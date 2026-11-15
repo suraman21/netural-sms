@@ -817,15 +817,22 @@ class AcmTicketService
 
     private function linkSuggestions(int $guardianId): array
     {
+        // G3 fix: the table has guardian_a/guardian_b (069) — the old
+        // guardian_id predicate never matched any column, so every call
+        // threw into the catch below and reviewers always saw []. Two
+        // placeholders (not one repeated) so native prepares also work.
         try {
             $stmt = $this->pdo->prepare(
-                'SELECT id, member_id, guardian_id, status, band, evidence, created_at'
+                'SELECT id, member_id, guardian_a, guardian_b, status, band, evidence, created_at'
                 . ' FROM guardian_link_suggestions'
-                . ' WHERE guardian_id = :gid ORDER BY id DESC LIMIT 10'
+                . ' WHERE guardian_a = :a OR guardian_b = :b ORDER BY id DESC LIMIT 10'
             );
-            $stmt->execute([':gid' => $guardianId]);
+            $stmt->execute([':a' => $guardianId, ':b' => $guardianId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
+            // Suggestions must never break ticket reads (pre-069
+            // databases lack the table), but failures stay visible.
+            error_log('AcmTicketService::linkSuggestions failed: ' . $e->getMessage());
             return [];
         }
     }
