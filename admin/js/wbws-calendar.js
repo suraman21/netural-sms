@@ -20,8 +20,25 @@ function isGLeap(y){return(y%4===0&&y%100!==0)||(y%400===0);}
 function mes1Day(gy){return isGLeap(gy+1)?12:11;}
 function getMes1(gy){return new Date(gy,8,mes1Day(gy));}
 
+// A date-only ISO string is a civil day, not a UTC instant. JavaScript's
+// default parser treats it as UTC, which shifts it in timezones west of UTC.
+// Keep existing Date and date-time parsing semantics unchanged.
+function parseCalendarInput(input){
+    if(input instanceof Date)return new Date(input.getTime());
+    if(typeof input==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(input)){
+        const parsed=new Date(input);
+        if(isNaN(parsed.getTime()))return parsed;
+        const parts=input.split('-').map(Number);
+        const local=new Date(0);
+        local.setFullYear(parts[0],parts[1]-1,parts[2]);
+        local.setHours(0,0,0,0);
+        return local;
+    }
+    return new Date(input);
+}
+
 function toEthiopian(input){
-    let dt=(input instanceof Date)?new Date(input.getTime()):new Date(input);
+    let dt=parseCalendarInput(input);
     if(isNaN(dt.getTime()))return{year:0,month:0,day:0};
     // CRITICAL: Normalize to LOCAL midnight to prevent timezone/DST off-by-one
     dt=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate());
@@ -51,7 +68,7 @@ function daysInMonth(m,y){
 function formatDate(input,fmt){
     if(!input)return '—';fmt=fmt||'medium';
     try{
-        const dt=(input instanceof Date)?input:new Date(input);
+        const dt=parseCalendarInput(input);
         if(isNaN(dt.getTime()))return String(input);
         return MODE==='ethiopian'?fmtEth(dt,fmt):fmtGC(dt,fmt);
     }catch(e){return String(input);}
@@ -75,7 +92,7 @@ function fmtGC(dt,f){
 }
 function formatDateTime(input){
     if(!input)return '—';
-    try{const dt=(input instanceof Date)?input:new Date(input);if(isNaN(dt.getTime()))return String(input);
+    try{const dt=parseCalendarInput(input);if(isNaN(dt.getTime()))return String(input);
     return formatDate(dt,'medium')+' '+dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}catch(e){return String(input);}
 }
 function todayFormatted(f){return formatDate(new Date(),f||'long');}
