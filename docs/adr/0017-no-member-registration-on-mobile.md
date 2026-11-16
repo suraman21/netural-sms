@@ -6,6 +6,8 @@
 
 > Recorded on 2026-10-22; the decision date is shown above. Evidence is cited so the decision can be checked; where the rationale is not documented, this is stated.
 
+> **2026-11-16 — reaffirmed:** [ADR-0022](0022-general-school-domain.md) adds a `school_registrar` seat and a school registration receipt, both web-only. The remodel does not put member registration on the phone; this record stays in force unchanged.
+
 ## Context
 
 Registration needs document uploads, duplicate checks and HR review, which were hard to guarantee on an offline mobile client.

@@ -6,6 +6,8 @@
 
 > Recorded on 2026-10-22; the decision date is shown above. Evidence is cited so the decision can be checked; where the rationale is not documented, this is stated.
 
+> **2026-11-16 — partially superseded:** [ADR-0022](0022-general-school-domain.md) retires the Mezmur ministry, so attendance ownership becomes single-owner (Education). The HR half of this decision — HR takes no attendance, HR tables stay a read-only archive — is unchanged and still in force.
+
 ## Context
 
 Three departments kept separate attendance, which duplicated effort and produced conflicting numbers.
