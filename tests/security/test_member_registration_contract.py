@@ -58,7 +58,7 @@ class MemberRegistrationContractTests(unittest.TestCase):
         self.assertIn("SecurityAuditService::record", self.controller)
         self.assertLess(
             self.controller.index("SecurityAuditService::record"),
-            self.controller.index("$conn->commit()"),
+            self.controller.index("$transaction->commit()"),
         )
         self.assertIn("$registrationPolicy['allow_uploads']", self.controller)
         self.assertIn("$registrationPolicy['allow_upgrade']", self.controller)

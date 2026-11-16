@@ -14,6 +14,7 @@ ob_start();
 header('Content-Type: application/json; charset=utf-8');
 require __DIR__ . '/config.php';
 require_once __DIR__ . '/backend/services/MemberFileService.php';
+require_once __DIR__ . '/backend/services/MemberImportTransaction.php';
 require_once __DIR__ . '/backend/services/MemberCategory.php';
 require_once __DIR__ . '/backend/services/IdentityCodeService.php';
 require_once __DIR__ . '/backend/services/MemberRegistrationPolicy.php';
@@ -381,6 +382,9 @@ if (isset($_POST['upgrade_member_id']) && is_scalar($_POST['upgrade_member_id'])
     $upgrade_id_check = (int)$_POST['upgrade_member_id'];
 }
 if ($upgrade_id_check > 0 && !is_string($doc_signed_form_path)) {
+    foreach ([$student_photo_path, $guardian_photo_path, $doc_school_records_path, $doc_spiritual_path, $doc_signed_form_path] as $uploadedPath) {
+        if (is_string($uploadedPath)) \App\Services\MemberFileService::discard($uploadedPath);
+    }
     jsonExit(['status' => 'error', 'message' => 'The signed registration form must be uploaded to promote a member.']);
 }
 
@@ -389,11 +393,12 @@ if ($upgrade_id_check > 0 && !is_string($doc_signed_form_path)) {
 // ║  3. DATABASE INSERT                                     ║
 // ╚══════════════════════════════════════════════════════════╝
 
-$conn->begin_transaction();
+$transaction = new \App\Services\MemberImportTransaction($conn);
 $filesCommitted = false;
 $duplicateIdentityLock = null;
 
 try {
+    $transaction->start();
     $data = [
         'member_code'          => $member_code,
         'registration_type'    => $registration_type,
@@ -589,10 +594,10 @@ try {
         throw new RuntimeException('Registration audit recording failed.');
     }
 
-    $conn->commit();
+    $transaction->commit();
+    $filesCommitted = true;
     \App\Services\MemberDuplicateService::releaseIdentityLock($conn, $duplicateIdentityLock);
     $duplicateIdentityLock = null;
-    $filesCommitted = true;
 
     // Identity v2 (post-commit, own transaction): apply the submitted
     // positions, issue the member code, derive legacy flags and refresh
@@ -664,7 +669,21 @@ try {
     ]);
 
 } catch (Throwable $e) {
-    try { $conn->rollback(); } catch (Throwable $r) {}
+    $outcomeUnknown = !$filesCommitted && $transaction->unknownAfterFailure();
+    // Do not delete documents or permit an immediate reservation retry when
+    // the database may have committed. The lease still expires; reconciliation
+    // must happen before any retry.
+    if ($outcomeUnknown || $filesCommitted) {
+        unset($GLOBALS['_member_registration_idempotency']);
+        error_log('Registration outcome requires review: ' . $e->getMessage());
+        jsonExit([
+            'status' => 'error',
+            'outcome_unknown' => true,
+            'message' => $filesCommitted
+                ? 'Registration was saved, but follow-up processing failed. Check the record and enrollment before retrying.'
+                : 'Registration outcome is unknown. Check the member record and uploaded documents before retrying.',
+        ], 503);
+    }
     \App\Services\MemberDuplicateService::releaseIdentityLock($conn, $duplicateIdentityLock);
     $duplicateIdentityLock = null;
     if (!$filesCommitted) {

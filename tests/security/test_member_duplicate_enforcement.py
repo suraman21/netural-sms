@@ -56,10 +56,10 @@ class MemberDuplicateEnforcementTests(unittest.TestCase):
         self.assertNotIn("api_check_duplicate.php?' +", self.hr_ui)
 
     def test_strong_match_is_checked_under_the_write_transaction(self):
-        begin = self.controller.index("$conn->begin_transaction()")
+        begin = self.controller.index("$transaction->start()")
         check = self.controller.index("MemberDuplicateService::findStrongMatch")
         insert = self.controller.index("INSERT INTO members")
-        commit = self.controller.index("$conn->commit()")
+        commit = self.controller.index("$transaction->commit()")
         self.assertLess(begin, check)
         self.assertLess(check, insert)
         self.assertLess(insert, commit)
