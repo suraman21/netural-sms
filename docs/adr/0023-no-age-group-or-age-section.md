@@ -4,6 +4,8 @@
 |---|---|---|
 | Accepted — owner decision, resolving [ADR-0022](0022-general-school-domain.md) deferred decision **D-5** | 2026-11-16 | Product owner |
 
+> **2026-11-16 — narrowed by [ADR-0024](0024-student-of-an-educational-institution.md):** the subject is a *student* of an educational institution, not a member of a congregation. This record's A1–A4 stand unchanged; its **A6** (legacy values readable, never migrated) is superseded — there is no legacy data to keep, and the church columns are removed rather than preserved.
+
 > Written before the code change, like ADR-0022. It records a decision and its consequences; the implementation is phase 3 of the remodel and has not started.
 
 ## Context
