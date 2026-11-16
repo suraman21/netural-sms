@@ -1,4 +1,6 @@
--- 091_telegram_v2_state_machine.sql (IDEMPOTENT)
+-- 102_telegram_v2_state_machine.sql (IDEMPOTENT)
+-- Renamed from 091 (2026-11-16) after colliding with ACM 091_acm_staff_enrollment_requests.sql;
+-- content unchanged.
 -- Expands the Telegram registration bot to the v2 UX:
 --   * richer session state machine (duplicate review / identity verification /
 --     final validation / completed)

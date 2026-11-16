@@ -1,6 +1,8 @@
 -- ============================================================
--- 082_telegram_registration_corrections.sql (IDEMPOTENT)
--- Phase 2 correction cycles and review history. Apply after 081.
+-- 101_telegram_registration_corrections.sql (IDEMPOTENT)
+-- Renamed from 082 (2026-11-16) after colliding with ACM 082_acm_activation_ceremony.sql;
+-- content unchanged. Apply after 100.
+-- Phase 2 correction cycles and review history. Apply after 100.
 -- ============================================================
 
 DROP PROCEDURE IF EXISTS `ssms_082_upgrade`;
