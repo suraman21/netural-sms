@@ -25,6 +25,8 @@ final class MemberFileService
 
     private const FIELDS = [
         'student_photo' => ['category' => 'photos', 'private' => false, 'pdf' => false],
+        // Dormant school workflow: never changes the legacy public-photo contract.
+        'school_student_photo' => ['category' => 'student_photos', 'private' => true, 'pdf' => false],
         'guardian_photo' => ['category' => 'guardian_photos', 'private' => true, 'pdf' => false],
         'doc_school_records' => ['category' => 'docs', 'private' => true, 'pdf' => true],
         'doc_spiritual' => ['category' => 'docs', 'private' => true, 'pdf' => true],
@@ -63,8 +65,15 @@ final class MemberFileService
         $extension = self::IMAGE_MIMES[$mime] ?? null;
         $reencodedTmp = null;
         if ($extension !== null) {
-            if (@getimagesize($tmp) === false) {
+            $imageInfo = @getimagesize($tmp);
+            if ($imageInfo === false) {
                 return ['path' => null, 'error' => 'The file is not a valid image.'];
+            }
+            if ($field === 'school_student_photo'
+                && (($imageInfo[0] ?? 0) < 1 || ($imageInfo[1] ?? 0) < 1
+                    || $imageInfo[0] > 8000 || $imageInfo[1] > 8000
+                    || $imageInfo[0] * $imageInfo[1] > 20000000)) {
+                return ['path' => null, 'error' => 'Image dimensions are too large.'];
             }
             // Re-encode the image to strip EXIF metadata and any appended
             // payload (polyglot protection). Falls back to the original upload
@@ -72,6 +81,8 @@ final class MemberFileService
             $reencodedTmp = self::reencodeImage($tmp, $mime, $extension);
             if ($reencodedTmp !== null) {
                 $tmp = $reencodedTmp;
+            } elseif ($field === 'school_student_photo') {
+                return ['path' => null, 'error' => 'Secure photo processing is unavailable.'];
             }
         } elseif (!empty($spec['pdf']) && $mime === 'application/pdf' && self::hasPdfHeader($tmp)) {
             $extension = 'pdf';
@@ -141,6 +152,10 @@ final class MemberFileService
     /** Resolve only private URI paths or the two protected legacy directories. */
     public static function resolvePrivatePath(string $storedPath): ?string
     {
+        if (preg_match('#^private://members/(student_photos)/([a-f0-9]{32}\.(?:jpg|png|gif|webp|bmp))$#D', $storedPath, $match)) {
+            $candidate = self::privateRoot() . '/' . $match[1] . '/' . $match[2];
+            return is_file($candidate) ? $candidate : null;
+        }
         if (preg_match('#^private://members/(docs|guardian_photos)/([a-f0-9]{32}\.(?:jpg|png|gif|webp|bmp|pdf))$#D', $storedPath, $match)) {
             $candidate = self::privateRoot() . '/' . $match[1] . '/' . $match[2];
             return is_file($candidate) ? $candidate : null;
