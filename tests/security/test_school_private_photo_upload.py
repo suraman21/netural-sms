@@ -130,6 +130,26 @@ class SchoolPrivatePhotoUpload(unittest.TestCase):
         self.assertEqual(list(target.iterdir()),[])
         self.assertEqual(list(insecure.iterdir()),[])
 
+    def test_failed_file_chmod_does_not_leave_successful_upload(self):
+        script = self.root/'web'/'chmod_failure.php'
+        script.write_text(r'''<?php
+        namespace App\Services { function chmod($path, $permissions) { return false; } }
+        namespace {
+            define('MEMBER_PRIVATE_STORAGE_PATH', getenv('FIXTURE_PRIVATE_ROOT'));
+            require getenv('FIXTURE_MEMBER_FILE_SERVICE');
+            header('Content-Type: application/json');
+            echo json_encode(\App\Services\MemberFileService::storeRequestUpload('school_student_photo'));
+        }
+        ''')
+        png = io.BytesIO(); Image.new('RGB',(4,4),'blue').save(png,format='PNG')
+        response = requests.post(self.base+'/chmod_failure.php',files={'school_student_photo':('x.png',png.getvalue(),'image/png')},timeout=10)
+        self.assertEqual(response.status_code,200)
+        result = response.json()
+        self.assertIsNone(result['path'])
+        self.assertIn('permissions could not be verified',result['error'])
+        photos = self.root/'private'/'members'/'student_photos'
+        self.assertEqual(list(photos.glob('*')),[])
+
     def test_reencoding_unavailable_fails_closed(self):
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
