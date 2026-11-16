@@ -1,7 +1,11 @@
 <?php
 // Private socket-only fixture. Not a user-facing registration endpoint.
 require __DIR__ . '/../../admin/backend/services/SchoolRegistrationReceipt.php';
+require __DIR__ . '/../../admin/backend/services/SchoolSectionYearResolver.php';
+require __DIR__ . '/../../admin/backend/services/EnrollmentService.php';
 use App\Services\SchoolRegistrationReceipt as R;
+use App\Services\SchoolSectionYearResolver as Resolver;
+use App\Services\EnrollmentService;
 use App\Services\SchoolRegistrationReceiptConflict;
 use App\Services\SchoolRegistrationReceiptNeedsReview;
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -50,4 +54,30 @@ $r=R::claim($other,42,$concurrentKey,$hash);check($r['state']==='replay');$other
 $lost=db($socket,ReceiptCommitLost::class);$lost->begin_transaction();$r=R::claim($lost,42,'fixture-lost-commit-0001',$hash);R::complete($lost,42,'fixture-lost-commit-0001',$hash,$r['owner_token'],778,$enrollment);
 bad(fn()=>$lost->commit(),RuntimeException::class);$lost->close();
 $c->begin_transaction();$r=R::claim($c,42,'fixture-lost-commit-0001',$hash);check($r['state']==='replay');$c->rollback();
-$c->close();$other->close();echo "PASS: $n durable receipt checks\n";
+// Compose actual resolver + legacy enrollment service + receipt in ONE
+// caller-owned transaction. No production auth, upload or workflow hooks here.
+$composedKey='fixture-composed-0000001';
+$c->begin_transaction();$claim=R::claim($c,42,$composedKey,$hash);
+$c->query("INSERT INTO members(id,status) VALUES(900,'active')");
+$class=Resolver::resolveForUpdate($c,1,101);
+$enr=EnrollmentService::enroll($c,900,$class,1,42,true);
+check(($enr['status']??'')==='success');$eid=(int)$enr['enrollment_id'];
+R::complete($c,42,$composedKey,$hash,$claim['owner_token'],900,$eid);
+check((int)$other->query('SELECT COUNT(*) n FROM members WHERE id=900')->fetch_assoc()['n']===0);
+$c->commit();
+check((int)$other->query("SELECT COUNT(*) n FROM members m JOIN class_enrollments e ON e.member_id=m.id JOIN school_registration_receipts r ON r.enrollment_id=e.id AND r.member_id=m.id WHERE m.id=900 AND e.class_id=11 AND e.academic_year_id=1 AND r.receipt_state='completed'")->fetch_assoc()['n']===1);
+$c->begin_transaction();$again=R::claim($c,42,$composedKey,$hash);check($again===['state'=>'replay','member_id'=>900,'enrollment_id'=>$eid]);$c->rollback();
+$rollbackKey='fixture-composed-rollback';$c->begin_transaction();$claim=R::claim($c,42,$rollbackKey,$hash);
+$c->query("INSERT INTO members(id,status) VALUES(901,'active')");
+// Simulate a failed enrollment after writing the member, with confirmed rollback.
+try {throw new RuntimeException('Fixture enrollment failure');} catch (RuntimeException $e) {$c->rollback();}
+check((int)$other->query('SELECT COUNT(*) n FROM members WHERE id=901')->fetch_assoc()['n']===0);
+$c->begin_transaction();$claim=R::claim($c,42,$rollbackKey,$hash);check($claim['state']==='acquired');$c->rollback();
+$lossKey='fixture-composed-loss-01';$lost=db($socket,ReceiptCommitLost::class);$lost->begin_transaction();
+$claim=R::claim($lost,42,$lossKey,$hash);$lost->query("INSERT INTO members(id,status) VALUES(902,'active')");
+$class=Resolver::resolveForUpdate($lost,1,101);$enr=EnrollmentService::enroll($lost,902,$class,1,42,true);
+check(($enr['status']??'')==='success');$eid=(int)$enr['enrollment_id'];R::complete($lost,42,$lossKey,$hash,$claim['owner_token'],902,$eid);
+bad(fn()=>$lost->commit(),RuntimeException::class);$lost->close();
+$c->begin_transaction();$again=R::claim($c,42,$lossKey,$hash);check($again===['state'=>'replay','member_id'=>902,'enrollment_id'=>$eid]);$c->rollback();
+check((int)$other->query("SELECT COUNT(*) n FROM members m JOIN class_enrollments e ON e.member_id=m.id JOIN school_registration_receipts r ON r.enrollment_id=e.id AND r.member_id=m.id WHERE m.id=902 AND r.receipt_state='completed'")->fetch_assoc()['n']===1);
+$c->close();$other->close();echo "PASS: $n durable receipt and atomic-composition checks\n";
