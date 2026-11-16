@@ -9,17 +9,19 @@ final class SchoolStructureCreateOutcomeUnknown extends \RuntimeException {}
 
 final class SchoolStructureActor
 {
-    private function __construct(private int $id, private string $role) {}
+    private function __construct(private int $id, private string $role, private string $passwordVersion) {}
     /** Values must come from a freshly authenticated, revalidated server session. */
-    public static function fromTrustedSession(int $id, string $role): self
+    public static function fromTrustedSession(int $id, string $role, string $passwordVersion): self
     {
-        if ($id <= 0 || !in_array($role, ['super_admin', 'school_admin', 'edu_dept'], true)) {
+        if ($id <= 0 || !in_array($role, ['super_admin', 'school_admin', 'edu_dept'], true)
+            || !preg_match('/^[0-9a-f]{64}$/D', $passwordVersion)) {
             throw new \DomainException('Structure management authorization required.');
         }
-        return new self($id, $role);
+        return new self($id, $role, $passwordVersion);
     }
     public function id(): int { return $this->id; }
     public function role(): string { return $this->role; }
+    public function passwordVersion(): string { return $this->passwordVersion; }
 }
 
 final class SchoolStructureCreate
@@ -53,9 +55,10 @@ final class SchoolStructureCreate
             $configured = true;
             if (!$db->begin_transaction()) throw new \RuntimeException('Transaction start failed.');
             $started = true; $configured = false;
-            foreach (['school_education_levels', 'school_grades', 'school_grade_sections', 'school_academic_structure_audit'] as $table) {
+            foreach (['school_education_levels', 'school_grades', 'school_grade_sections', 'school_academic_structure_audit', 'users'] as $table) {
                 AttendancePreparationReadBoundary::requireTransactionalTable($db, $table);
             }
+            self::revalidateActor($db, $actor);
             if ($kind === 'grade') {
                 self::requireActive($db, 'SELECT id FROM school_education_levels WHERE id=? AND is_active=1 FOR UPDATE', $parent);
             } elseif ($kind === 'section') {
@@ -124,6 +127,25 @@ final class SchoolStructureCreate
             }
             throw $error;
         }
+    }
+
+    /** Must run under the owned transaction before any structure write. */
+    private static function revalidateActor(\mysqli $db, SchoolStructureActor $actor): void
+    {
+        $stmt = $db->prepare('SELECT role, is_active, password_hash FROM users WHERE id=? FOR UPDATE');
+        if (!$stmt) throw new \RuntimeException('Account verification unavailable.');
+        try {
+            $id = $actor->id();
+            if (!$stmt->bind_param('i', $id) || !$stmt->execute()) throw new \RuntimeException('Account verification unavailable.');
+            $result = $stmt->get_result();
+            if (!$result) throw new \RuntimeException('Account verification unavailable.');
+            try { $row = $result->fetch_assoc(); } finally { $result->free(); }
+            if (!$row || (int)$row['is_active'] !== 1 || $row['role'] !== $actor->role()
+                || !is_string($row['password_hash'])
+                || !hash_equals($actor->passwordVersion(), hash('sha256', $row['password_hash']))) {
+                throw new \DomainException('Structure management authorization no longer valid.');
+            }
+        } finally { $stmt->close(); }
     }
 
     private static function requireActive(\mysqli $db, string $sql, int $id): void
