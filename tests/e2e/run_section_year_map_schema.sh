@@ -55,3 +55,7 @@ check 'SELECT COUNT(*) FROM class_enrollments WHERE member_id=777' 1
 check 'SELECT COUNT(*) FROM school_section_year_class_map' 2
 echo 'PASS: empty/repeat schema, one-to-one per year, cross-year reuse, FK restrictions, rollback and synthetic enrollment join'
 SMS_SECTION_MAP_FIXTURE_SOCKET="$D/mysql.sock" php "$REPO/tests/e2e/section_year_resolution.php"
+"${DB[@]}" -e "CREATE TABLE users (id INT UNSIGNED NOT NULL PRIMARY KEY) ENGINE=InnoDB; INSERT INTO users VALUES (42),(43);"
+"${DB[@]}" < "$REPO/sql/099_school_registration_receipts.sql"
+"${DB[@]}" < "$REPO/sql/099_school_registration_receipts.sql"
+SMS_SECTION_MAP_FIXTURE_SOCKET="$D/mysql.sock" php "$REPO/tests/e2e/school_registration_receipt.php"

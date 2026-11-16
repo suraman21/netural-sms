@@ -36,7 +36,7 @@ cp "$REPO/admin/school_structure.php" "$D/project/admin/school_structure.php"
 cp "$REPO/admin/school_calendar.php" "$D/project/admin/school_calendar.php"
 cp "$REPO/admin/js/school_calendar.js" "$D/project/admin/js/school_calendar.js"
 cp "$REPO/admin/js/school_structure.js" "$D/project/admin/js/school_structure.js"
-for migration in 095_school_calendar_configuration.sql 096_school_academic_structure.sql 097_school_academic_structure_audit.sql; do
+for migration in 095_school_calendar_configuration.sql 096_school_academic_structure.sql 097_school_academic_structure_audit.sql 098_school_section_year_class_map.sql 099_school_registration_receipts.sql; do
   if [ -f "$REPO/sql/$migration" ]; then cp "$REPO/sql/$migration" "$D/project/sql/$migration"; fi
 done
 # The archived copy has its own parent config, which takes precedence.
@@ -84,7 +84,7 @@ bash tests/e2e/provision_env.sh > "$D/provision.log" 2>&1 || { cat "$D/provision
 # The upstream script can continue after failures. Preserve visibility of them.
 echo 'Provisioning warnings:'
 grep -E 'known-stale|index-only residue|Error|ERROR|Fatal' "$D/provision.log" || true
-if grep -Eq 'known-stale, patched below\): sql/09[56]_' "$D/provision.log"; then echo 'New foundation migration failed' >&2; exit 1; fi
+if grep -Eq 'known-stale, patched below\): sql/09[5-9]_' "$D/provision.log"; then echo 'New foundation migration failed' >&2; exit 1; fi
 if [ -f sql/095_school_calendar_configuration.sql ]; then
   MODE=$(sudo -n mariadb -N -B ssms_test -e "SELECT CONCAT(id,':',IFNULL(mode,'unconfigured'),':',revision) FROM school_calendar_configuration")
   [ "$MODE" = '1:unconfigured:0' ] || { echo "Unexpected calendar bootstrap: $MODE" >&2; exit 1; }
