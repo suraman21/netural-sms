@@ -48,3 +48,5 @@ check "SELECT CONCAT(l.name,':',g.name,':',s.name,':',l.is_active,':',g.is_activ
 "${DB[@]}" < "$SQL"
 check "SELECT COUNT(*) FROM school_grade_sections" 3
 echo 'PASS: empty bootstrap, repeat apply, hierarchy, uniqueness, FK restrictions, rollback and updates'
+command -v php >/dev/null || { echo 'Missing required tool: php' >&2; exit 2; }
+SMS_STRUCTURE_FIXTURE_SOCKET="$SOCKET" php "$REPO/tests/e2e/academic_structure_create.php"
