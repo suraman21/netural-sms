@@ -58,7 +58,24 @@ class RegistrationUploadOutcome(unittest.TestCase):
         self.assertEqual(status, 500, result)
         self.assertEqual(int(db("SELECT COUNT(*) FROM members WHERE full_name_am='Rollback "+unique+"'")), 0)
         self.assertEqual(self.files() - before, normal_files | preserved)
+        rolled_back_name = 'Afterwrite '+unique
+        status, result = self.submit(rolled_back_name, uuid.uuid4().hex, {'fixture_after_write_failure': '1'})
+        self.assertEqual(status, 500, result)
+        self.assertEqual(int(db("SELECT COUNT(*) FROM members WHERE full_name_am='"+rolled_back_name+"'")), 0)
+        self.assertEqual(self.files() - before, normal_files | preserved)
+        unknown_name = 'RollbackUnknown '+unique
+        unknown_key = uuid.uuid4().hex
+        fault = {'fixture_after_write_failure': '1', 'fixture_rollback_response_loss': '1'}
+        status, result = self.submit(unknown_name, unknown_key, fault)
+        self.assertEqual(status, 503, result)
+        self.assertTrue(result.get('outcome_unknown'), result)
+        self.assertEqual(int(db("SELECT COUNT(*) FROM members WHERE full_name_am='"+unknown_name+"'")), 0)
+        uncertain_files = self.files() - before - normal_files - preserved
+        self.assertEqual(len(uncertain_files), 1)
+        status, result = self.submit(unknown_name, unknown_key, fault)
+        self.assertEqual(status, 409, result)
+        self.assertEqual(self.files() - before, normal_files | preserved | uncertain_files)
         status, result = self.submit('Promotion '+unique, uuid.uuid4().hex, {'upgrade_member_id': '123'})
         self.assertEqual(result.get('status'), 'error', result)
         self.assertIn('signed registration form', result.get('message',''))
-        self.assertEqual(self.files() - before, normal_files | preserved)
+        self.assertEqual(self.files() - before, normal_files | preserved | uncertain_files)

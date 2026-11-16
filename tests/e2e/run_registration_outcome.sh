@@ -29,6 +29,8 @@ cp "$REPO/admin/backend/services/MemberImportTransaction.php" "$D/project/admin/
 cp "$REPO/admin/api_import_members.php" "$D/project/admin/api_import_members.php"
 cp "$REPO/admin/backend/services/TestMemberSeed.php" "$D/project/admin/backend/services/TestMemberSeed.php"
 cp "$REPO/admin/hr_register_member.php" "$D/project/admin/hr_register_member.php"
+cp "$REPO/admin/dashboards/hr-dept.php" "$D/project/admin/dashboards/hr-dept.php"
+cp "$REPO/admin/dashboards/school_admin.php" "$D/project/admin/dashboards/school_admin.php"
 cp "$REPO/api/v1/routes/enrollment.php" "$D/project/api/v1/routes/enrollment.php"
 cp "$REPO/admin/school_structure.php" "$D/project/admin/school_structure.php"
 cp "$REPO/admin/school_calendar.php" "$D/project/admin/school_calendar.php"
@@ -104,18 +106,26 @@ p=pathlib.Path(sys.argv[1]); s=p.read_text()
 old=r"if (!$this->db->commit()) throw new \RuntimeException('Commit not confirmed.');"
 new=old+"\n"+r"        if (($_POST['fixture_commit_response_loss'] ?? '') === '1') throw new \RuntimeException('Fixture lost commit response');"
 assert s.count(old)==1
-p.write_text(s.replace(old,new))
+s=s.replace(old,new)
+old=r"if (!$this->db->rollback()) throw new \RuntimeException('Rollback not confirmed.');"
+assert s.count(old)==1
+s=s.replace(old, old+"\n"+r"                if (($_POST['fixture_rollback_response_loss'] ?? '') === '1') throw new \RuntimeException('Fixture lost rollback response');")
+p.write_text(s)
 INJECT
 python3 - "$D/project/admin/hr_register_member.php" <<'INJECT'
 import pathlib,sys
 p=pathlib.Path(sys.argv[1]); s=p.read_text()
 old='$transaction->start();'
 assert s.count(old)==1
-p.write_text(s.replace(old, old+"\n    if (($_POST['fixture_before_write_failure'] ?? '') === '1') throw new RuntimeException('Fixture pre-write failure');"))
+s=s.replace(old, old+"\n    if (($_POST['fixture_before_write_failure'] ?? '') === '1') throw new RuntimeException('Fixture pre-write failure');")
+old='$transaction->commit();'
+assert s.count(old)==1
+s=s.replace(old, "if (($_POST['fixture_after_write_failure'] ?? '') === '1') throw new RuntimeException('Fixture post-write failure');\n    "+old)
+p.write_text(s)
 INJECT
-cp "$REPO/tests/security/test_registration_upload_outcome_http.py" "$D/project/tests/security/"
+cp "$REPO/tests/security/test_registration_upload_outcome_http.py" "$REPO/tests/security/test_registration_response_loss_ui.py" "$D/project/tests/security/"
 export SSMS_REGISTRATION_FAULT_FIXTURE=1
-python3 -m pytest tests/security/test_registration_upload_outcome_http.py -q -rs > "$D/regtest.log" 2>&1 || { cat "$D/regtest.log"; tail -40 "$D/web.log"; exit 1; }
+python3 -m pytest tests/security/test_registration_upload_outcome_http.py tests/security/test_registration_response_loss_ui.py -q -rs > "$D/regtest.log" 2>&1 || { cat "$D/regtest.log"; tail -40 "$D/web.log"; exit 1; }
 cat "$D/regtest.log"
 if grep -Eq '[0-9]+ skipped' "$D/regtest.log"; then exit 1; fi
 # Fail if the live-test class was not executed, rather than accepting skips.

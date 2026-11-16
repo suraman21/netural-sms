@@ -3659,12 +3659,17 @@ if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
             .then(response => {
                 const ct = response.headers.get('content-type') || '';
                 if (!ct.includes('application/json')) {
-                    throw { _type: 'session_expired', message: 'Session expired. The page will reload.' };
+                    throw new Error('Unexpected registration response');
                 }
                 return response.json();
             })
             .then(data => {
                 if (overlay) overlay.classList.add('hidden');
+
+                if (!data || typeof data !== 'object' || typeof data.status !== 'string') {
+                    alert('Registration outcome is unknown. Check the member record and uploaded documents before retrying.');
+                    return;
+                }
 
                 if (data && (data.status === 'session_expired' || data.status === 'csrf_expired' || data.action === 'reload')) {
                     alert(data.message || 'Session expired. The page will reload.');
@@ -3678,19 +3683,13 @@ if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
                     const wrapper = document.getElementById('memberRegistrationWrapper');
                     if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } else {
-                    alert(data && data.message ? data.message : 'Saving failed. Please try again.');
+                    alert(data && data.message ? data.message : 'Registration was not confirmed. Check the member record before retrying.');
                 }
             })
             .catch(err => {
                 if (overlay) overlay.classList.add('hidden');
-                if (err && err._type === 'session_expired') {
-                    alert(err.message); window.location.reload(); return;
-                }
-                if (err instanceof SyntaxError) {
-                    alert('Session may have expired. The page will reload.'); window.location.reload(); return;
-                }
                 console.error(err);
-                alert('Connection error. Please check your internet and try again.\n\nIf this keeps happening, refresh the page first.');
+                alert('Registration outcome is unknown. Check the member record and uploaded documents before retrying.');
             });
     }
 
@@ -4443,19 +4442,15 @@ function submitRegistrationForm(formData) {
         // ── Key fix: check for non-JSON responses before parsing ──
         const contentType = response.headers.get('content-type') || '';
         if (!contentType.includes('application/json')) {
-            // Server returned HTML (likely a redirect to login page)
-            if (response.redirected || response.url.includes('index.php')) {
-                throw { _type: 'session_expired', message: 'Session expired. Redirecting to login...' };
-            }
-            throw { _type: 'server_error', message: 'Server returned an unexpected response. Please try again.' };
+            throw new Error('Unexpected registration response');
         }
         return response.json();
     })
     .then(data => {
         if (overlay) overlay.classList.add('hidden');
         
-        if (!data || typeof data !== 'object') {
-            alert('Unexpected server response. Please try again.');
+        if (!data || typeof data !== 'object' || typeof data.status !== 'string') {
+            alert('Registration outcome is unknown. Check the member record and uploaded documents before retrying.');
             return;
         }
         
@@ -4484,40 +4479,13 @@ function submitRegistrationForm(formData) {
         }
         
         // ── Handle known errors with real messages ──
-        alert(data.message || 'Registration failed. Please try again.');
+        alert(data.message || 'Registration was not confirmed. Check the member record before retrying.');
     })
     .catch(err => {
         if (overlay) overlay.classList.add('hidden');
         
-        // ── Structured errors from our checks above ──
-        if (err && err._type === 'session_expired') {
-            alert(err.message);
-            window.location.reload();
-            return;
-        }
-        if (err && err._type === 'server_error') {
-            alert(err.message);
-            return;
-        }
-        
-        // ── Actual network errors ──
         console.error('Registration error:', err);
-        
-        // Check if it's a JSON parse error (server returned HTML)
-        if (err instanceof SyntaxError && err.message.includes('Unexpected token')) {
-            alert('Your session may have expired. The page will reload.');
-            window.location.reload();
-            return;
-        }
-        
-        // Check if offline
-        if (!navigator.onLine) {
-            alert('You appear to be offline. Please check your internet connection and try again.');
-            return;
-        }
-        
-        // Generic network error
-        alert('Connection error. Please check your internet and try again.\n\nIf this keeps happening, try refreshing the page first.');
+        alert('Registration outcome is unknown. Check the member record and uploaded documents before retrying.');
     });
 }
 
