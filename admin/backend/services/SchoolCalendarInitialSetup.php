@@ -11,18 +11,22 @@ require_once __DIR__ . '/AttendancePreparationReadBoundary.php';
 
 final class CalendarSetupActor
 {
-    private function __construct(private int $userId) {}
+    private function __construct(private int $userId, private string $passwordVersion, private string $authorizationVersion) {}
 
     /** $role and $userId must come from a freshly authenticated server session. */
-    public static function fromTrustedSession(int $userId, string $role): self
+    public static function fromTrustedSession(int $userId, string $role, string $passwordVersion, string $authorizationVersion): self
     {
-        if ($userId <= 0 || $role !== 'super_admin') {
+        if ($userId <= 0 || $userId > 4294967295 || $role !== 'super_admin'
+            || !preg_match('/^[0-9a-f]{64}$/D', $passwordVersion)
+            || !preg_match('/^[1-9][0-9]{0,19}$/D', $authorizationVersion)) {
             throw new \DomainException('Super Admin authorization is required.');
         }
-        return new self($userId);
+        return new self($userId, $passwordVersion, $authorizationVersion);
     }
 
     public function userId(): int { return $this->userId; }
+    public function passwordVersion(): string { return $this->passwordVersion; }
+    public function authorizationVersion(): string { return $this->authorizationVersion; }
 }
 
 final class CalendarAlreadyConfigured extends \DomainException {}
@@ -30,6 +34,25 @@ final class CalendarSetupOutcomeUnknown extends \RuntimeException {}
 
 final class SchoolCalendarInitialSetup
 {
+    private static function revalidateActor(\mysqli $db, CalendarSetupActor $actor): void
+    {
+        $stmt = $db->prepare('SELECT role,is_active,password_hash,authorization_version FROM users WHERE id=? FOR UPDATE');
+        if (!$stmt) throw new \RuntimeException('Calendar account verification unavailable.');
+        try {
+            $id = $actor->userId();
+            if (!$stmt->bind_param('i', $id) || !$stmt->execute()) throw new \RuntimeException('Calendar account verification unavailable.');
+            $result = $stmt->get_result();
+            if (!$result) throw new \RuntimeException('Calendar account verification unavailable.');
+            try { $row = $result->fetch_assoc(); } finally { $result->free(); }
+            if (!$row || (int)$row['is_active'] !== 1 || $row['role'] !== 'super_admin'
+                || (string)$row['authorization_version'] !== $actor->authorizationVersion()
+                || !is_string($row['password_hash'])
+                || !hash_equals($actor->passwordVersion(), hash('sha256', $row['password_hash']))) {
+                throw new \DomainException('Calendar setup authorization no longer valid.');
+            }
+        } finally { $stmt->close(); }
+    }
+
     /**
      * Owns its transaction. Initial selection only; does not switch a mode.
      * A commit/rollback failure has an unknown outcome: read state before retry.
@@ -54,9 +77,12 @@ final class SchoolCalendarInitialSetup
             if (!$db->begin_transaction()) throw new \RuntimeException('Cannot start transaction.');
             $started = true;
             $configured = false;
-            foreach (['school_calendar_configuration', 'school_calendar_configuration_audit'] as $table) {
+            foreach (['users', 'school_calendar_configuration', 'school_calendar_configuration_audit'] as $table) {
                 AttendancePreparationReadBoundary::requireTransactionalTable($db, $table);
             }
+            // Lock the account first, then configuration. A future mode-switch
+            // service must use compatible lock ordering to avoid deadlocks.
+            self::revalidateActor($db, $actor);
             $result = $db->query('SELECT mode, revision FROM school_calendar_configuration WHERE id=1 FOR UPDATE');
             if (!$result instanceof \mysqli_result) throw new \RuntimeException('Calendar configuration unavailable.');
             try { $state = $result->fetch_assoc(); } finally { $result->free(); }

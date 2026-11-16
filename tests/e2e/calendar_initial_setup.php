@@ -30,7 +30,7 @@ if (($argv[1] ?? '') === 'worker') {
     $workerDb = new mysqli('localhost', 'calendar_test', 'fixture-only', 'sms_calendar_service_test', 0, $socket);
     echo "READY\n"; flush();
     try {
-        SchoolCalendarInitialSetup::choose($workerDb, CalendarSetupActor::fromTrustedSession(42, 'super_admin'), $argv[2] ?? '');
+        SchoolCalendarInitialSetup::choose($workerDb, CalendarSetupActor::fromTrustedSession(42, 'super_admin', hash('sha256', 'fixture-hash'), '1'), $argv[2] ?? '');
         echo "SUCCESS\n";
     } catch (CalendarAlreadyConfigured $e) { echo "CONFLICT\n"; }
     $workerDb->close();
@@ -53,9 +53,31 @@ function resetFixture(mysqli $db): void {
     $db->query('UPDATE school_calendar_configuration SET mode=NULL,revision=0,updated_at=NULL WHERE id=1');
 }
 try {
-    denied(fn()=>CalendarSetupActor::fromTrustedSession(1, 'school_admin'), DomainException::class);
-    denied(fn()=>CalendarSetupActor::fromTrustedSession(0, 'super_admin'), DomainException::class);
-    $actor = CalendarSetupActor::fromTrustedSession(42, 'super_admin');
+    denied(fn()=>CalendarSetupActor::fromTrustedSession(1, 'school_admin', hash('sha256', 'fixture-hash'), '1'), DomainException::class);
+    denied(fn()=>CalendarSetupActor::fromTrustedSession(0, 'super_admin', hash('sha256', 'fixture-hash'), '1'), DomainException::class);
+    $actor = CalendarSetupActor::fromTrustedSession(42, 'super_admin', hash('sha256', 'fixture-hash'), '1');
+    denied(fn()=>CalendarSetupActor::fromTrustedSession(42, 'super_admin', '', '1'), DomainException::class);
+    denied(fn()=>CalendarSetupActor::fromTrustedSession(42, 'super_admin', hash('sha256','fixture-hash'), ''), DomainException::class);
+    denied(fn()=>CalendarSetupActor::fromTrustedSession(4294967296, 'super_admin', hash('sha256','fixture-hash'), '1'), DomainException::class);
+    // All account mutation is confined to this synthetic fixture.
+    foreach ([
+        ["UPDATE users SET is_active=0 WHERE id=42", "UPDATE users SET is_active=1 WHERE id=42"],
+        ["UPDATE users SET role='school_admin' WHERE id=42", "UPDATE users SET role='super_admin' WHERE id=42"],
+        ["UPDATE users SET password_hash='changed' WHERE id=42", "UPDATE users SET password_hash='fixture-hash' WHERE id=42"],
+        ["UPDATE users SET authorization_version=2 WHERE id=42", "UPDATE users SET authorization_version=1 WHERE id=42"],
+    ] as [$change, $restore]) {
+        $db->query($change);
+        try { denied(fn()=>SchoolCalendarInitialSetup::choose($db,$actor,'gregorian'), DomainException::class); }
+        finally { $db->query($restore); }
+        $actual=state($db);
+        expect($actual['mode']===null && (int)$actual['revision']===0 && (int)$actual['audits']===0, 'Stale actor changed state');
+    }
+    $missing=CalendarSetupActor::fromTrustedSession(999, 'super_admin', hash('sha256','fixture-hash'), '1');
+    denied(fn()=>SchoolCalendarInitialSetup::choose($db,$missing,'ethiopian'), DomainException::class);
+    $db->query('RENAME TABLE users TO fixture_users_hidden');
+    try { denied(fn()=>SchoolCalendarInitialSetup::choose($db,$actor,'ethiopian'), Throwable::class); }
+    finally { $db->query('RENAME TABLE fixture_users_hidden TO users'); }
+    expect(state($db)['mode']===null, 'Missing account storage changed mode');
     foreach ([MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT, MYSQLI_REPORT_OFF] as $reportMode) {
         mysqli_report($reportMode);
         foreach (['ethiopian','gregorian'] as $mode) {

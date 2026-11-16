@@ -31,5 +31,6 @@ FACTS=$("${ROOT[@]}" -N -e 'SELECT @@skip_networking,@@datadir')
 [ "$FACTS" = "$(printf '1\t%s/data/' "$D")" ] || { echo 'Refusing unexpected database server' >&2; exit 3; }
 "${ROOT[@]}" -e "CREATE DATABASE sms_calendar_service_test; CREATE USER 'calendar_test'@'localhost' IDENTIFIED BY 'fixture-only'; GRANT ALL PRIVILEGES ON sms_calendar_service_test.* TO 'calendar_test'@'localhost';"
 DB=(mariadb --no-defaults --protocol=socket --socket="$SOCKET" -u calendar_test --password=fixture-only sms_calendar_service_test)
+"${DB[@]}" -e "CREATE TABLE users (id INT UNSIGNED PRIMARY KEY, role VARCHAR(50) NOT NULL, is_active TINYINT NOT NULL, password_hash VARCHAR(255) NOT NULL, authorization_version BIGINT UNSIGNED NOT NULL) ENGINE=InnoDB; INSERT INTO users VALUES (42,'super_admin',1,'fixture-hash',1);"
 "${DB[@]}" < "$SQL"
 SSMS_AUDIT_TESTING=1 SMS_CALENDAR_TEST_SOCKET="$SOCKET" php "$REPO/tests/e2e/calendar_initial_setup.php"
