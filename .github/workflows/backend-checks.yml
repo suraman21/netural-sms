@@ -155,7 +155,10 @@ jobs:
 
       - name: Install test dependencies
         run: |
-          python -m pip install --upgrade pip pytest pytest-subtests openpyxl
+          # pillow + requests: tests/security/test_school_private_photo_upload.py
+          # generates real PNG fixtures and drives the upload over HTTP. Without
+          # them the four tests self-skip and the zero-skip gate fails the job.
+          python -m pip install --upgrade pip pytest pytest-subtests openpyxl pillow requests
           sudo apt-get update -qq
           sudo apt-get install -y mariadb-client
           # Legacy guards use sudo mariadb with no host. Bridge that client
@@ -267,7 +270,19 @@ jobs:
           set -uo pipefail
           # -rs reports every skip with its reason so the gate below can count
           # them and a human can see which test opted out.
+          # DESELECTED: these six modules need a disposable database with fault
+          # injection (or their own MariaDB socket) and cannot run against this
+          # job's shared service. They are executed for real by
+          # "School foundation fixtures (isolated, fault-injected)" below, which
+          # fails on any skip. Deselecting here is not a coverage waiver: every
+          # one of them still runs in this workflow.
           python -m pytest tests/security -q -rs --durations=10 \
+            --deselect tests/security/test_enrollment_transaction_outcome_http.py \
+            --deselect tests/security/test_registration_upload_outcome_http.py \
+            --deselect tests/security/test_school_calendar_display_safety.py \
+            --deselect tests/security/test_school_structure_create_http.py \
+            --deselect tests/security/test_school_structure_read.py \
+            --deselect tests/security/test_term_delete_verification_http.py \
             2>&1 | tee /tmp/pytest.out
           rc="${PIPESTATUS[0]}"
           echo "pytest exit=${rc}"
@@ -290,6 +305,50 @@ jobs:
             exit 1
           fi
           echo "No tests skipped."
+
+      # The six modules deselected above need a disposable database with fault
+      # injection and their own MariaDB socket. This harness builds that world
+      # in a temp directory (its own mariadbd, its own data dir), patches the
+      # fault hooks into the copy, and refuses to treat a skip as a pass.
+      # Without this step the zero-skip gate could only be satisfied by
+      # weakening the tests, which AGENTS.md forbids.
+      - name: School foundation fixtures (isolated, fault-injected)
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y mariadb-server
+          # The runner image may autostart a server that fights the service
+          # container for port 3306; every harness below runs its own private
+          # mariadbd on a unix socket with --skip-networking.
+          sudo service mariadb stop || true
+          # tests/e2e/*.sh are pinned to the author's /home/user convention: the
+          # datadir lives under /home/user/.cache and the cleanup trap refuses any
+          # path outside it (so a wrong variable can never rm -rf something real).
+          # A GitHub runner's home is /home/runner, so recreate the expected base
+          # rather than weaken those guards.
+          sudo mkdir -p /home/user/.cache
+          sudo chown "$(id -u):$(id -g)" /home/user /home/user/.cache
+          bash tests/e2e/run_registration_outcome.sh
+
+      # The four November school-foundation harnesses assert what an applied
+      # migration alone cannot: singleton constraints, FK restrictions, rollback,
+      # idempotent re-apply and the transactional service paths. Nothing else in
+      # CI executes them, so without this step migrations 095-099 would be
+      # applied but never verified.
+      - name: School foundation schema fixtures (isolated MariaDB)
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          # Self-contained (same three prep lines as the step above) rather than
+          # relying on the previous step's side effects.
+          sudo apt-get install -y mariadb-server
+          sudo service mariadb stop || true
+          sudo mkdir -p /home/user/.cache
+          sudo chown "$(id -u):$(id -g)" /home/user /home/user/.cache
+          bash tests/e2e/run_calendar_configuration_schema.sh
+          bash tests/e2e/run_academic_structure_schema.sh
+          bash tests/e2e/run_section_year_map_schema.sh
+          bash tests/e2e/run_calendar_initial_setup.sh
 
       - name: F-20 idempotency lifecycle (real MariaDB)
         # The "Create test databases" step above provisions ssms_idem_e2e and
