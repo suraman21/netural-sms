@@ -22,7 +22,7 @@ FACTS=$("${ROOT[@]}" -N -e 'SELECT @@skip_networking,@@datadir')
 [ "$FACTS" = "$(printf '1\t%s/data/' "$D")" ] || { echo 'Wrong server; refusing to run' >&2; exit 3; }
 "${ROOT[@]}" -e "CREATE DATABASE section_map_fixture CHARACTER SET utf8mb4;"
 DB=("${ROOT[@]}" --batch --skip-column-names section_map_fixture)
-"${DB[@]}" -e "CREATE TABLE academic_years (id INT UNSIGNED PRIMARY KEY) ENGINE=InnoDB; CREATE TABLE classes (id INT UNSIGNED PRIMARY KEY) ENGINE=InnoDB; INSERT INTO academic_years VALUES (1),(2); INSERT INTO classes VALUES (11),(12),(13);"
+"${DB[@]}" -e "CREATE TABLE academic_years (id INT UNSIGNED PRIMARY KEY, status ENUM('upcoming','active','closed') NOT NULL, is_current TINYINT(1) NOT NULL) ENGINE=InnoDB; CREATE TABLE classes (id INT UNSIGNED PRIMARY KEY, is_active TINYINT(1) NOT NULL) ENGINE=InnoDB; INSERT INTO academic_years VALUES (1,'active',1),(2,'closed',0); INSERT INTO classes VALUES (11,1),(12,1),(13,1);"
 "${DB[@]}" < "$REPO/sql/096_school_academic_structure.sql"
 "${DB[@]}" < "$REPO/sql/098_school_section_year_class_map.sql"
 "${DB[@]}" < "$REPO/sql/098_school_section_year_class_map.sql"
@@ -42,6 +42,16 @@ refuse 'DELETE FROM classes WHERE id=11'
 refuse 'DELETE FROM school_grade_sections WHERE id=101'
 "${DB[@]}" -e 'START TRANSACTION; INSERT INTO school_section_year_class_map(academic_year_id,section_id,class_id) VALUES(1,102,12); ROLLBACK;'
 check 'SELECT COUNT(*) FROM school_section_year_class_map' 2
+# Relational proof only: real EnrollmentService stores legacy class and year,
+# not the unrelated school section ID. These synthetic tables mirror relevant
+# 013 keys, not the complete legacy application schema.
+"${DB[@]}" -e "CREATE TABLE members (id INT UNSIGNED NOT NULL PRIMARY KEY, status VARCHAR(20) NOT NULL DEFAULT 'active') ENGINE=InnoDB; CREATE TABLE class_enrollments (id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, member_id INT UNSIGNED NOT NULL, class_id INT UNSIGNED NOT NULL, academic_year_id INT UNSIGNED NOT NULL, enrolled_at DATE DEFAULT NULL, enrolled_by INT UNSIGNED DEFAULT NULL, status ENUM('active','withdrawn','completed','transferred') NOT NULL DEFAULT 'active', UNIQUE KEY unique_enrollment(member_id,class_id,academic_year_id), KEY class_id(class_id), KEY academic_year_id(academic_year_id)) ENGINE=InnoDB; INSERT INTO members(id) VALUES (777),(778); INSERT INTO class_enrollments(member_id,class_id,academic_year_id) VALUES(777,11,1);"
+check "SELECT CONCAT(e.member_id,':',m.section_id,':',m.class_id,':',m.academic_year_id) FROM class_enrollments e JOIN school_section_year_class_map m ON m.class_id=e.class_id AND m.academic_year_id=e.academic_year_id WHERE e.member_id=777" '777:101:11:1'
+check 'SELECT COUNT(*) FROM class_enrollments e JOIN school_grade_sections s ON s.id=e.class_id WHERE e.member_id=777' 0
+check 'SELECT COUNT(*) FROM class_enrollments e JOIN school_section_year_class_map m ON m.class_id=e.class_id AND m.academic_year_id=e.academic_year_id WHERE e.member_id=777 AND m.academic_year_id=2' 0
+"${DB[@]}" -e "START TRANSACTION; INSERT INTO class_enrollments(member_id,class_id,academic_year_id) VALUES (777,12,2); ROLLBACK;"
+check 'SELECT COUNT(*) FROM class_enrollments WHERE member_id=777' 1
 "${DB[@]}" < "$REPO/sql/098_school_section_year_class_map.sql"
 check 'SELECT COUNT(*) FROM school_section_year_class_map' 2
-echo 'PASS: empty/repeat schema, one-to-one per year, cross-year reuse, FK restrictions, rollback'
+echo 'PASS: empty/repeat schema, one-to-one per year, cross-year reuse, FK restrictions, rollback and synthetic enrollment join'
+SMS_SECTION_MAP_FIXTURE_SOCKET="$D/mysql.sock" php "$REPO/tests/e2e/section_year_resolution.php"
