@@ -373,8 +373,10 @@ if (file_exists($_cmsConfigPath)) {
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
-                            <?php else: ?>
-                            <!-- Fallback schedule (shown until entries are added in admin) -->
+                            <?php elseif (defined('LANDING_FALLBACK_SCHEDULE_ENABLED') && LANDING_FALLBACK_SCHEDULE_ENABLED): ?>
+                            <!-- Fallback schedule (shown until entries are added in admin).
+                                 Church deployment content: a general-school deployment sets
+                                 LANDING_FALLBACK_SCHEDULE_ENABLED to false and nothing renders. -->
                             <div class="bg-white rounded-lg p-6 card-hover">
                                 <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                                     <div class="mb-4 md:mb-0"><h3 class="text-2xl font-bold text-green-900 flex items-center"><span class="text-yellow-500 mr-3">📅</span>Sunday / እሁድ</h3></div>
@@ -503,11 +505,15 @@ if (file_exists($_cmsConfigPath)) {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
                             </div>
+                            <?php if (defined('LANDING_CONTACT_ADDRESS') && LANDING_CONTACT_ADDRESS !== ''): ?>
                             <div>
                                 <h4 class="font-bold text-lg mb-1">Location</h4>
-                                <p><?= DENOMINATION_EN ?></p>
-                                <p class="text-yellow-300">https://maps.app.goo.gl/iHSzmE5BphXrWo8Z8</p>
+                                <p><?= e(LANDING_CONTACT_ADDRESS) ?></p>
+                                <?php if (defined('LANDING_CONTACT_MAP_URL') && LANDING_CONTACT_MAP_URL !== ''): ?>
+                                <p class="text-yellow-300"><?= e(LANDING_CONTACT_MAP_URL) ?></p>
+                                <?php endif; ?>
                             </div>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="flex items-start space-x-4">
@@ -516,11 +522,15 @@ if (file_exists($_cmsConfigPath)) {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
                                 </svg>
                             </div>
+                            <?php if (defined('LANDING_CONTACT_PHONE') && LANDING_CONTACT_PHONE !== ''): ?>
                             <div>
                                 <h4 class="font-bold text-lg mb-1">Phone</h4>
-                                <p>+251 XXX XXX XXX</p>
-                                <p class="text-sm text-yellow-300">Sunday: 8:00 AM - 1:00 PM</p>
+                                <p><?= e(LANDING_CONTACT_PHONE) ?></p>
+                                <?php if (defined('LANDING_CONTACT_PHONE_HOURS') && LANDING_CONTACT_PHONE_HOURS !== ''): ?>
+                                <p class="text-sm text-yellow-300"><?= e(LANDING_CONTACT_PHONE_HOURS) ?></p>
+                                <?php endif; ?>
                             </div>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="flex items-start space-x-4">
@@ -529,11 +539,15 @@ if (file_exists($_cmsConfigPath)) {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                                 </svg>
                             </div>
+                            <?php if (defined('LANDING_CONTACT_EMAIL') && LANDING_CONTACT_EMAIL !== ''): ?>
                             <div>
                                 <h4 class="font-bold text-lg mb-1">Email</h4>
-                                <p>info@wulidebirhan.org</p>
-                                <p class="text-sm text-yellow-300">We'll respond within 24 hours</p>
+                                <p><?= e(LANDING_CONTACT_EMAIL) ?></p>
+                                <?php if (defined('LANDING_CONTACT_EMAIL_NOTE') && LANDING_CONTACT_EMAIL_NOTE !== ''): ?>
+                                <p class="text-sm text-yellow-300"><?= e(LANDING_CONTACT_EMAIL_NOTE) ?></p>
+                                <?php endif; ?>
                             </div>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="flex items-start space-x-4">
@@ -542,11 +556,15 @@ if (file_exists($_cmsConfigPath)) {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
+                            <?php if (defined('LANDING_OFFICE_HOURS_1') && LANDING_OFFICE_HOURS_1 !== ''): ?>
                             <div>
                                 <h4 class="font-bold text-lg mb-1">Office Hours</h4>
-                                <p>Sunday: 8:30 AM - 12:30 PM</p>
-                                <p>Wednesday: 5:30 PM - 8:00 PM</p>
+                                <p><?= e(LANDING_OFFICE_HOURS_1) ?></p>
+                                <?php if (defined('LANDING_OFFICE_HOURS_2') && LANDING_OFFICE_HOURS_2 !== ''): ?>
+                                <p><?= e(LANDING_OFFICE_HOURS_2) ?></p>
+                                <?php endif; ?>
                             </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
