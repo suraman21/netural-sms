@@ -16,7 +16,10 @@ class EnrollmentOutcomePins(unittest.TestCase):
         registration = (ROOT/'admin/hr_register_member.php').read_text()
         mobile = (ROOT/'api/v1/routes/enrollment.php').read_text()
         seed = (ROOT/'admin/backend/services/TestMemberSeed.php').read_text()
+        importer = (ROOT/'admin/api_import_members.php').read_text()
         self.assertIn("!empty($enr['outcome_unknown'])", seed)
+        self.assertIn("$transaction->unknownAfterFailure($nestedOutcomeUnknown)", importer)
+        self.assertIn("'outcome_unknown' => true", importer)
         self.assertIn("'outcome_unknown'=>true", service)
         self.assertIn("if ($commitAttempted || $rollbackAttempted)", service)
         bulk = edu.split("case 'bulk_enroll':",1)[1].split("case 'transfer_student':",1)[0]

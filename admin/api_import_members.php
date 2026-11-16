@@ -25,6 +25,7 @@ require_once __DIR__ . '/backend/services/ExcelColumnMap.php';
 require_once __DIR__ . '/backend/services/EnrollmentService.php';
 require_once __DIR__ . '/backend/services/MemberCategory.php';
 require_once __DIR__ . '/backend/services/MemberImportService.php';
+require_once __DIR__ . '/backend/services/MemberImportTransaction.php';
 require_once __DIR__ . '/backend/services/SecurityAuditService.php';
 require_once __DIR__ . '/backend/danger_confirm.php';
 
@@ -680,8 +681,10 @@ if ($dryRun) {
 $stats = ['inserted' => 0, 'updated' => 0, 'unchanged' => 0, 'enrolled' => 0, 'enroll_skipped' => 0,
     'codes_issued' => 0, 'codes_pending' => 0, 'unassigned' => 0, 'skipped_archived' => $summary['skipped_archived']];
 $currentRow = 0;
+$nestedOutcomeUnknown = false;
+$transaction = new \App\Services\MemberImportTransaction($conn);
 try {
-    $conn->begin_transaction();
+    $transaction->start();
     foreach ($plan as $item) {
         $currentRow = (int)$item['row'];
         $rowData = $item['data'];
@@ -743,6 +746,10 @@ try {
         }
         if ($memberId > 0 && $item['class'] !== null) {
             $enr = EnrollmentService::enroll($conn, $memberId, (int)$item['class']['id'], null, $adminId, true);
+            if (!empty($enr['outcome_unknown'])) {
+                $nestedOutcomeUnknown = true;
+                throw new RuntimeException('Enrollment transaction cleanup was not confirmed.');
+            }
             if (($enr['status'] ?? '') !== 'success') {
                 throw new DomainException('Class "' . $item['class']['class_name'] . '": ' . ($enr['message'] ?? 'enrollment failed'));
             }
@@ -760,17 +767,21 @@ try {
     ], 'member', null)) {
         throw new RuntimeException('Import audit recording failed.');
     }
-    $conn->commit();
+    $transaction->commit();
 } catch (\Throwable $e) {
-    try {
-        $conn->rollback();
-    } catch (\Throwable $ignored) {
-    }
+    $outcomeUnknown = $transaction->unknownAfterFailure($nestedOutcomeUnknown);
     error_log('api_import_members (write, row ' . $currentRow . '): ' . $e->getMessage());
+    if ($outcomeUnknown) {
+        import_json([
+            'success' => false,
+            'outcome_unknown' => true,
+            'message' => 'Import outcome is unknown. Review member and enrollment records before trying again.',
+        ], 503);
+    }
     $detail = ($e instanceof DomainException && $currentRow > 0) ? ['Row ' . $currentRow . ': ' . $e->getMessage()] : [];
     import_json([
         'success' => false,
-        'message' => 'Import failed' . ($currentRow > 0 ? ' at row ' . $currentRow : '') . '. Nothing was saved.',
+        'message' => 'Import failed' . ($currentRow > 0 ? ' at row ' . $currentRow : '') . '. Review the records before trying again.',
         'errors' => $detail,
         'error_count' => count($detail),
     ]);

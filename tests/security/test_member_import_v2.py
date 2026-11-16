@@ -65,15 +65,19 @@ class ImporterStaticContract(unittest.TestCase):
 
     def test_single_transaction_and_dry_run(self):
         self.assertIn("$dryRun", self.src)
-        self.assertEqual(self.src.count("$conn->begin_transaction()"), 1)
-        self.assertIn("$conn->rollback()", self.src)
+        self.assertEqual(self.src.count("$transaction->start()"), 1)
+        self.assertIn("$transaction->commit()", self.src)
+        self.assertIn("$transaction->unknownAfterFailure($nestedOutcomeUnknown)", self.src)
+        boundary = read("admin/backend/services/MemberImportTransaction.php")
+        self.assertIn("$this->db->begin_transaction()", boundary)
+        self.assertIn("$this->db->rollback()", boundary)
         self.assertIn("EnrollmentService::enroll($conn, $memberId, (int)$item['class']['id'], null, $adminId, true)", self.src)
         # The old post-commit enrollment pass and PDO writes are gone.
         self.assertNotIn("enrollByLabel(", self.src)
         self.assertNotIn("$pdo->beginTransaction()", self.src)
         # Writes happen only after the error gate and the dry-run exit.
-        self.assertLess(self.src.index("if ($errorCount > 0)"), self.src.index("$conn->begin_transaction()"))
-        self.assertLess(self.src.index("if ($dryRun)"), self.src.index("$conn->begin_transaction()"))
+        self.assertLess(self.src.index("if ($errorCount > 0)"), self.src.index("$transaction->start()"))
+        self.assertLess(self.src.index("if ($dryRun)"), self.src.index("$transaction->start()"))
 
     def test_identity_and_section_rules(self):
         self.assertIn("$rowData['age_group']", self.src)
@@ -471,7 +475,7 @@ class ImportLive(unittest.TestCase):
         finally:
             db("RENAME TABLE class_enrollments_tv_tmp TO class_enrollments")
         self.assertFalse(res["success"], res)
-        self.assertIn("Nothing was saved", res["message"])
+        self.assertIn("Review the records", res["message"])
         self.assertEqual(self.count(), before, "row 4 must be rolled back when row 5 fails")
 
     def test_6_d5_family_link_rule(self):

@@ -23,41 +23,42 @@ class EnrollmentService
     private static function transactionScope(\mysqli $conn, bool $withinTransaction, callable $work): array
     {
         if (!$withinTransaction) return self::ownedTransaction($conn, $work);
-        $ownsTransaction = false;
+        // A savepoint belongs to the caller's transaction; failure to establish,
+        // roll back or release it makes the outer transaction unsafe to reuse.
         $savepoint = 'ssms_enrollment_' . bin2hex(random_bytes(6));
         $started = false;
+        $cleanupAttempted = false;
         try {
-            if ($ownsTransaction) $conn->begin_transaction();
-            else $conn->query('SAVEPOINT ' . $savepoint);
+            if (!$conn->query('SAVEPOINT ' . $savepoint)) throw new \RuntimeException('Savepoint unavailable.');
             $started = true;
             $result = $work();
             if (($result['status'] ?? '') !== 'success') {
-                if ($ownsTransaction) $conn->rollback();
-                else {
-                    $conn->query('ROLLBACK TO SAVEPOINT ' . $savepoint);
-                    $conn->query('RELEASE SAVEPOINT ' . $savepoint);
+                $cleanupAttempted = true;
+                if (!$conn->query('ROLLBACK TO SAVEPOINT ' . $savepoint)
+                    || !$conn->query('RELEASE SAVEPOINT ' . $savepoint)) {
+                    throw new \RuntimeException('Savepoint cleanup failed.');
                 }
+                $started = false;
                 return $result;
             }
-            if ($ownsTransaction) $conn->commit();
-            else $conn->query('RELEASE SAVEPOINT ' . $savepoint);
+            $cleanupAttempted = true;
+            if (!$conn->query('RELEASE SAVEPOINT ' . $savepoint)) throw new \RuntimeException('Savepoint release failed.');
+            $started = false;
             return $result;
         } catch (\Throwable $error) {
-            if ($started) {
-                try {
-                    if ($ownsTransaction) $conn->rollback();
-                    else {
-                        $conn->query('ROLLBACK TO SAVEPOINT ' . $savepoint);
-                        $conn->query('RELEASE SAVEPOINT ' . $savepoint);
-                    }
-                } catch (\Throwable $ignored) { /* connection may already be lost */ }
+            if (!$started || $cleanupAttempted) return self::unknownOutcome($conn);
+            try {
+                if (!$conn->query('ROLLBACK TO SAVEPOINT ' . $savepoint)
+                    || !$conn->query('RELEASE SAVEPOINT ' . $savepoint)) {
+                    throw new \RuntimeException('Savepoint cleanup failed.');
+                }
+            } catch (\Throwable $cleanupError) {
+                return self::unknownOutcome($conn);
             }
-            if ($error instanceof \DomainException) {
-                return ['status'=>'error', 'message'=>$error->getMessage()];
-            }
+            if ($error instanceof \DomainException) return ['status'=>'error','message'=>$error->getMessage()];
             if (function_exists('reportInternalError')) reportInternalError('Enrollment transaction failed', $error);
-            else error_log('Enrollment transaction failed: ' . $error->getMessage());
-            return ['status'=>'error', 'message'=>'Enrollment failed. No changes were made.'];
+            else error_log('Enrollment transaction failed.');
+            return ['status'=>'error','message'=>'Enrollment could not be completed.'];
         }
     }
 

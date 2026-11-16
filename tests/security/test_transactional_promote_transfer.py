@@ -130,11 +130,12 @@ class TransactionalPromoteTransferTests(unittest.TestCase):
         self.assertNotIn("$conn->in_transaction()", self.enrollment)
         self.assertIn("$withinTransaction", self.enrollment)
         self.assertIn("ROLLBACK TO SAVEPOINT", self.enrollment)
-        self.assertIn("$ownsTransaction", self.enrollment)
+        self.assertIn("self::ownedTransaction($conn, $work)", self.enrollment)
         # Owned transactions are committed on success and rolled back on
         # failure; foreign ones are left to the caller.
-        self.assertIn("$conn->commit();", self.enrollment)
-        self.assertIn("$conn->rollback();", self.enrollment)
+        self.assertIn("$conn->commit()", self.enrollment)
+        self.assertIn("$conn->rollback()", self.enrollment)
+        self.assertIn("$cleanupAttempted", self.enrollment)
 
 
 if __name__ == "__main__":
