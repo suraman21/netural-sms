@@ -181,3 +181,29 @@ def test_age_group_removal_decision_is_recorded_and_bounded():
     # The concept still exists in code today (phase 3 has not run). If this
     # fails, phase 3 landed and this test should assert the opposite.
     assert (ROOT / "admin/backend/services/MemberCategory.php").is_file()
+
+
+def test_ethiopian_ladder_is_a_seed_not_a_migration():
+    """A migration must not invent an institution's curriculum (ADR-0025 I1).
+
+    The first draft of sql/103 seeded the ladder on an empty install and broke
+    test_school_structure_read, which expects an unconfigured installation to
+    report no levels. Structure and content are pinned apart here so the two
+    cannot drift back together.
+    """
+    migration = text("sql/103_institution_levels_and_exam_gates.sql")
+    assert "school_exam_gates" in migration
+    assert "INSERT" not in migration.upper(), "sql/103 must change structure only"
+    assert "school_education_levels" in migration
+
+    seed_path = ROOT / "sql/seeds/ethiopian_ladder.sql"
+    assert seed_path.exists(), "the ladder must ship as an opt-in seed"
+    seed = seed_path.read_text(encoding="utf-8")
+    assert "NOT A MIGRATION" in seed
+    assert seed.count("WHERE NOT EXISTS (SELECT 1 FROM `school_education_levels`)") == 1
+    # The guard is the whole table, so a configured institution is untouched and
+    # a deleted level is never resurrected.
+    assert "WHERE NOT EXISTS (SELECT 1 FROM `school_education_levels` WHERE" not in seed
+    # It must not be picked up by the migration inventory glob (sql/NNN_*.sql).
+    assert all("seeds" not in p.parts for p in (ROOT / "sql").glob("[0-9][0-9][0-9]_*.sql"))
+    assert [p.name for p in (ROOT / "sql" / "seeds").glob("*.sql")] == ["ethiopian_ladder.sql"]

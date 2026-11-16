@@ -43,7 +43,7 @@
 | [product/PRD.md](product/PRD.md): product requirements, with requirement IDs | Canonical |
 | [product/GLOSSARY.md](product/GLOSSARY.md): domain, calendar and technical terms | Canonical |
 | [architecture/TECHNICAL_DESIGN.md](architecture/TECHNICAL_DESIGN.md): technical design (arc42, C4 diagrams, runtime and deployment views) | Canonical |
-| [adr/README.md](adr/README.md): dated decisions ADR-0001 to ADR-0024 and a template | Maintained index; preserve original decisions and explicit supersession boundaries |
+| [adr/README.md](adr/README.md): dated decisions ADR-0001 to ADR-0025 and a template | Maintained index; preserve original decisions and explicit supersession boundaries |
 | [rfc/README.md](rfc/README.md): proposals for significant changes; [RFC 0001](rfc/0001-repository-structure.md) repository structure | Reference |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Canonical |
 | [FAILURE_INTELLIGENCE.md](FAILURE_INTELLIGENCE.md), [mobile client contract](../Mobile/wbws_flutter_app/docs/FAILURE_INTELLIGENCE_CLIENT.md) | Reference |
