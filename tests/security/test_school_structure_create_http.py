@@ -23,6 +23,12 @@ def post(session, payload):
 class StructureCreateHttp(unittest.TestCase):
     def test_creation_and_security(self):
         edu, teacher, finance = WebSession('edu_dept'), WebSession('teacher'), WebSession('finance_dept')
+        status, page = edu._open(BASE + '/admin/school_structure.php')
+        self.assertEqual(status, 200)
+        self.assertIn(b'not yet connected', page)
+        self.assertIn(b'school_structure.js', page)
+        for user in (teacher, finance):
+            self.assertEqual(user._open(BASE + '/admin/school_structure.php')[0], 403)
         initial = int(db('SELECT COUNT(*) FROM school_academic_structure_audit'))
         payload = {'kind': 'level', 'name': 'Fixture HTTP ክፍል', 'sort_order': 3}
         for user in (teacher, finance):
