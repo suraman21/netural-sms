@@ -31,6 +31,8 @@ Records 0001–0020 were written on 2026-10-22 from the code, the commit history
 
 | [ADR-0022](0022-general-school-domain.md) | A general school domain, with the Mezmur ministry retired | Accepted — owner scope decision (option C) | 2026-11-16 |
 
+| [ADR-0023](0023-no-age-group-or-age-section.md) | No age group and no age-based section; age is a birth date, never a classification | Accepted — owner decision, resolves ADR-0022 D-5 | 2026-11-16 |
+
 Supersession is recorded in three places and must stay consistent: the status column above, a dated blockquote in the superseded record, and the new record's decision it replaces. Two records are only *partially* superseded (ADR-0008 calendar scope, ADR-0009 attendance ownership) — read the blockquote before citing them as dead.
 
 ## Writing a new ADR

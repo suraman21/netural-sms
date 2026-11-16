@@ -160,3 +160,24 @@ def test_general_school_decision_record_exists_and_supersedes_explicitly():
     index = text("docs/adr/README.md")
     assert "0022-general-school-domain.md" in index
     assert "Superseded by ADR-0022" in index
+
+
+def test_age_group_removal_decision_is_recorded_and_bounded():
+    """ADR-0023 removes the age-group concept; pin what that must keep true.
+
+    The risk this guards against is a later "compatibility" shim: an age band
+    reintroduced under a new name, or a migration that quietly maps legacy
+    values onto grades (which is exactly what the decision forbids).
+    """
+    decision = text("docs/adr/0023-no-age-group-or-age-section.md")
+    for clause in ("A1", "A2", "A3", "A4", "A5", "A6"):
+        assert f"**{clause} —" in decision, clause
+    assert "is deleted, not refactored" in decision
+    assert "No rule may assign a member to a class, section, grade or category from it" in decision
+    assert "read-only, never migrated" in decision
+    # The ADR index navigates to it and ADR-0022 points at it as the D-5 answer.
+    assert "0023-no-age-group-or-age-section.md" in text("docs/adr/README.md")
+    assert "D-5 resolved" in text("docs/adr/0022-general-school-domain.md")
+    # The concept still exists in code today (phase 3 has not run). If this
+    # fails, phase 3 landed and this test should assert the opposite.
+    assert (ROOT / "admin/backend/services/MemberCategory.php").is_file()
