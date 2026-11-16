@@ -1585,7 +1585,9 @@ switch ($action) {
                     $yrow = $yr->get_result()->fetch_assoc(); $yr->close();
                     if ($yrow && $yrow['start_date'] && $yrow['end_date']
                             && ($tstartVal < $yrow['start_date'] || $tendVal > $yrow['end_date'])) {
-                        echo json_encode(['status'=>'error','message'=>'Semester dates must fall within the year\'s dates ('.$yrow['start_date'].' to '.$yrow['end_date'].').']);
+                        // Stored dates are canonical, not necessarily the school’s
+                        // display calendar. Do not leak them in a user-facing error.
+                        echo json_encode(['status'=>'error','message'=>'Semester dates must fall within the year. Check the academic year dates.']);
                         exit;
                     }
                 } catch (Exception $eYr) {}

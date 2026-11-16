@@ -56,6 +56,11 @@ if ($action === 'followups') {
     require __DIR__ . '/assessment_followups.php';
     exit;
 }
+// The ordinary grades routes must enforce their role gate before inspecting
+// classes or assessments. Follow-ups above have a separate, wider read policy.
+if (!apiRoleIs($auth, apiRolesGrades())) {
+    err('You cannot manage grades.', 403);
+}
 $year = getCurrentAcademicYear();
 
 if (!$year) {

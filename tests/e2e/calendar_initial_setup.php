@@ -6,7 +6,24 @@ if (!is_string($socket) || !preg_match('#^/home/user/\.cache/calendar-schema-db\
 require_once __DIR__ . '/../../admin/backend/services/SchoolCalendarInitialSetup.php';
 use App\Services\CalendarAlreadyConfigured;
 use App\Services\CalendarSetupActor;
+use App\Services\CalendarSetupOutcomeUnknown;
 use App\Services\SchoolCalendarInitialSetup;
+
+// Failure injection is limited to the transaction boundary; SQL remains real.
+class CalendarFaultConnection extends mysqli {
+    public string $fault = '';
+    public function commit(int $flags = 0, ?string $name = null): bool {
+        if ($this->fault === 'lost-commit') {
+            parent::commit($flags, $name);
+            throw new RuntimeException('Synthetic lost commit confirmation');
+        }
+        return parent::commit($flags, $name);
+    }
+    public function rollback(int $flags = 0, ?string $name = null): bool {
+        if ($this->fault === 'rollback-failed') return false;
+        return parent::rollback($flags, $name);
+    }
+}
 
 if (($argv[1] ?? '') === 'worker') {
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -68,6 +85,24 @@ try {
         expect((int)$db->query('SELECT @@in_transaction')->fetch_row()[0] === 1, 'Outer transaction was ended');
         $db->rollback();
     }
+    // Commit succeeds on the server, but its confirmation is deliberately lost.
+    // The service must report unknown, and a fresh connection sees the commit.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    resetFixture($db);
+    $faultDb = new CalendarFaultConnection('localhost', 'calendar_test', 'fixture-only', 'sms_calendar_service_test', 0, $socket);
+    $faultDb->fault = 'lost-commit';
+    denied(fn()=>SchoolCalendarInitialSetup::choose($faultDb,$actor,'ethiopian'), CalendarSetupOutcomeUnknown::class);
+    $afterLost = state($db);
+    expect($afterLost['mode'] === 'ethiopian' && (int)$afterLost['revision'] === 1 && (int)$afterLost['audits'] === 1, 'Lost response state was not committed');
+    // An audit failure followed by a rollback failure is also unknown. The
+    // service closes the faulty connection rather than returning it for reuse.
+    resetFixture($db);
+    $db->query("INSERT INTO school_calendar_configuration_audit(configuration_id,revision,previous_mode,new_mode,actor_user_id,occurred_at) VALUES (1,1,NULL,'gregorian',7,NOW(6))");
+    $faultDb = new CalendarFaultConnection('localhost', 'calendar_test', 'fixture-only', 'sms_calendar_service_test', 0, $socket);
+    $faultDb->fault = 'rollback-failed';
+    denied(fn()=>SchoolCalendarInitialSetup::choose($faultDb,$actor,'ethiopian'), CalendarSetupOutcomeUnknown::class);
+    $afterFailure = state($db);
+    expect($afterFailure['mode'] === null && (int)$afterFailure['revision'] === 0 && (int)$afterFailure['audits'] === 1, 'Unexpected state after closed connection');
     // Hold the singleton row while two independently connected workers start.
     // Both enter setup before the row is released; exactly one can win.
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
