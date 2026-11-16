@@ -150,6 +150,10 @@ class TestMemberSeed
                 }
 
                 $enr = EnrollmentService::enroll($conn, $memberId, (int)$class['id'], (int)$year['id'], $adminId);
+                if (!empty($enr['outcome_unknown'])) {
+                    return ['ok'=>false, 'outcome_unknown'=>true,
+                        'message'=>'A practice enrollment outcome is unknown. Review the records before retrying.'];
+                }
                 if (($enr['status'] ?? '') === 'success') {
                     $stats['enrolled']++;
                 } else {

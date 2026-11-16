@@ -140,7 +140,7 @@ if (($action === '' || $action === null) && $method === 'POST') {
         (int)$auth['uid']
     );
     if (($result['status'] ?? '') !== 'success') {
-        err($result['message'] ?? 'Could not enroll this student.', 400);
+        err($result['message'] ?? 'Could not enroll this student.', !empty($result['outcome_unknown']) ? 503 : 400);
     }
     logApiAction($auth['uid'], $auth['usr'], 'Mobile Enroll', "Member {$memberId} → class {$classId}");
     ok($result);

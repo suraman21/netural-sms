@@ -55,3 +55,4 @@ echo 'PASS: empty bootstrap, repeat apply, hierarchy, uniqueness, FK restriction
 command -v php >/dev/null || { echo 'Missing required tool: php' >&2; exit 2; }
 SMS_STRUCTURE_FIXTURE_SOCKET="$SOCKET" php "$REPO/tests/e2e/academic_structure_create.php"
 SMS_STRUCTURE_FIXTURE_SOCKET="$SOCKET" php "$REPO/tests/e2e/structure_concurrent_revocation.php"
+SMS_STRUCTURE_FIXTURE_SOCKET="$SOCKET" php "$REPO/tests/e2e/enrollment_transaction_outcome.php"

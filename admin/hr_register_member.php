@@ -630,6 +630,8 @@ try {
             );
             if (($enr['status'] ?? '') === 'success' && empty($enr['skipped'])) {
                 $enrollNote = ' Enrolled in class.';
+            } elseif (!empty($enr['outcome_unknown'])) {
+                $enrollNote = ' Enrollment outcome is unknown; check the student enrollment before trying again.';
             } elseif (($enr['status'] ?? '') !== 'success') {
                 $enrollNote = ' Saved without class (' . ($enr['message'] ?? 'enrollment skipped') . ').';
                 error_log('HR register enroll: ' . ($enr['message'] ?? 'unknown'));

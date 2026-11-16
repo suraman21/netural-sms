@@ -1779,6 +1779,12 @@ switch ($action) {
         foreach ($memberIds as $mid) {
             $mid = (int)$mid; if (!$mid) continue;
             $res = EnrollmentService::enroll($conn, $mid, $classId, (int)$currentYear['id'], $by);
+            if (!empty($res['outcome_unknown'])) {
+                echo json_encode(['status'=>'error','outcome_unknown'=>true,
+                    'message'=>'An enrollment outcome is unknown. Stop and review the student enrollments before retrying.',
+                    'enrolled'=>$ok,'skipped'=>$skip,'failed'=>$fail]);
+                exit;
+            }
             if (($res['status'] ?? '') === 'success') {
                 if (!empty($res['skipped'])) $skip++; else $ok++;
             } else {

@@ -22,7 +22,8 @@ class EnrollmentService
      */
     private static function transactionScope(\mysqli $conn, bool $withinTransaction, callable $work): array
     {
-        $ownsTransaction = !$withinTransaction;
+        if (!$withinTransaction) return self::ownedTransaction($conn, $work);
+        $ownsTransaction = false;
         $savepoint = 'ssms_enrollment_' . bin2hex(random_bytes(6));
         $started = false;
         try {
@@ -58,6 +59,61 @@ class EnrollmentService
             else error_log('Enrollment transaction failed: ' . $error->getMessage());
             return ['status'=>'error', 'message'=>'Enrollment failed. No changes were made.'];
         }
+    }
+
+    /** Owned transaction: never claim rollback or failure after an uncertain commit. */
+    private static function ownedTransaction(\mysqli $conn, callable $work): array
+    {
+        $started = false;
+        $commitAttempted = false;
+        $rollbackAttempted = false;
+        try {
+            // Reject a pre-existing transaction before BEGIN can implicitly commit it.
+            $state = $conn->query('SELECT @@session.autocommit AS enabled');
+            if (!$state instanceof \mysqli_result) throw new \RuntimeException('Transaction state unavailable.');
+            try { $row = $state->fetch_assoc(); } finally { $state->free(); }
+            if ((int)($row['enabled'] ?? 0) !== 1) throw new \RuntimeException('Independent transaction required.');
+            if (!$conn->query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')) throw new \RuntimeException('Transaction setup failed.');
+            // If BEGIN fails, close the connection to avoid leaking next-transaction settings.
+            try {
+                if (!$conn->begin_transaction()) throw new \RuntimeException('Transaction start failed.');
+            } catch (\Throwable $error) {
+                try { $conn->close(); } catch (\Throwable $ignored) {}
+                throw $error;
+            }
+            $started = true;
+            $result = $work();
+            if (($result['status'] ?? '') !== 'success') {
+                $rollbackAttempted = true;
+                if (!$conn->rollback()) throw new \RuntimeException('Rollback not confirmed.');
+                $started = false;
+                return $result;
+            }
+            $commitAttempted = true;
+            if (!$conn->commit()) throw new \RuntimeException('Commit not confirmed.');
+            $started = false;
+            return $result;
+        } catch (\Throwable $error) {
+            if ($commitAttempted || $rollbackAttempted) return self::unknownOutcome($conn);
+            if ($started) {
+                try {
+                    if (!$conn->rollback()) throw new \RuntimeException('Rollback not confirmed.');
+                } catch (\Throwable $rollbackError) {
+                    return self::unknownOutcome($conn);
+                }
+            }
+            if ($error instanceof \DomainException) return ['status'=>'error','message'=>$error->getMessage()];
+            if (function_exists('reportInternalError')) reportInternalError('Enrollment transaction failed', $error);
+            else error_log('Enrollment transaction failed.');
+            return ['status'=>'error','message'=>'Enrollment could not be completed.'];
+        }
+    }
+
+    private static function unknownOutcome(\mysqli $conn): array
+    {
+        try { $conn->close(); } catch (\Throwable $ignored) {}
+        return ['status'=>'error', 'outcome_unknown'=>true,
+            'message'=>'Enrollment outcome is unknown. Check the student enrollment before trying again.'];
     }
 
     private static function lockMember(\mysqli $conn, int $memberId): void
