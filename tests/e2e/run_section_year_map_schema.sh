@@ -60,3 +60,6 @@ SMS_SECTION_MAP_FIXTURE_SOCKET="$D/mysql.sock" php "$REPO/tests/e2e/section_year
 "${DB[@]}" < "$REPO/sql/099_school_registration_receipts.sql"
 SMS_SECTION_MAP_FIXTURE_SOCKET="$D/mysql.sock" php "$REPO/tests/e2e/school_registration_receipt.php"
 SMS_SECTION_MAP_FIXTURE_SOCKET="$D/mysql.sock" php "$REPO/tests/e2e/school_registrar_actor.php"
+"${DB[@]}" < "$REPO/sql/095_school_calendar_configuration.sql"
+"${DB[@]}" < "$REPO/sql/095_school_calendar_configuration.sql"
+SMS_SECTION_MAP_FIXTURE_SOCKET="$D/mysql.sock" php "$REPO/tests/e2e/school_calendar_write_context.php"
