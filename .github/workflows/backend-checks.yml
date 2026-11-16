@@ -342,6 +342,7 @@ jobs:
           bash tests/e2e/run_academic_structure_schema.sh
           bash tests/e2e/run_section_year_map_schema.sh
           bash tests/e2e/run_calendar_initial_setup.sh
+          bash tests/e2e/run_institution_levels_schema.sh
 
       - name: F-20 idempotency lifecycle (real MariaDB)
         # The "Create test databases" step above provisions ssms_idem_e2e and
