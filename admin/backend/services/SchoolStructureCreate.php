@@ -1,5 +1,5 @@
 <?php
-/** Dormant persistence foundation. No HTTP access, authentication or audit here. */
+/** Dormant persistence foundation. No HTTP access or authentication here. */
 namespace App\Services;
 
 require_once __DIR__ . '/SchoolStructureInput.php';
@@ -7,25 +7,40 @@ require_once __DIR__ . '/AttendancePreparationReadBoundary.php';
 
 final class SchoolStructureCreateOutcomeUnknown extends \RuntimeException {}
 
+final class SchoolStructureActor
+{
+    private function __construct(private int $id, private string $role) {}
+    /** Values must come from a freshly authenticated, revalidated server session. */
+    public static function fromTrustedSession(int $id, string $role): self
+    {
+        if ($id <= 0 || !in_array($role, ['super_admin', 'school_admin', 'edu_dept'], true)) {
+            throw new \DomainException('Structure management authorization required.');
+        }
+        return new self($id, $role);
+    }
+    public function id(): int { return $this->id; }
+    public function role(): string { return $this->role; }
+}
+
 final class SchoolStructureCreate
 {
-    /** Caller must authorize and audit before this may be exposed to users. */
-    public static function level(\mysqli $db, mixed $name, mixed $order): int
+    /** Caller must authenticate, revalidate and authorize before exposing to users. */
+    public static function level(\mysqli $db, SchoolStructureActor $actor, mixed $name, mixed $order): int
     {
-        return self::create($db, 'level', null, SchoolStructureInput::name($name), SchoolStructureInput::sortOrder($order));
+        return self::create($db, $actor, 'level', null, SchoolStructureInput::name($name), SchoolStructureInput::sortOrder($order));
     }
 
-    public static function grade(\mysqli $db, mixed $levelId, mixed $name, mixed $order): int
+    public static function grade(\mysqli $db, SchoolStructureActor $actor, mixed $levelId, mixed $name, mixed $order): int
     {
-        return self::create($db, 'grade', SchoolStructureInput::parentId($levelId), SchoolStructureInput::name($name), SchoolStructureInput::sortOrder($order));
+        return self::create($db, $actor, 'grade', SchoolStructureInput::parentId($levelId), SchoolStructureInput::name($name), SchoolStructureInput::sortOrder($order));
     }
 
-    public static function section(\mysqli $db, mixed $gradeId, mixed $name, mixed $order): int
+    public static function section(\mysqli $db, SchoolStructureActor $actor, mixed $gradeId, mixed $name, mixed $order): int
     {
-        return self::create($db, 'section', SchoolStructureInput::parentId($gradeId), SchoolStructureInput::name($name), SchoolStructureInput::sortOrder($order));
+        return self::create($db, $actor, 'section', SchoolStructureInput::parentId($gradeId), SchoolStructureInput::name($name), SchoolStructureInput::sortOrder($order));
     }
 
-    private static function create(\mysqli $db, string $kind, ?int $parent, string $name, int $order): int
+    private static function create(\mysqli $db, SchoolStructureActor $actor, string $kind, ?int $parent, string $name, int $order): int
     {
         $started = false; $configured = false; $commitAttempted = false;
         try {
@@ -38,7 +53,7 @@ final class SchoolStructureCreate
             $configured = true;
             if (!$db->begin_transaction()) throw new \RuntimeException('Transaction start failed.');
             $started = true; $configured = false;
-            foreach (['school_education_levels', 'school_grades', 'school_grade_sections'] as $table) {
+            foreach (['school_education_levels', 'school_grades', 'school_grade_sections', 'school_academic_structure_audit'] as $table) {
                 AttendancePreparationReadBoundary::requireTransactionalTable($db, $table);
             }
             if ($kind === 'grade') {
@@ -80,6 +95,15 @@ final class SchoolStructureCreate
                 if (!$bound || !$stmt->execute() || $stmt->affected_rows !== 1) throw new \RuntimeException('Structure insert failed.');
                 $id = $stmt->insert_id;
                 if (!is_int($id) || $id <= 0) throw new \RuntimeException('Structure identifier is outside supported range.');
+            } finally { $stmt->close(); }
+            $stmt = $db->prepare('INSERT INTO school_academic_structure_audit (entity_kind, entity_id, parent_id, created_name, created_sort_order, actor_user_id, actor_role, occurred_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(6))');
+            if (!$stmt) throw new \RuntimeException('Structure audit unavailable.');
+            try {
+                $actorId = $actor->id(); $actorRole = $actor->role();
+                if (!$stmt->bind_param('siisiis', $kind, $id, $parent, $name, $order, $actorId, $actorRole)
+                    || !$stmt->execute() || $stmt->affected_rows !== 1) {
+                    throw new \RuntimeException('Structure audit failed.');
+                }
             } finally { $stmt->close(); }
             $commitAttempted = true;
             if (!$db->commit()) throw new \RuntimeException('Structure commit not confirmed.');

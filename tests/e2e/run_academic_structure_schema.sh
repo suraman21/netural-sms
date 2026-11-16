@@ -33,6 +33,8 @@ FACTS=$("${ROOT[@]}" -N -e 'SELECT @@skip_networking,@@datadir')
 DB=(mariadb --no-defaults --protocol=socket --socket="$SOCKET" -u academic_test --password=fixture-only --batch --skip-column-names sms_academic_schema_test)
 "${DB[@]}" < "$SQL"
 "${DB[@]}" < "$SQL"
+"${DB[@]}" < "$REPO/sql/097_school_academic_structure_audit.sql"
+"${DB[@]}" < "$REPO/sql/097_school_academic_structure_audit.sql"
 check() { local got; got=$("${DB[@]}" -e "$1"); [ "$got" = "$2" ] || { printf 'Expected %s, got %s\n' "$2" "$got" >&2; exit 1; }; }
 check "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('school_education_levels','school_grades','school_grade_sections') AND ENGINE='InnoDB'" 3
 check "SELECT (SELECT COUNT(*) FROM school_education_levels)+(SELECT COUNT(*) FROM school_grades)+(SELECT COUNT(*) FROM school_grade_sections)" 0
