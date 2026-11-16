@@ -93,6 +93,43 @@ class SchoolPrivatePhotoUpload(unittest.TestCase):
         self.assertIn('dimensions',self.post(upload=('wide.png',wide.getvalue(),'image/png'))['error'])
         self.assertEqual(list((self.root/'private'/'members'/'student_photos').glob('*')),[])
 
+    def test_unsafe_storage_locations_fail_closed(self):
+        def upload_to(private_root):
+            with socket.socket() as sock:
+                sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
+            env = dict(os.environ, FIXTURE_PRIVATE_ROOT=str(private_root),
+                       FIXTURE_MEMBER_FILE_SERVICE=str(ROOT/'admin/backend/services/MemberFileService.php'))
+            server = subprocess.Popen([PHP,'-S',f'127.0.0.1:{port}','-t',str(self.root/'web')],
+                                      env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            url = f'http://127.0.0.1:{port}/fixture.php'
+            try:
+                for _ in range(100):
+                    try: requests.get(url,timeout=.25); break
+                    except requests.RequestException:
+                        if server.poll() is not None: self.fail('PHP fixture exited')
+                        time.sleep(.05)
+                else: self.fail('PHP fixture did not start')
+                png = io.BytesIO(); Image.new('RGB',(4,4),'blue').save(png,format='PNG')
+                result = requests.post(url,files={'school_student_photo':('x.png',png.getvalue(),'image/png')},timeout=10).json()
+                self.assertIsNone(result['path'],result)
+                self.assertIn('not safely configured',result['error'])
+            finally:
+                server.terminate()
+                try: server.wait(timeout=5)
+                except subprocess.TimeoutExpired: server.kill(); server.wait()
+        inside = self.root/'web'/'unsafe-private'
+        upload_to(inside)
+        insecure = self.root/'insecure'/'members'/'student_photos'
+        insecure.mkdir(parents=True, mode=0o700); insecure.chmod(0o755)
+        upload_to(self.root/'insecure')
+        link = self.root/'linked'/'members'/'student_photos'
+        link.parent.mkdir(parents=True)
+        target = self.root/'outside-target'; target.mkdir(mode=0o700)
+        link.symlink_to(target, target_is_directory=True)
+        upload_to(self.root/'linked')
+        self.assertEqual(list(target.iterdir()),[])
+        self.assertEqual(list(insecure.iterdir()),[])
+
     def test_reencoding_unavailable_fails_closed(self):
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]

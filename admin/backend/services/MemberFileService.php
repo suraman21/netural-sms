@@ -118,6 +118,10 @@ final class MemberFileService
                 if ($reencodedTmp !== null) @unlink($reencodedTmp);
                 return ['path' => null, 'error' => 'Private document storage is unavailable.'];
             }
+            if ($field === 'school_student_photo' && !self::schoolPhotoDirectoryIsPrivate($dir)) {
+                if ($reencodedTmp !== null) @unlink($reencodedTmp);
+                return ['path' => null, 'error' => 'Private photo storage is not safely configured.'];
+            }
             $target = $dir . '/' . $name;
             $ok = ($reencodedTmp !== null)
                 ? $saveFile($tmp, $target)
@@ -126,7 +130,16 @@ final class MemberFileService
                 if ($reencodedTmp !== null) @unlink($reencodedTmp);
                 return ['path' => null, 'error' => 'The file could not be saved.'];
             }
-            @chmod($target, 0600);
+            $privateModeSet = @chmod($target, 0600);
+            if ($field === 'school_student_photo') {
+                clearstatcache(true, $target);
+                $mode = @fileperms($target);
+                if (!$privateModeSet || $mode === false || ($mode & 0077) !== 0) {
+                    @unlink($target);
+                    if ($reencodedTmp !== null) @unlink($reencodedTmp);
+                    return ['path' => null, 'error' => 'Private photo permissions could not be verified.'];
+                }
+            }
             if ($reencodedTmp !== null) @unlink($reencodedTmp);
             return ['path' => self::PRIVATE_PREFIX . $spec['category'] . '/' . $name, 'error' => null];
         }
@@ -219,6 +232,29 @@ final class MemberFileService
         }
         $projectRoot = defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__, 3);
         return dirname($projectRoot) . '/ssms_private/members';
+    }
+
+    /** Check only the dormant school-photo category; deployment must also check aliases/ACLs. */
+    private static function schoolPhotoDirectoryIsPrivate(string $dir): bool
+    {
+        if (is_link($dir)) return false;
+        $resolved = realpath($dir);
+        clearstatcache(true, $dir);
+        $mode = @fileperms($dir);
+        if ($resolved === false || $mode === false || ($mode & 0077) !== 0) return false;
+        $roots = [];
+        $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
+        if (is_string($documentRoot) && $documentRoot !== '') $roots[] = $documentRoot;
+        if (defined('ROOT_PATH') && is_string(ROOT_PATH) && ROOT_PATH !== '') $roots[] = ROOT_PATH;
+        if ($roots === []) return false;
+        foreach ($roots as $root) {
+            $public = realpath($root);
+            if ($public === false) return false;
+            $public = rtrim($public, DIRECTORY_SEPARATOR);
+            if ($public === '') return false;
+            if ($resolved === $public || str_starts_with($resolved, $public . DIRECTORY_SEPARATOR)) return false;
+        }
+        return true;
     }
 
     private static function ensureDirectory(string $dir, int $mode): bool
