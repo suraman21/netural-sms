@@ -29,7 +29,8 @@ done
 ROOT=(mariadb --no-defaults --protocol=socket --socket="$SOCKET" -u root)
 FACTS=$("${ROOT[@]}" -N -e 'SELECT @@skip_networking,@@datadir')
 [ "$FACTS" = "$(printf '1\t%s/data/' "$D")" ] || { echo 'Refusing unexpected database server' >&2; exit 3; }
-"${ROOT[@]}" -e "CREATE DATABASE sms_academic_schema_test; CREATE USER 'academic_test'@'localhost' IDENTIFIED BY 'fixture-only'; GRANT ALL PRIVILEGES ON sms_academic_schema_test.* TO 'academic_test'@'localhost';"
+# PROCESS is granted only on this isolated server to observe InnoDB lock waits.
+"${ROOT[@]}" -e "CREATE DATABASE sms_academic_schema_test; CREATE USER 'academic_test'@'localhost' IDENTIFIED BY 'fixture-only'; GRANT ALL PRIVILEGES ON sms_academic_schema_test.* TO 'academic_test'@'localhost'; GRANT PROCESS ON *.* TO 'academic_test'@'localhost';"
 DB=(mariadb --no-defaults --protocol=socket --socket="$SOCKET" -u academic_test --password=fixture-only --batch --skip-column-names sms_academic_schema_test)
 "${DB[@]}" -e "CREATE TABLE users (id INT UNSIGNED PRIMARY KEY, role VARCHAR(50) NOT NULL, is_active TINYINT NOT NULL, password_hash VARCHAR(255) NOT NULL, authorization_version BIGINT UNSIGNED NOT NULL) ENGINE=InnoDB; INSERT INTO users VALUES (42,'edu_dept',1,'fixture-hash',1);"
 "${DB[@]}" < "$SQL"
@@ -53,3 +54,4 @@ check "SELECT COUNT(*) FROM school_grade_sections" 3
 echo 'PASS: empty bootstrap, repeat apply, hierarchy, uniqueness, FK restrictions, rollback and updates'
 command -v php >/dev/null || { echo 'Missing required tool: php' >&2; exit 2; }
 SMS_STRUCTURE_FIXTURE_SOCKET="$SOCKET" php "$REPO/tests/e2e/academic_structure_create.php"
+SMS_STRUCTURE_FIXTURE_SOCKET="$SOCKET" php "$REPO/tests/e2e/structure_concurrent_revocation.php"
