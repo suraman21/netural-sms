@@ -124,7 +124,7 @@ class CalendarLegendTests(unittest.TestCase):
 class CalendarAssetVersionTests(unittest.TestCase):
     def test_page_loads_the_new_script_version(self):
         page = PAGE.read_text(encoding="utf-8")
-        self.assertTrue("$assetVer = '20261026lg';" in page, "school_calendar.php asset version not bumped")
+        self.assertTrue("$assetVer = '20261116ec';" in page, "school_calendar.php asset version not bumped")
 
 
 if __name__ == "__main__":

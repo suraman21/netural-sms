@@ -33,7 +33,7 @@ $roleLabels = [
     'hr_dept' => 'HR Department', 'edu_dept' => 'Education Department', 'mezmur_dept' => 'Mezmur Department',
     'teacher' => 'Teacher', 'attendance_taker' => 'Attendance Taker',
 ];
-$assetVer = '20261026lg';
+$assetVer = '20261116ec';
 $schoolName = defined('SCHOOL_NAME_SHORT') ? SCHOOL_NAME_SHORT : 'SSMS';
 ?>
 <!DOCTYPE html>
@@ -149,8 +149,9 @@ $schoolName = defined('SCHOOL_NAME_SHORT') ? SCHOOL_NAME_SHORT : 'SSMS';
           <form class="sc-form" id="sc-holiday-form">
             <label>Title (English)<input id="sc-h-title" maxlength="120" placeholder="e.g. Fasika"></label>
             <label>Title (Amharic)<input id="sc-h-title-am" maxlength="120" placeholder="ለምሳሌ ፋሲካ"></label>
-            <label>From (Gregorian)<input id="sc-h-from" type="date"></label>
-            <label>To (Gregorian, optional)<input id="sc-h-to" type="date"></label>
+            <label>From (Ethiopian calendar)<input id="sc-h-from" type="date" hidden disabled></label>
+            <label>To (Ethiopian calendar, optional)<input id="sc-h-to" type="date" hidden disabled></label>
+            <p id="sc-date-status" role="status">The Ethiopian date picker is loading. If it does not load, reload the page.</p>
             <label>Type
               <select id="sc-h-type">
                 <option value="holiday">Holiday</option>
@@ -159,7 +160,7 @@ $schoolName = defined('SCHOOL_NAME_SHORT') ? SCHOOL_NAME_SHORT : 'SSMS';
                 <option value="other">Other</option>
               </select>
             </label>
-            <button class="rc-btn rc-btn-primary rc-btn-sm" type="submit">Add holiday</button>
+            <button class="rc-btn rc-btn-primary rc-btn-sm" id="sc-h-submit" type="submit" disabled>Add holiday</button>
           </form>
           <?php endif; ?>
         </div>

@@ -306,7 +306,6 @@
     host.innerHTML = ''
       + '<div class="sc-dialog"><div class="sc-dialogbox">'
       + '<h2>' + esc(label) + '</h2>'
-      + '<div class="s" style="font-size:12px;color:#64748b;margin-bottom:8px">' + esc(greg) + '</div>'
       + (isOff
         ? '<p style="font-size:13px;line-height:1.6">This day is a <strong>Day Off</strong>. Reopening it lets classes hold again. '
           + 'A day can be reopened only before it passes.</p>'
@@ -369,7 +368,30 @@
 
   // ── boot ────────────────────────────────────────────────────────────────
   function boot() {
-    if (!EC) { document.querySelector('.sc-wrap').innerHTML = '<div class="sc-panel">Calendar library failed to load.</div>'; return; }
+    if (!EC || EC.mode !== 'ethiopian') {
+      document.querySelector('.sc-wrap').textContent = 'This calendar page is unavailable because its Ethiopian calendar display could not be initialized.';
+      return;
+    }
+    if (CFG.canWrite) {
+      try {
+        EC.initPickers();
+        var from = $('sc-h-from'), to = $('sc-h-to'), button = $('sc-h-submit');
+        var fromDisplay = from && from.parentNode.querySelector('input[data-for="sc-h-from"]');
+        var toDisplay = to && to.parentNode.querySelector('input[data-for="sc-h-to"]');
+        if (!from || !to || !button || from.type !== 'hidden' || to.type !== 'hidden'
+            || !fromDisplay || !toDisplay) throw new Error('Picker unavailable');
+        from.disabled = false; to.disabled = false;
+        fromDisplay.disabled = false; toDisplay.disabled = false;
+        button.disabled = false;
+        $('sc-date-status').textContent = 'Select dates in the Ethiopian calendar.';
+      } catch (_) {
+        if ($('sc-h-from')) $('sc-h-from').disabled = true;
+        if ($('sc-h-to')) $('sc-h-to').disabled = true;
+        if ($('sc-h-submit')) $('sc-h-submit').disabled = true;
+        var status = $('sc-date-status');
+        if (status) status.textContent = 'The Ethiopian date picker is unavailable; adding holidays is disabled. Reload the page.';
+      }
+    }
     state.year = EC.toEthiopian(new Date()).year;
     state.month = EC.toEthiopian(new Date()).month;
 
@@ -405,6 +427,9 @@
         if (form) {
           form.addEventListener('submit', function (e) {
             e.preventDefault();
+            if ($('sc-h-submit').disabled || $('sc-h-from').disabled || $('sc-h-to').disabled) {
+              toast('The Ethiopian date picker is unavailable. Reload the page.', false); return;
+            }
             var payload = {
               title: $('sc-h-title').value,
               title_am: $('sc-h-title-am').value,
