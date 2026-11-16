@@ -9,13 +9,18 @@ for tool in mariadb-install-db mariadbd mariadb mktemp php; do
 done
 SQL="$REPO/sql/095_school_calendar_configuration.sql"
 [ -f "$SQL" ] || { echo 'Calendar schema migration not found' >&2; exit 2; }
-mkdir -p /home/user/.cache
-D=$(mktemp -d /home/user/.cache/calendar-schema-db.XXXXXXXX)
+# Fixture base: /tmp, never a user's home. The MariaDB AppArmor profile
+# shipped with a stock Ubuntu runner allows /tmp/** and denies paths under
+# /home, so a datadir in a home directory fails with 'Errcode: 13
+# Permission denied'. Override with SSMS_FIXTURE_BASE if /tmp is unsuitable.
+BASE="${SSMS_FIXTURE_BASE:-/tmp}"
+mkdir -p "$BASE"
+D=$(mktemp -d "$BASE/calendar-schema-db.XXXXXXXX")
 SOCKET="$D/mysql.sock"
 PID=''
 cleanup() {
   if [ -n "$PID" ]; then kill "$PID" 2>/dev/null || true; wait "$PID" 2>/dev/null || true; fi
-  case "$D" in /home/user/.cache/calendar-schema-db.[a-zA-Z0-9]*) rm -rf -- "$D";; *) echo 'Refusing unsafe cleanup' >&2;; esac
+  case "$D" in "$BASE"/calendar-schema-db.[a-zA-Z0-9]*) rm -rf -- "$D";; *) echo 'Refusing unsafe cleanup' >&2;; esac
 }
 trap cleanup EXIT INT TERM
 mariadb-install-db --no-defaults --datadir="$D/data" --auth-root-authentication-method=normal --skip-test-db > "$D/init.log" 2>&1 || { cat "$D/init.log" >&2; exit 1; }

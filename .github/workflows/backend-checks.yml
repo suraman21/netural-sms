@@ -321,13 +321,6 @@ jobs:
           # container for port 3306; every harness below runs its own private
           # mariadbd on a unix socket with --skip-networking.
           sudo service mariadb stop || true
-          # tests/e2e/*.sh are pinned to the author's /home/user convention: the
-          # datadir lives under /home/user/.cache and the cleanup trap refuses any
-          # path outside it (so a wrong variable can never rm -rf something real).
-          # A GitHub runner's home is /home/runner, so recreate the expected base
-          # rather than weaken those guards.
-          sudo mkdir -p /home/user/.cache
-          sudo chown "$(id -u):$(id -g)" /home/user /home/user/.cache
           bash tests/e2e/run_registration_outcome.sh
 
       # The four November school-foundation harnesses assert what an applied
@@ -339,12 +332,12 @@ jobs:
         timeout-minutes: 10
         run: |
           set -euo pipefail
-          # Self-contained (same three prep lines as the step above) rather than
-          # relying on the previous step's side effects.
+          # Self-contained (same prep lines as the step above) rather than relying
+          # on the previous step's side effects. No home-directory prep is needed:
+          # these harnesses put their datadir under /tmp, which is what the MariaDB
+          # AppArmor profile on a stock Ubuntu runner actually allows.
           sudo apt-get install -y mariadb-server
           sudo service mariadb stop || true
-          sudo mkdir -p /home/user/.cache
-          sudo chown "$(id -u):$(id -g)" /home/user /home/user/.cache
           bash tests/e2e/run_calendar_configuration_schema.sh
           bash tests/e2e/run_academic_structure_schema.sh
           bash tests/e2e/run_section_year_map_schema.sh

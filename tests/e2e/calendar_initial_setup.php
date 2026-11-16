@@ -2,7 +2,11 @@
 /** Synthetic local-only fixture; never loads application configuration. */
 if (PHP_SAPI !== 'cli' || getenv('SSMS_AUDIT_TESTING') !== '1') exit(2);
 $socket = getenv('SMS_CALENDAR_TEST_SOCKET');
-if (!is_string($socket) || !preg_match('#^/home/user/\.cache/calendar-schema-db\.[A-Za-z0-9]+/mysql\.sock$#D', $socket)) exit(2);
+// The socket must still be a disposable calendar-schema-db fixture, but the base is the
+// caller's temp directory (/tmp by default), not a user home: a stock Ubuntu runner's
+// MariaDB AppArmor profile denies paths under /home, so a home-based datadir cannot start.
+$base = rtrim((string) (getenv('SSMS_FIXTURE_BASE') ?: '/tmp'), '/');
+if (!is_string($socket) || !preg_match('#^' . preg_quote($base, '#') . '/calendar-schema-db\\.[A-Za-z0-9]+/mysql\\.sock$#D', $socket)) exit(2);
 require_once __DIR__ . '/../../admin/backend/services/SchoolCalendarInitialSetup.php';
 use App\Services\CalendarAlreadyConfigured;
 use App\Services\CalendarSetupActor;
