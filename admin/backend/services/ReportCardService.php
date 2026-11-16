@@ -2318,7 +2318,7 @@ class ReportCardService
     {
         return [
             'school_am' => defined('SCHOOL_NAME_AMHARIC') ? SCHOOL_NAME_AMHARIC : 'ፈለገ ቅዱሳን ሰንበት ትምህርት ቤት',
-            'school_en' => trim((defined('SCHOOL_TRANSLATION_EN') ? SCHOOL_TRANSLATION_EN : 'Spring of Saints') . ' ' . (defined('SCHOOL_TYPE') ? SCHOOL_TYPE : 'Sunday School')),
+            'school_en' => trim((defined('SCHOOL_TRANSLATION_EN') ? SCHOOL_TRANSLATION_EN : '') . ' ' . (defined('SCHOOL_TYPE') ? SCHOOL_TYPE : 'School')),
             'school_short_am' => defined('SCHOOL_NAME_SHORT_AM') ? SCHOOL_NAME_SHORT_AM : 'ፈለገ ቅዱሳን',
             'school_short' => defined('SCHOOL_NAME_SHORT') ? SCHOOL_NAME_SHORT : 'FKSS',
             'parish_am' => defined('PARISH_NAME_AM') ? PARISH_NAME_AM : '',

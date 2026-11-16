@@ -13,6 +13,11 @@ class AppConfig {
 
   static const String appName = 'FKSS';
   static const String appNameAmharic = 'ፈለገ ቅዱሳን ሰንበት ት/ቤት';
+  /// Full name shown under the logo on the sign-in screen. It lives here, with
+  /// appName/appNameAmharic, because this file is the app's single source of
+  /// identity per build: the screen used to hardcode the string, so a
+  /// differently-branded build still showed this school's name (ADR-0022 D7).
+  static const String appNameEnglish = 'Spring of Saints Sunday School';
   // ⚠ SINGLE SOURCE OF TRUTH for the update system: the app compares
   // THESE values against the server's .fkss_app_release.php — pubspec.yaml's
   // version only feeds the Android package version. They MUST stay in sync

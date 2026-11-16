@@ -88,7 +88,9 @@ if ($tooLargeForWorkbook) {
     );
 }
 
-$baseFilename = 'sundayschool_' . $tier . '_members_' . date('Y-m-d');
+// EXPORT_PREFIX (school_config.php) is the single source for export filenames;
+// admin/groups.php already used it while this file still hardcoded 'sundayschool_'.
+$baseFilename = EXPORT_PREFIX . '_' . $tier . '_members_' . date('Y-m-d');
 try {
     if ($format === 'csv') {
         MemberExportService::streamCsv(

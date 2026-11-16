@@ -26,15 +26,18 @@
 
 // ── Core identity ─────────────────────────────────────────────
 if (!defined('ACTIVE_THEME'))           define('ACTIVE_THEME', 'fkss');
-if (!defined('SCHOOL_NAME'))            define('SCHOOL_NAME', 'Sunday School');
+// Neutral by design (ADR-0022): these are the values an unconfigured or
+// partially-configured deployment gets. A church deployment sets its own in
+// school_config.php; it must not be the default for everyone else.
+if (!defined('SCHOOL_NAME'))            define('SCHOOL_NAME', 'School');
 if (!defined('SCHOOL_NAME_SHORT'))      define('SCHOOL_NAME_SHORT', SCHOOL_NAME);
 if (!defined('SCHOOL_NAME_AMHARIC'))    define('SCHOOL_NAME_AMHARIC', SCHOOL_NAME);
 if (!defined('SCHOOL_NAME_SHORT_AM'))   define('SCHOOL_NAME_SHORT_AM', SCHOOL_NAME_AMHARIC);
 if (!defined('SCHOOL_TRANSLATION_EN'))  define('SCHOOL_TRANSLATION_EN', SCHOOL_NAME_SHORT);
 if (!defined('SCHOOL_TAGLINE'))         define('SCHOOL_TAGLINE', '');
 if (!defined('SCHOOL_TAGLINE_AM'))      define('SCHOOL_TAGLINE_AM', '');
-if (!defined('SCHOOL_TYPE'))            define('SCHOOL_TYPE', 'Sunday School');
-if (!defined('SCHOOL_TYPE_AM'))         define('SCHOOL_TYPE_AM', 'ሰንበት ት/ቤት');
+if (!defined('SCHOOL_TYPE'))            define('SCHOOL_TYPE', 'School');
+if (!defined('SCHOOL_TYPE_AM'))         define('SCHOOL_TYPE_AM', 'ትምህርት ቤት');
 
 // ── Parish / religious texts ──────────────────────────────────
 if (!defined('PARISH_NAME_AM'))         define('PARISH_NAME_AM', SCHOOL_NAME_AMHARIC);
@@ -47,7 +50,7 @@ if (!defined('RELIGIOUS_INVOCATION'))   define('RELIGIOUS_INVOCATION', '');
 if (!defined('ID_CARD_TITLE_AM'))       define('ID_CARD_TITLE_AM', SCHOOL_NAME_SHORT_AM . ' ' . SCHOOL_TYPE_AM . ' አባል መታወቂያ ካርድ');
 if (!defined('ID_CARD_TITLE_EN'))       define('ID_CARD_TITLE_EN', SCHOOL_TRANSLATION_EN . ' ' . SCHOOL_TYPE . ' Member ID Card');
 if (!defined('ID_CARD_FOOTER_AM'))      define('ID_CARD_FOOTER_AM', '');
-if (!defined('ID_CARD_SIG_HEAD_AM'))    define('ID_CARD_SIG_HEAD_AM', 'የሰንበት ት/ቤትቱ ሃላፊ ስምና ፊርማ');
+if (!defined('ID_CARD_SIG_HEAD_AM'))    define('ID_CARD_SIG_HEAD_AM', 'የ' . SCHOOL_TYPE_AM . 'ቱ ሃላፊ ስምና ፊርማ');
 if (!defined('ID_CARD_SIG_ADMIN_AM'))   define('ID_CARD_SIG_ADMIN_AM', 'የደብሩ አስተዳደር ስምና ፊርማ');
 if (!defined('ID_CARD_DISCLAIMER_AM'))  define('ID_CARD_DISCLAIMER_AM', '');
 if (!defined('ID_CARD_BACKGROUND'))     define('ID_CARD_BACKGROUND', '/admin/id_cards/assets/backgrounds/id_card_bg.jpg');
@@ -121,10 +124,12 @@ if (!defined('DEVELOPER_NAME'))         define('DEVELOPER_NAME', '');
 if (!defined('DEVELOPER_SHOW_CREDIT'))  define('DEVELOPER_SHOW_CREDIT', false);
 if (!defined('API_NAME'))               define('API_NAME', 'SSMS API');
 if (!defined('API_MEMBER_PREFIX'))      define('API_MEMBER_PREFIX', 'M');
-if (!defined('GROUP_CAT_SS'))           define('GROUP_CAT_SS', 'Sunday School');
-if (!defined('GROUP_CAT_SS_AM'))        define('GROUP_CAT_SS_AM', 'ሰንበት ት/ቤት');
-if (!defined('GROUP_CAT_PARISH'))       define('GROUP_CAT_PARISH', 'Parish');
+if (!defined('GROUP_CAT_SS'))           define('GROUP_CAT_SS', SCHOOL_TYPE);
+if (!defined('GROUP_CAT_SS_AM'))        define('GROUP_CAT_SS_AM', SCHOOL_TYPE_AM);
+// The binary column is_under_sunday_school is frozen, but a general school's
+// second category is its community, not a parish.
+if (!defined('GROUP_CAT_PARISH'))       define('GROUP_CAT_PARISH', 'Community');
 if (!defined('GROUP_CAT_PARISH_AM'))    define('GROUP_CAT_PARISH_AM', 'ግቢ');
-if (!defined('GROUP_UNDER_SS_LABEL'))   define('GROUP_UNDER_SS_LABEL', 'Under Sunday School');
-if (!defined('GROUP_UNDER_SS_LABEL_AM')) define('GROUP_UNDER_SS_LABEL_AM', 'በሰንበት ት/ቤት ስር');
+if (!defined('GROUP_UNDER_SS_LABEL'))   define('GROUP_UNDER_SS_LABEL', 'Under ' . GROUP_CAT_SS);
+if (!defined('GROUP_UNDER_SS_LABEL_AM')) define('GROUP_UNDER_SS_LABEL_AM', 'በ' . GROUP_CAT_SS_AM . ' ስር');
 if (!defined('LEAK_DETECT_KEYWORDS'))   define('LEAK_DETECT_KEYWORDS', serialize(['password', 'secret', 'token']));

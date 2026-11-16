@@ -281,6 +281,31 @@ define('LANDING_MISSION_AM', 'የኛ ተልእኮ ልጆችን በ' . DENOMINATI
 define('COPYRIGHT_YEAR', '2026');
 define('COPYRIGHT_TEXT', SCHOOL_NAME_AMHARIC . ' - ' . SCHOOL_TRANSLATION_EN . ' ' . SCHOOL_TYPE);
 
+// ── Contact block ─────────────────────────────────────────────
+// Every line of the "Get in Touch" panel. An EMPTY value hides that
+// row completely, so a deployment that configures nothing prints no
+// contact details rather than a placeholder or a previous occupant's.
+//
+// These were hardcoded in index.php until 2026-11-16, and the values
+// there were wrong for this deployment: the email address named a
+// different school (WBWS / Wulide Birhan) and the phone was still the
+// "+251 XXX XXX XXX" placeholder. They are therefore EMPTY here on
+// purpose — fill in this deployment's real details to show the rows.
+define('LANDING_CONTACT_ADDRESS', '');
+define('LANDING_CONTACT_PHONE', '');
+define('LANDING_CONTACT_PHONE_HOURS', '');
+define('LANDING_CONTACT_EMAIL', '');
+define('LANDING_CONTACT_EMAIL_NOTE', '');
+define('LANDING_CONTACT_MAP_URL', '');
+define('LANDING_OFFICE_HOURS_1', '');
+define('LANDING_OFFICE_HOURS_2', '');
+
+// The hardcoded Sunday/Wednesday timetable in index.php is church
+// deployment content. When the schedule table is empty, the page shows
+// these defaults only if this is true; a general-school deployment sets
+// it to false and the section is omitted instead.
+define('LANDING_FALLBACK_SCHEDULE_ENABLED', true);
+
 
 // ┌─────────────────────────────────────────────────────────────┐
 // │  SECTION 15: MONITOR / UPTIME                               │

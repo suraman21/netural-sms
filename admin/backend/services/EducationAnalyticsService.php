@@ -666,7 +666,7 @@ table.rpt-tbl tr:nth-child(even){background:#fafafa}
     <span style="font-size:10px;font-weight:normal;color:#64748b">Directorial Overview</span>
   </div>
   <p style="margin:0 0 12px;font-size:11px;line-height:1.5;color:#334155">
-    This executive intelligence packet synthesizes the academic progression, attendance regularities, and curriculum delivery status across all registered classes in the Sunday School.
+    This executive intelligence packet synthesizes the academic progression, attendance regularities, and curriculum delivery status across all registered classes in the school.
     The student body maintains a collective grade mean of <strong><?= number_format((float)($stats['avg_grade'] ?? 0), 1) ?>%</strong> with <strong><?= $stats['high_achievers'] ?? 0 ?></strong> students meeting high achievement criteria ($\ge 85\%$ score and $\ge 80\%$ attendance).
     Faculty assessment governance demonstrates a <strong><?= $governance['delivery_rate'] ?? 0 ?>%</strong> exam delivery rate, with <strong><?= $governance['missing_count'] ?? 0 ?></strong> planned assessment submissions currently pending completion from assigned teachers.
   </p>
@@ -887,7 +887,7 @@ table.rpt-tbl tr:nth-child(even){background:#fafafa}
       <div style="margin-top:25px">Date: ________________________</div>
     </div>
     <div class="sig-box">
-      <div class="title">Parish Administration Office</div>
+      <div class="title"><?= e(defined("GROUP_CAT_PARISH") ? GROUP_CAT_PARISH : "Community") ?> Administration Office</div>
       <div class="am-title amh"><?= htmlspecialchars($brand['sig_admin'] ?? 'የደብሩ አስተዳደር ጽሕፈት ቤት ስምና ፊርማ') ?></div>
       <div style="margin-top:25px">Date: ________________________</div>
     </div>

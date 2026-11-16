@@ -1183,7 +1183,7 @@ function genCustomReport(){
         pdfFooter(doc);doc.save('<?= MEMBER_CODE_PREFIX ?>_'+fn+'_Report.pdf');
     }else if(fmt==='excel'){
         const wb=XLSX.utils.book_new();
-        const ws=XLSX.utils.aoa_to_sheet([['<?= SCHOOL_NAME_SHORT ?> Sunday School — '+title],['Generated: '+genStamp()],[''],[h],...r.map(x=>[x])]);
+        const ws=XLSX.utils.aoa_to_sheet([['<?= SCHOOL_NAME_SHORT . ' ' . SCHOOL_TYPE ?> — '+title],['Generated: '+genStamp()],[''],[h],...r.map(x=>[x])]);
         ws['!cols']=h.map(()=>({wch:20}));ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:h.length-1}}];
         XLSX.utils.book_append_sheet(wb,ws,fn);XLSX.writeFile(wb,'<?= MEMBER_CODE_PREFIX ?>_'+fn+'_Report.xlsx');
     }else if(fmt==='word'){
