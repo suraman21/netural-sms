@@ -193,7 +193,7 @@ if (isset($conn)) {
                 <div class="stat-card">
                     <div class="flex items-center gap-3">
                         <div class="stat-icon bg-purple-100 text-purple-600"><i class="fa-solid fa-building-columns"></i></div>
-                        <div><div class="stat-value"><?= $stats['parish'] ?></div><div class="stat-label">Parish Associations</div></div>
+                        <div><div class="stat-value"><?= $stats['parish'] ?></div><div class="stat-label"><?= e(GROUP_CAT_PARISH) ?> Associations</div></div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -216,8 +216,8 @@ if (isset($conn)) {
                     <h3 class="card-title"><i class="fa-solid fa-layer-group text-emerald-600"></i> Registered Groups</h3>
                     <div class="flex gap-2">
                         <button class="tab-btn active" onclick="filterGroups('all')">All</button>
-                        <button class="tab-btn" onclick="filterGroups('ss')">Sunday School</button>
-                        <button class="tab-btn" onclick="filterGroups('parish')">Parish</button>
+                        <button class="tab-btn" onclick="filterGroups('ss')"><?= e(GROUP_CAT_SS) ?></button>
+                        <button class="tab-btn" onclick="filterGroups('parish')"><?= e(GROUP_CAT_PARISH) ?></button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -244,9 +244,9 @@ if (isset($conn)) {
                                 <td><strong><?= e($g['group_name']) ?></strong></td>
                                 <td>
                                     <?php if ($g['is_under_sunday_school']): ?>
-                                    <span class="badge badge-green"><i class="fa-solid fa-church mr-1"></i> Sunday School</span>
+                                    <span class="badge badge-green"><i class="fa-solid fa-building mr-1"></i> <?= e(GROUP_CAT_SS) ?></span>
                                     <?php else: ?>
-                                    <span class="badge badge-purple"><i class="fa-solid fa-building-columns mr-1"></i> Parish</span>
+                                    <span class="badge badge-purple"><i class="fa-solid fa-building-columns mr-1"></i> <?= e(GROUP_CAT_PARISH) ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td><?= esc($g['established_year'], '-') ?></td>
@@ -489,6 +489,11 @@ if (isset($conn)) {
     <script>
     const API = '../backend/groups_api.php';
     const GROUPS_CSRF = <?= json_encode((string)($_SESSION['csrf_token'] ?? '')) ?>;
+    // Category labels come from school_config.php (GROUP_CAT_*), not from string
+    // literals in this template: the binary is_under_sunday_school column is a
+    // frozen identifier, but the words a deployment shows for it are not.
+    const SS_CAT_LABEL = <?= json_encode(GROUP_CAT_SS) ?>;
+    const PARISH_CAT_LABEL = <?= json_encode(GROUP_CAT_PARISH) ?>;
     let currentGroupId = null;
 
     // Group CRUD
@@ -576,7 +581,7 @@ if (isset($conn)) {
             
             let html = `
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                    <div class="p-3 bg-slate-50 rounded-lg"><div class="text-xs text-slate-500">Category</div><div class="font-semibold">${g.is_under_sunday_school ? 'Sunday School' : 'Parish'}</div></div>
+                    <div class="p-3 bg-slate-50 rounded-lg"><div class="text-xs text-slate-500">Category</div><div class="font-semibold">${g.is_under_sunday_school ? SS_CAT_LABEL : PARISH_CAT_LABEL}</div></div>
                     <div class="p-3 bg-slate-50 rounded-lg"><div class="text-xs text-slate-500">Est. Year</div><div class="font-semibold">${g.established_year || '-'}</div></div>
                     <div class="p-3 bg-slate-50 rounded-lg"><div class="text-xs text-slate-500">Initial (M/F)</div><div class="font-semibold">${g.founding_male} / ${g.founding_female}</div></div>
                     <div class="p-3 bg-emerald-50 rounded-lg"><div class="text-xs text-emerald-600">Current (M/F)</div><div class="font-semibold text-emerald-700">${g.current_male} / ${g.current_female}</div></div>
