@@ -6,6 +6,8 @@
 
 > Recorded on 2026-10-22; the decision date is shown above. Evidence is cited so the decision can be checked; where the rationale is not documented, this is stated.
 
+> **2026-11-16 — superseded:** the Mezmur ministry is retired by [ADR-0022](0022-general-school-domain.md); there is no audio, art, presigned upload or signed-URL playback contract in the target product. Read this record as history: it describes what existed until phase 7 of the remodel, not what the product will require.
+
 ## Context
 
 Hymn audio files are too large for shared-hosting storage and PHP upload limits.

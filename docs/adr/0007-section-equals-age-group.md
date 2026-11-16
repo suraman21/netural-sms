@@ -6,6 +6,8 @@
 
 > Recorded on 2026-10-22; the decision date is shown above. Evidence is cited so the decision can be checked; where the rationale is not documented, this is stated.
 
+> **2026-11-16 — superseded:** [ADR-0022](0022-general-school-domain.md) makes a section a *grade section* and demotes the age group to a derived, legacy attribute. The A/B/C sections remain readable through `school_section_year_class_map` until the data mapping (D-5) is decided, so this record still describes how existing rows behave — it no longer describes the target model.
+
 ## Context
 
 Sections and age groups were modelled separately, and different screens used different hard-coded lists, including a wrong label.

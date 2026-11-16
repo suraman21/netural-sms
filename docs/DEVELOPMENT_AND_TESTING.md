@@ -47,6 +47,10 @@ All **eight** check runs on baseline `7209278b44dd35f0e2cf9ec94d198ee968bb10dc` 
 
 On 2026-10-24, tests were corrected to expect the implemented roster cap of 200 and to stop interpreting a JavaScript date comment as division by two. These were test corrections, not changes to the roster or report-card business rules. Keep historical test outcomes tied to their tested commits.
 
+### 3.1a The 2026-11-16 red gate (repaired)
+
+Between 2026-11-14 and 2026-11-16 `main` failed Backend checks: duplicate migration numbers from the Telegram/ACM collision, two source-pin failures, a Chromium timeout, and ten skips that the zero-skip gate correctly refused. The repair (test and CI infrastructure only) renumbered the Telegram chain to `100`–`102`, corrected `docs/DATABASE.md`, dropped a quoted legacy seat name, raised the browser budget, added `pillow`/`requests`, and moved the six fixture-gated modules into the isolated harness that was written for them. Locally verified: 3617 passed / 0 failed / 0 skipped, harness 79+3 passed, four schema harnesses pass. The workflow run for the pushed commit is the acceptance evidence, not this note.
+
 ### 3.2 The 79 skips
 
 **Historical, resolved by PR #41 (`bf924d7`, 2026-10-28).** Earlier runs lacked the seeded HTTP world and `openpyxl`; 71 server-dependent tests and eight import tests skipped. The workflow now installs `openpyxl`, provisions the canonical isolated schema/roles, starts the guarded PHP router, bridges legacy database clients to the disposable CI service and isolates live-test login buckets. Database-specific subprocesses select the correct fixture database.
@@ -66,6 +70,7 @@ The *Fail if any test skipped* step remains active: **any skip fails this job**,
 | JavaScript | `tests/js/` | Node harnesses invoked by relevant Python tests |
 | Flutter | `Mobile/wbws_flutter_app/test/` | `flutter test`; includes service, storage, policy and UI tests |
 | Documentation and structure | `tests/security/test_docs_links.py`, `test_structure_include_paths.py`, `test_structure_boundaries.py` | Relative links/anchors, include paths and served/nonserved boundaries |
+| School foundation fixtures | `tests/e2e/run_registration_outcome.sh`, `run_calendar_configuration_schema.sh`, `run_academic_structure_schema.sh`, `run_section_year_map_schema.sh`, `run_calendar_initial_setup.sh` | Two CI steps after the suite: the fault-injected harness executes the six modules deselected from `tests/security` (`test_enrollment_transaction_outcome_http`, `test_registration_upload_outcome_http`, `test_school_calendar_display_safety`, `test_school_structure_create_http`, `test_school_structure_read`, `test_term_delete_verification_http`), and the schema harnesses assert constraints that applying a migration cannot prove. Both refuse to treat a skip as a pass |
 
 `flutter analyze` is not an enforced backend workflow step. [analyze_flutter.sh](../tests/e2e/analyze_flutter.sh) is available for local analysis. A passing targeted run is not a substitute for an unexecuted full suite; report them separately.
 

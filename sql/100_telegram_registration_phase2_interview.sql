@@ -1,5 +1,7 @@
 -- ============================================================
--- 081_telegram_registration_phase2_interview.sql (IDEMPOTENT)
+-- 100_telegram_registration_phase2_interview.sql (IDEMPOTENT)
+-- Renamed from 081 (2026-11-16) after colliding with ACM 081_acm_office_model.sql;
+-- content unchanged. 081 was never applied to a deployment.
 -- Phase 2 interview state: return a one-field correction to review.
 -- Apply after 080 before deploying the Phase 2 interview service.
 -- ============================================================

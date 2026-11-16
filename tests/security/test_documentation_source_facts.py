@@ -121,3 +121,42 @@ def test_retained_source_copy_and_partial_manual_are_not_hidden_as_completed():
     assert "6/30" in lifecycle
     assert "remaining differences were not fully reviewed" in lifecycle
     assert "INCOMPLETE — ADDITIONAL WORK REQUIRED" in text("docs/user_manual/COVERAGE.md")
+
+
+def test_general_school_decision_record_exists_and_supersedes_explicitly():
+    """ADR-0022 must precede the remodel's code (plan phase 1).
+
+    Two things are pinned: that the superseded records were *marked* rather
+    than quietly rewritten (the rule in docs/adr/README.md), and that the new
+    record does not smuggle a data-destruction or a deferred owner decision
+    into the decision text.
+    """
+    decision = text("docs/adr/0022-general-school-domain.md")
+    assert "| Accepted" in decision
+    assert "General school" in decision or "general school" in decision
+    # D1..D10 decisions, and the clause that keeps retirement non-destructive.
+    for number in range(1, 11):
+        assert f"**D{number} —" in decision, number
+    assert "This record removes code, not data." in decision
+    # The superseded records point at the new one instead of being edited.
+    for old in (
+        "0007-section-equals-age-group.md",
+        "0008-ethiopian-calendar-only.md",
+        "0009-attendance-ownership.md",
+        "0015-mezmur-media-object-storage.md",
+    ):
+        body = text("docs/adr/" + old)
+        assert "0022-general-school-domain.md" in body, old
+        assert "2026-11-16 —" in body, old
+    # ADR-0017 is reaffirmed, not superseded: registration stays web-only.
+    reaffirmed = text("docs/adr/0017-no-member-registration-on-mobile.md")
+    assert "reaffirmed" in reaffirmed.lower()
+    assert "0022-general-school-domain.md" in reaffirmed
+    # Every deferred owner decision is named as deferred, so nobody implements it silently.
+    deferred = decision.split("## Deferred decisions", 1)[1].split("## Consequences", 1)[0]
+    for d in ("D-2", "D-4", "D-5", "D-6", "D-7", "D-8"):
+        assert f"| {d} |" in deferred, d
+    # The index navigates to it and flags the dead records.
+    index = text("docs/adr/README.md")
+    assert "0022-general-school-domain.md" in index
+    assert "Superseded by ADR-0022" in index

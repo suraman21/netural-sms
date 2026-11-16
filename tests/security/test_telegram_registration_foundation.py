@@ -16,8 +16,8 @@ class TelegramRegistrationFoundationTests(unittest.TestCase):
         cls.duplicate = (ROOT / "admin/backend/services/TelegramDuplicateCandidateService.php").read_text(encoding="utf-8")
         cls.registry = (ROOT / "admin/backend/services/TelegramFormRegistry.php").read_text(encoding="utf-8")
         cls.migration = (ROOT / "sql/080_telegram_registration_foundation.sql").read_text(encoding="utf-8")
-        cls.phase2_migration = (ROOT / "sql/081_telegram_registration_phase2_interview.sql").read_text(encoding="utf-8")
-        cls.correction_migration = (ROOT / "sql/082_telegram_registration_corrections.sql").read_text(encoding="utf-8")
+        cls.phase2_migration = (ROOT / "sql/100_telegram_registration_phase2_interview.sql").read_text(encoding="utf-8")
+        cls.correction_migration = (ROOT / "sql/101_telegram_registration_corrections.sql").read_text(encoding="utf-8")
 
     def test_feature_is_fail_closed(self):
         school = (ROOT / "school_config.php").read_text(encoding="utf-8")
