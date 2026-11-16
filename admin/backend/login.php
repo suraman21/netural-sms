@@ -67,11 +67,23 @@ if (!$ipLimit['allowed'] || !$accountLimit['allowed']) {
 }
 
 try {
-    $stmt = $pdo->prepare('
-        SELECT id, username, email, full_name, role, password_hash, is_active
-        FROM users WHERE username = :ue1 OR email = :ue2 LIMIT 1
-    ');
-    $stmt->execute([':ue1' => $usernameOrEmail, ':ue2' => $usernameOrEmail]);
+    // Capture authorization version in the same account read as the password.
+    // Legacy installations missing migration 048 can still log in, but do not
+    // receive the claim required by version-sensitive structure writes.
+    try {
+        $stmt = $pdo->prepare('
+            SELECT id, username, email, full_name, role, password_hash, is_active, authorization_version
+            FROM users WHERE username = :ue1 OR email = :ue2 LIMIT 1
+        ');
+        $stmt->execute([':ue1' => $usernameOrEmail, ':ue2' => $usernameOrEmail]);
+    } catch (PDOException $error) {
+        if ((int)($error->errorInfo[1] ?? 0) !== 1054 || !str_contains($error->getMessage(), 'authorization_version')) throw $error;
+        $stmt = $pdo->prepare('
+            SELECT id, username, email, full_name, role, password_hash, is_active
+            FROM users WHERE username = :ue1 OR email = :ue2 LIMIT 1
+        ');
+        $stmt->execute([':ue1' => $usernameOrEmail, ':ue2' => $usernameOrEmail]);
+    }
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
@@ -95,6 +107,9 @@ try {
     $_SESSION['AUTH_STARTED_AT'] = time();
     $_SESSION['AUTH_REVALIDATED_AT'] = time();
     $_SESSION['AUTH_PASSWORD_VERSION'] = hash('sha256', (string)$user['password_hash']);
+    if (isset($user['authorization_version'])) {
+        $_SESSION['AUTHORIZATION_VERSION'] = (string)$user['authorization_version'];
+    }
     // Random per-login browser context used only to reject stale account pages.
     // It never selects or authorizes an account; admin_id remains authoritative.
     $_SESSION['PROFILE_ACCOUNT_CONTEXT'] = bin2hex(random_bytes(32));

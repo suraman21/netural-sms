@@ -31,7 +31,7 @@ FACTS=$("${ROOT[@]}" -N -e 'SELECT @@skip_networking,@@datadir')
 [ "$FACTS" = "$(printf '1\t%s/data/' "$D")" ] || { echo 'Refusing unexpected database server' >&2; exit 3; }
 "${ROOT[@]}" -e "CREATE DATABASE sms_academic_schema_test; CREATE USER 'academic_test'@'localhost' IDENTIFIED BY 'fixture-only'; GRANT ALL PRIVILEGES ON sms_academic_schema_test.* TO 'academic_test'@'localhost';"
 DB=(mariadb --no-defaults --protocol=socket --socket="$SOCKET" -u academic_test --password=fixture-only --batch --skip-column-names sms_academic_schema_test)
-"${DB[@]}" -e "CREATE TABLE users (id INT UNSIGNED PRIMARY KEY, role VARCHAR(50) NOT NULL, is_active TINYINT NOT NULL, password_hash VARCHAR(255) NOT NULL) ENGINE=InnoDB; INSERT INTO users VALUES (42,'edu_dept',1,'fixture-hash');"
+"${DB[@]}" -e "CREATE TABLE users (id INT UNSIGNED PRIMARY KEY, role VARCHAR(50) NOT NULL, is_active TINYINT NOT NULL, password_hash VARCHAR(255) NOT NULL, authorization_version BIGINT UNSIGNED NOT NULL) ENGINE=InnoDB; INSERT INTO users VALUES (42,'edu_dept',1,'fixture-hash',1);"
 "${DB[@]}" < "$SQL"
 "${DB[@]}" < "$SQL"
 "${DB[@]}" < "$REPO/sql/097_school_academic_structure_audit.sql"

@@ -22,12 +22,18 @@ function fails(callable $fn, string $type): void {
 }
 $db = connection($socket);
 $fingerprint = hash('sha256', 'fixture-hash');
-$actor = SchoolStructureActor::fromTrustedSession(42, 'edu_dept', $fingerprint);
-foreach (['teacher', 'finance_dept', 'hr_dept', ''] as $role) fails(fn()=>SchoolStructureActor::fromTrustedSession(42, $role, $fingerprint), DomainException::class);
-fails(fn()=>SchoolStructureActor::fromTrustedSession(0, 'super_admin', $fingerprint), DomainException::class);
-check(SchoolStructureActor::fromTrustedSession(7, 'school_admin', $fingerprint)->id() === 7);
-check(SchoolStructureActor::fromTrustedSession(8, 'super_admin', $fingerprint)->role() === 'super_admin');
-fails(fn()=>SchoolStructureActor::fromTrustedSession(42, 'edu_dept', ''), DomainException::class);
+$actor = SchoolStructureActor::fromTrustedSession(42, 'edu_dept', $fingerprint, '1');
+foreach (['teacher', 'finance_dept', 'hr_dept', ''] as $role) fails(fn()=>SchoolStructureActor::fromTrustedSession(42, $role, $fingerprint, '1'), DomainException::class);
+fails(fn()=>SchoolStructureActor::fromTrustedSession(0, 'super_admin', $fingerprint, '1'), DomainException::class);
+check(SchoolStructureActor::fromTrustedSession(7, 'school_admin', $fingerprint, '1')->id() === 7);
+check(SchoolStructureActor::fromTrustedSession(8, 'super_admin', $fingerprint, '1')->role() === 'super_admin');
+fails(fn()=>SchoolStructureActor::fromTrustedSession(42, 'edu_dept', '', '1'), DomainException::class);
+fails(fn()=>SchoolStructureActor::fromTrustedSession(42, 'edu_dept', $fingerprint, ''), DomainException::class);
+fails(fn()=>SchoolStructureActor::fromTrustedSession(42, 'edu_dept', $fingerprint, '01'), DomainException::class);
+$db->query("UPDATE users SET authorization_version=2 WHERE id=42");
+fails(fn()=>Create::level($db, $actor, 'revoked version', 1), DomainException::class);
+check((int)$db->query("SELECT COUNT(*) n FROM school_education_levels WHERE name='revoked version'")->fetch_assoc()['n'] === 0);
+$db->query("UPDATE users SET authorization_version=1 WHERE id=42");
 $db->query("UPDATE users SET is_active=0 WHERE id=42");
 fails(fn()=>Create::level($db, $actor, 'disabled actor', 1), DomainException::class);
 $db->query("UPDATE users SET is_active=1, role='finance_dept' WHERE id=42");
@@ -35,7 +41,7 @@ fails(fn()=>Create::level($db, $actor, 'changed role', 1), DomainException::clas
 $db->query("UPDATE users SET role='edu_dept', password_hash='changed' WHERE id=42");
 fails(fn()=>Create::level($db, $actor, 'changed password', 1), DomainException::class);
 $db->query("UPDATE users SET password_hash='fixture-hash' WHERE id=42");
-$missing = SchoolStructureActor::fromTrustedSession(999, 'edu_dept', $fingerprint);
+$missing = SchoolStructureActor::fromTrustedSession(999, 'edu_dept', $fingerprint, '1');
 fails(fn()=>Create::level($db, $missing, 'missing user', 1), DomainException::class);
 check((int)$db->query("SELECT COUNT(*) n FROM school_education_levels WHERE name IN ('disabled actor','changed role','changed password','missing user')")->fetch_assoc()['n'] === 0);
 check((int)$db->query('SELECT COUNT(*) n FROM school_academic_structure_audit')->fetch_assoc()['n'] === 0);

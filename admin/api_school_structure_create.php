@@ -43,7 +43,7 @@ try {
     sort($keys); sort($supplied);
     if ($keys !== $supplied) throw new InvalidArgumentException();
     if (!$conn instanceof mysqli) throw new RuntimeException('Database unavailable.');
-    $actor = SchoolStructureActor::fromTrustedSession((int)$_SESSION['admin_id'], (string)$_SESSION['admin_role'], (string)($_SESSION['AUTH_PASSWORD_VERSION'] ?? ''));
+    $actor = SchoolStructureActor::fromTrustedSession((int)$_SESSION['admin_id'], (string)$_SESSION['admin_role'], (string)($_SESSION['AUTH_PASSWORD_VERSION'] ?? ''), (string)($_SESSION['AUTHORIZATION_VERSION'] ?? ''));
     $id = match ($kind) {
         'level' => SchoolStructureCreate::level($conn, $actor, $input['name'], $input['sort_order']),
         'grade' => SchoolStructureCreate::grade($conn, $actor, $input['parent_id'], $input['name'], $input['sort_order']),

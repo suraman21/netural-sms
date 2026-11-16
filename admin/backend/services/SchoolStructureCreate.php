@@ -9,19 +9,21 @@ final class SchoolStructureCreateOutcomeUnknown extends \RuntimeException {}
 
 final class SchoolStructureActor
 {
-    private function __construct(private int $id, private string $role, private string $passwordVersion) {}
+    private function __construct(private int $id, private string $role, private string $passwordVersion, private string $authorizationVersion) {}
     /** Values must come from a freshly authenticated, revalidated server session. */
-    public static function fromTrustedSession(int $id, string $role, string $passwordVersion): self
+    public static function fromTrustedSession(int $id, string $role, string $passwordVersion, string $authorizationVersion): self
     {
         if ($id <= 0 || !in_array($role, ['super_admin', 'school_admin', 'edu_dept'], true)
-            || !preg_match('/^[0-9a-f]{64}$/D', $passwordVersion)) {
+            || !preg_match('/^[0-9a-f]{64}$/D', $passwordVersion)
+            || !preg_match('/^[1-9][0-9]{0,19}$/D', $authorizationVersion)) {
             throw new \DomainException('Structure management authorization required.');
         }
-        return new self($id, $role, $passwordVersion);
+        return new self($id, $role, $passwordVersion, $authorizationVersion);
     }
     public function id(): int { return $this->id; }
     public function role(): string { return $this->role; }
     public function passwordVersion(): string { return $this->passwordVersion; }
+    public function authorizationVersion(): string { return $this->authorizationVersion; }
 }
 
 final class SchoolStructureCreate
@@ -132,7 +134,7 @@ final class SchoolStructureCreate
     /** Must run under the owned transaction before any structure write. */
     private static function revalidateActor(\mysqli $db, SchoolStructureActor $actor): void
     {
-        $stmt = $db->prepare('SELECT role, is_active, password_hash FROM users WHERE id=? FOR UPDATE');
+        $stmt = $db->prepare('SELECT role, is_active, password_hash, authorization_version FROM users WHERE id=? FOR UPDATE');
         if (!$stmt) throw new \RuntimeException('Account verification unavailable.');
         try {
             $id = $actor->id();
@@ -141,6 +143,7 @@ final class SchoolStructureCreate
             if (!$result) throw new \RuntimeException('Account verification unavailable.');
             try { $row = $result->fetch_assoc(); } finally { $result->free(); }
             if (!$row || (int)$row['is_active'] !== 1 || $row['role'] !== $actor->role()
+                || (string)$row['authorization_version'] !== $actor->authorizationVersion()
                 || !is_string($row['password_hash'])
                 || !hash_equals($actor->passwordVersion(), hash('sha256', $row['password_hash']))) {
                 throw new \DomainException('Structure management authorization no longer valid.');

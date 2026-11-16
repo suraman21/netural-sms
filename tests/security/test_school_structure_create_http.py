@@ -72,6 +72,17 @@ class StructureCreateHttp(unittest.TestCase):
             self.assertEqual(int(db("SELECT COUNT(*) FROM school_education_levels WHERE name='Missing audit fixture'")), 0)
         finally:
             db('RENAME TABLE fixture_audit_hidden TO school_academic_structure_audit')
+        # A version-only revocation denies the cached session without changing role or password.
+        db("UPDATE users SET authorization_version=authorization_version+1 WHERE username='audit_edu'")
+        self.assertIn(post(edu, {'kind':'level','name':'Revoked version fixture','sort_order':0})[0], (401,403))
+        self.assertEqual(int(db("SELECT COUNT(*) FROM school_education_levels WHERE name='Revoked version fixture'")), 0)
+        self.assertEqual(int(db('SELECT COUNT(*) FROM school_academic_structure_audit')), initial + 3)
+        edu = WebSession('edu_dept')  # fresh login captures the current version
+        status, result = post(edu, {'kind':'level','name':'Fresh login fixture','sort_order':0})
+        self.assertEqual(status, 201, result)
+        fresh = result['id']
+        db(f"DELETE FROM school_academic_structure_audit WHERE entity_kind='level' AND entity_id={fresh}")
+        db(f'DELETE FROM school_education_levels WHERE id={fresh}')
         # Account is changed only in the disposable fixture; cached session must not authorize writes.
         try:
             db("UPDATE users SET is_active=0 WHERE username='audit_edu'")
@@ -85,3 +96,12 @@ class StructureCreateHttp(unittest.TestCase):
         db(f'DELETE FROM school_grade_sections WHERE id={section}')
         db(f'DELETE FROM school_grades WHERE id={grade}')
         db(f'DELETE FROM school_education_levels WHERE id={level}')
+        # Legacy-login fallback: only this disposable fixture drops its version column.
+        db('ALTER TABLE users DROP COLUMN authorization_version')
+        try:
+            legacy = WebSession('edu_dept')
+            status, _ = post(legacy, {'kind':'level','name':'Legacy no version','sort_order':0})
+            self.assertEqual(status, 403)
+            self.assertEqual(int(db("SELECT COUNT(*) FROM school_education_levels WHERE name='Legacy no version'")), 0)
+        finally:
+            db('ALTER TABLE users ADD COLUMN authorization_version BIGINT UNSIGNED NOT NULL DEFAULT 1')
