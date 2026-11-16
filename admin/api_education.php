@@ -287,14 +287,35 @@ function __edu_dc_count(mysqli $conn, string $sql, array $ids): int
     }
 }
 
+/** Required evidence for semester deletion; failures must never mean zero. */
+function __edu_term_count(mysqli $conn, string $sql, array $ids): int
+{
+    $st = $conn->prepare($sql);
+    if (!$st) throw new RuntimeException('Semester usage query unavailable.');
+    try {
+        if (!$st->bind_param(str_repeat('i', count($ids)), ...$ids) || !$st->execute()) {
+            throw new RuntimeException('Semester usage query failed.');
+        }
+        $result = $st->get_result();
+        if (!$result) throw new RuntimeException('Semester usage result unavailable.');
+        try { $row = $result->fetch_row(); } finally { $result->free(); }
+        if (!is_array($row) || !isset($row[0]) || !is_numeric($row[0])) {
+            throw new RuntimeException('Semester usage result invalid.');
+        }
+        return (int)$row[0];
+    } finally {
+        $st->close();
+    }
+}
+
 /** What deleting a semester would touch (F1 guard + dialog counts). */
 function __edu_term_usage(mysqli $conn, int $tid): array
 {
     return [
-        'assessments'       => __edu_dc_count($conn, "SELECT COUNT(*) FROM assessments WHERE term_id = ?", [$tid]),
-        'grades'            => __edu_dc_count($conn, "SELECT COUNT(*) FROM academic_records WHERE term_id = ? OR assessment_id IN (SELECT id FROM assessments WHERE term_id = ?)", [$tid, $tid]),
-        'grade_submissions' => __edu_dc_count($conn, "SELECT COUNT(*) FROM grade_submissions WHERE term_id = ?", [$tid]),
-        'class_subjects'    => __edu_dc_count($conn, "SELECT COUNT(*) FROM class_subjects WHERE term_id = ?", [$tid]),
+        'assessments'       => __edu_term_count($conn, "SELECT COUNT(*) FROM assessments WHERE term_id = ?", [$tid]),
+        'grades'            => __edu_term_count($conn, "SELECT COUNT(*) FROM academic_records WHERE term_id = ? OR assessment_id IN (SELECT id FROM assessments WHERE term_id = ?)", [$tid, $tid]),
+        'grade_submissions' => __edu_term_count($conn, "SELECT COUNT(*) FROM grade_submissions WHERE term_id = ?", [$tid]),
+        'class_subjects'    => __edu_term_count($conn, "SELECT COUNT(*) FROM class_subjects WHERE term_id = ?", [$tid]),
     ];
 }
 
@@ -326,7 +347,14 @@ switch ($action) {
     case 'impact_delete_term':
         $tid = (int)($_GET['term_id'] ?? $_POST['term_id'] ?? 0);
         if (!$tid) { echo json_encode(['status' => 'error', 'message' => 'Term ID required']); break; }
-        $u = __edu_term_usage($conn, $tid);
+        try {
+            $u = __edu_term_usage($conn, $tid);
+        } catch (Throwable $e) {
+            error_log('Semester impact verification failed: ' . $e->getMessage());
+            http_response_code(503);
+            echo json_encode(['status'=>'error','message'=>'Cannot verify semester usage. Contact an administrator before deleting it.']);
+            break;
+        }
         echo json_encode([
             'status'  => 'success',
             'blocked' => ($u['assessments'] + $u['grades'] + $u['grade_submissions']) > 0,
@@ -1725,24 +1753,43 @@ switch ($action) {
     case 'delete_term':
         $tid = (int)($_POST['term_id'] ?? 0);
         if (!$tid) { echo json_encode(['status'=>'error','message'=>'Term ID required']); exit; }
-        // STEP 6 — protect historical data: semesters of a CLOSED (past) year
-        // cannot be deleted.
+        // A missing or unreadable year must not bypass historical protection.
         try {
             $chk = $conn->prepare("SELECT ay.status FROM academic_terms t JOIN academic_years ay ON ay.id=t.academic_year_id WHERE t.id=?");
-            if ($chk) {
-                $chk->bind_param('i', $tid);
-                $chk->execute();
-                $row = $chk->get_result()->fetch_assoc();
-                $chk->close();
-                if ($row && ($row['status'] ?? '') === 'closed') {
-                    echo json_encode(['status'=>'error','message'=>'This semester belongs to a closed (past) year and is protected. It cannot be deleted.']);
-                    break;
-                }
+            if (!$chk) throw new RuntimeException('Semester status query unavailable.');
+            try {
+                if (!$chk->bind_param('i', $tid) || !$chk->execute()) throw new RuntimeException('Semester status query failed.');
+                $result = $chk->get_result();
+                if (!$result) throw new RuntimeException('Semester status result unavailable.');
+                try { $row = $result->fetch_assoc(); } finally { $result->free(); }
+            } finally { $chk->close(); }
+            if (!$row) {
+                echo json_encode(['status'=>'error','message'=>'Semester or its academic year was not found.']);
+                break;
             }
-        } catch (Exception $e) { /* status column may not exist yet — allow */ }
+            if (!in_array($row['status'] ?? null, ['active', 'upcoming', 'closed'], true)) {
+                throw new RuntimeException('Unrecognized academic year status.');
+            }
+            if ($row['status'] === 'closed') {
+                echo json_encode(['status'=>'error','message'=>'This semester belongs to a closed (past) year and is protected. It cannot be deleted.']);
+                break;
+            }
+        } catch (Throwable $e) {
+            error_log('Semester status verification failed: ' . $e->getMessage());
+            http_response_code(503);
+            echo json_encode(['status'=>'error','message'=>'Cannot verify the academic year. Contact an administrator before deleting this semester.']);
+            break;
+        }
         // F1 (2026-10-21): a semester that already holds assessments, grades or
         // mark lists is protected — deleting it would orphan that history.
-        $__use = __edu_term_usage($conn, $tid);
+        try {
+            $__use = __edu_term_usage($conn, $tid);
+        } catch (Throwable $e) {
+            error_log('Semester deletion verification failed: ' . $e->getMessage());
+            http_response_code(503);
+            echo json_encode(['status'=>'error','message'=>'Cannot verify semester usage. Contact an administrator before deleting it.']);
+            break;
+        }
         if (($__use['assessments'] + $__use['grades'] + $__use['grade_submissions']) > 0) {
             echo json_encode([
                 'status'  => 'error',

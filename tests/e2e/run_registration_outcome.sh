@@ -123,9 +123,17 @@ assert s.count(old)==1
 s=s.replace(old, "if (($_POST['fixture_after_write_failure'] ?? '') === '1') throw new RuntimeException('Fixture post-write failure');\n    "+old)
 p.write_text(s)
 INJECT
-cp "$REPO/tests/security/test_registration_upload_outcome_http.py" "$REPO/tests/security/test_registration_response_loss_ui.py" "$D/project/tests/security/"
-export SSMS_REGISTRATION_FAULT_FIXTURE=1
-python3 -m pytest tests/security/test_registration_upload_outcome_http.py tests/security/test_registration_response_loss_ui.py -q -rs > "$D/regtest.log" 2>&1 || { cat "$D/regtest.log"; tail -40 "$D/web.log"; exit 1; }
+# Simulate status-query failure solely in the disposable copy.
+python3 - "$D/project/admin/api_education.php" <<'INJECT'
+import pathlib,sys
+p=pathlib.Path(sys.argv[1]); s=p.read_text()
+old='            $chk = $conn->prepare("SELECT ay.status FROM academic_terms t JOIN academic_years ay ON ay.id=t.academic_year_id WHERE t.id=?");'
+assert s.count(old)==1
+p.write_text(s.replace(old, "            if (($_POST['fixture_status_failure'] ?? '') === '1') throw new RuntimeException('Fixture status failure');\n"+old))
+INJECT
+cp "$REPO/tests/security/test_registration_upload_outcome_http.py" "$REPO/tests/security/test_registration_response_loss_ui.py" "$REPO/tests/security/test_term_delete_verification_http.py" "$D/project/tests/security/"
+export SSMS_REGISTRATION_FAULT_FIXTURE=1 SSMS_TERM_GUARD_FIXTURE=1
+python3 -m pytest tests/security/test_registration_upload_outcome_http.py tests/security/test_registration_response_loss_ui.py tests/security/test_term_delete_verification_http.py -q -rs > "$D/regtest.log" 2>&1 || { cat "$D/regtest.log"; tail -40 "$D/web.log"; exit 1; }
 cat "$D/regtest.log"
 if grep -Eq '[0-9]+ skipped' "$D/regtest.log"; then exit 1; fi
 # Fail if the live-test class was not executed, rather than accepting skips.
