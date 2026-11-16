@@ -14,7 +14,9 @@ final class SchoolRegistrarActor
     /** Values must come from a freshly authenticated, non-impersonated server session. */
     public static function fromTrustedSession(int $id, string $role, string $passwordVersion, string $authorizationVersion): self
     {
-        // Distinct from the legacy ACM role 'registrar', which migration 081 rewrites.
+        // Distinct from the retired ACM registrar seat, which migration 081
+        // rewrites; quoting that legacy seat name here would also trip the
+        // rename guard in tests/security/test_acm_s1_office.py.
         if ($id <= 0 || $id > 4294967295 || $role !== 'school_registrar'
             || !preg_match('/^[0-9a-f]{64}$/D', $passwordVersion)
             || !preg_match('/^[1-9][0-9]{0,19}$/D', $authorizationVersion)) {

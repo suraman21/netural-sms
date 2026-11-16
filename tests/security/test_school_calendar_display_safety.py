@@ -80,7 +80,9 @@ document.title=initialized&&converted&&safe&&payload?'PASS':'FAIL';
             p = subprocess.run([CHROME, '--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
                                 '--host-resolver-rules=MAP * ~NOTFOUND','--user-data-dir='+tmp+'/profile',
                                 '--virtual-time-budget=2500','--dump-dom',path.as_uri()],
-                               capture_output=True,text=True,timeout=30,env=dict(os.environ,TZ='Africa/Addis_Ababa'))
+                               # 90s, not 30s: the 30s budget timed out on the CI runner
+                               # (2026-11-16 run, 30.06s) before Chromium finished --headless.
+                               capture_output=True,text=True,timeout=90,env=dict(os.environ,TZ='Africa/Addis_Ababa'))
             self.assertEqual(p.returncode, 0, p.stderr[-1200:])
             self.assertIsNotNone(re.search(r'<title>PASS</title>',p.stdout),p.stdout[-3000:])
 
