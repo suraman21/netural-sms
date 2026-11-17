@@ -1,6 +1,8 @@
-# FKSS — Sunday School Management System
+# Arkeo School — School Management System
 
-FKSS is the management system of the Felege Kidusan Sunday School. It replaces spreadsheets and paper records for member registration, education (classes, assessments, report cards, timetable, attendance), the Mezmur (hymn) ministry, communications and reporting. Staff use a PHP web application; teachers and department staff also use an Android app built with Flutter that works offline and synchronises with the server.
+Arkeo School (SMS) is the management system for an educational institution: KG through Grade 12, and courses, colleges and degree or diploma programmes alongside them. An installation configures the levels it runs; a KG–12 institution follows the ordinary Ethiopian school workflow, while a college enrols a student in a programme of fixed duration ending in a certificate, a diploma or a degree. It replaces spreadsheets and paper records for student registration, education (classes, assessments, report cards, timetable, attendance), communications and reporting. Staff use a PHP web application; teachers and department staff also use an Android app built with Flutter that works offline and synchronises with the server.
+
+> **This repository is a fresh clone**, not the Felege Kidusan deployment. The Sunday-school domain it was forked from is being removed in the open, phase by phase — see [SMS-TRANSFORMATION-TRACKER.md](../SMS-TRANSFORMATION-TRACKER.md) and the ADRs. Nothing in this repository reads or writes another installation's data.
 
 > **Source baseline (reviewed 2026-10-28):** development main `7209278`. All eight baseline checks passed; the earlier 79-skip failure is resolved. A later change needs its own checks. See [Testing and CI](docs/DEVELOPMENT_AND_TESTING.md#3-current-ci-status).
 > - Delivery is development main → development-server update → owner acceptance → separately authorized production promotion. A merge does not prove deployment. See [Operations](docs/OPERATIONS.md).

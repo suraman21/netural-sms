@@ -37,6 +37,8 @@ Records 0001–0020 were written on 2026-10-22 from the code, the commit history
 
 | [ADR-0025](0025-institution-levels-and-ethiopian-workflow.md) | An institution configures its levels; KG–12 follows the Ethiopian workflow, a college runs awards | Accepted — owner decision, resolves ADR-0022 D-6 | 2026-11-16 |
 
+| [ADR-0026](0026-product-name-and-calendar-default.md) | The product is **Arkeo School**; a new installation defaults to the Ethiopian calendar, chosen once by the super admin | Accepted — owner decision, resolves ADR-0022 D-2 and D-4 | 2026-11-16 |
+
 Supersession is recorded in three places and must stay consistent: the status column above, a dated blockquote in the superseded record, and the new record's decision it replaces. Two records are only *partially* superseded (ADR-0008 calendar scope, ADR-0009 attendance ownership) — read the blockquote before citing them as dead.
 
 ## Writing a new ADR
