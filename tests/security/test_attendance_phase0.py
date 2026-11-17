@@ -495,13 +495,22 @@ class Phase0LiveGuards(unittest.TestCase):
         self.assertNotIn('<option value="warning"', page)
 
     # ── calendar ─────────────────────────────────────────────────────
-    def test_super_admin_settings_has_no_calendar_switch(self):
+    def test_super_admin_settings_has_no_inline_calendar_switch(self):
+        """ADR-0026 P2: the dashboard links to setup; it does not become the switch.
+
+        The settings page must not grow a Gregorian radio or a save handler — the
+        one-time choice belongs on admin/calendar_setup.php, behind the audited
+        service. What changed when the owner decided the super admin sets the
+        calendar is the copy: the dashboard no longer claims the calendar is
+        "not configurable", it points at the page that configures it.
+        """
         page = self.sessions["super_admin"].get("/admin/dashboard.php?section=settings")[1].decode(
             "utf-8", "replace"
         )
         self.assertNotIn("saveCalendarMode", page)
         self.assertNotIn('value="gregorian"', page)
-        self.assertIn("not configurable", page)
+        self.assertIn("calendar_setup.php", page)
+        self.assertIn("sets it once", page)
 
     def test_save_calendar_mode_is_not_an_action(self):
         status, data = self.sessions["super_admin"].post_form(
