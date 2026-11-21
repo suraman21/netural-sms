@@ -116,11 +116,26 @@ class Phase0StaticGuards(unittest.TestCase):
         self.assertIn("['active','inactive']", body)
         self.assertIn("csrf_token", body)
 
-    def test_calendar_mode_is_forced_ethiopian(self):
+    def test_calendar_mode_defaults_to_ethiopian_and_only_setup_can_change_it(self):
+        """ADR-0026 P2 refines the October rule rather than deleting it.
+
+        The October 2026 requirement was "Ethiopian, mandatory system-wide",
+        hardened against a stale dept_settings row or a session value flipping
+        every date in the UI. The owner has since said the default stays
+        Ethiopian but the super admin chooses at setup, so the invariant is now:
+        Ethiopian unless the one audited setup row says otherwise — and never
+        because of a stale row or session value.
+        """
         src = read("admin/backend/calendar_system.php")
         fn = code_lines(src[src.index("function wbws_get_calendar_mode") : src.index("function wbws_format_date")])
+        # The stale sources stay dead: this is what the October fix was for.
         self.assertNotIn("dept_settings", fn)
+        self.assertNotIn("$_SESSION['wbws_calendar_mode'] ==", fn)
+        # Ethiopian remains the fallback the function ends on.
         self.assertIn("return 'ethiopian';", fn)
+        # The only input is the configured row, from the one setup table.
+        self.assertIn("school_calendar_configuration", fn)
+        # The super admin's dashboard still cannot switch it inline.
         sa = read("admin/dashboards/super-admin.php")
         self.assertNotIn("saveCalendarMode", sa)
         self.assertNotIn('value="gregorian"', sa)
@@ -480,13 +495,22 @@ class Phase0LiveGuards(unittest.TestCase):
         self.assertNotIn('<option value="warning"', page)
 
     # ── calendar ─────────────────────────────────────────────────────
-    def test_super_admin_settings_has_no_calendar_switch(self):
+    def test_super_admin_settings_has_no_inline_calendar_switch(self):
+        """ADR-0026 P2: the dashboard links to setup; it does not become the switch.
+
+        The settings page must not grow a Gregorian radio or a save handler — the
+        one-time choice belongs on admin/calendar_setup.php, behind the audited
+        service. What changed when the owner decided the super admin sets the
+        calendar is the copy: the dashboard no longer claims the calendar is
+        "not configurable", it points at the page that configures it.
+        """
         page = self.sessions["super_admin"].get("/admin/dashboard.php?section=settings")[1].decode(
             "utf-8", "replace"
         )
         self.assertNotIn("saveCalendarMode", page)
         self.assertNotIn('value="gregorian"', page)
-        self.assertIn("not configurable", page)
+        self.assertIn("calendar_setup.php", page)
+        self.assertIn("sets it once", page)
 
     def test_save_calendar_mode_is_not_an_action(self):
         status, data = self.sessions["super_admin"].post_form(

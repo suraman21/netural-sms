@@ -26,14 +26,18 @@ class MobileTargetEnvironmentGuard(unittest.TestCase):
     def test_production_api_and_identity(self):
         config = read("lib/utils/config.dart")
         self.assertIn(f"static const String apiBaseUrl = '{PROD_API}';", config)
-        self.assertIn("static const String appName = 'FKSS';", config)
+        # The app's display name is the product name (ADR-0026 P1). What this
+        # guard actually protects — the production API host, the package id and
+        # the absence of a beta flavour — is asserted around this line and is
+        # untouched by a rename.
+        self.assertIn("static const String appName = 'Arkeo School';", config)
         self.assertNotIn("arkeonethiopia.com/api", config)
         self.assertNotIn("isBeta", config)
         gradle = read("android/app/build.gradle")
         self.assertIn(f'applicationId = "{PROD_PACKAGE}"', gradle)
         self.assertNotIn(".fkss.beta", gradle)
         manifest = read("android/app/src/main/AndroidManifest.xml")
-        self.assertIn('android:label="FKSS"', manifest)
+        self.assertIn('android:label="Arkeo School"', manifest)
         self.assertNotIn("Beta", manifest)
         self.assertNotIn("isBeta", read("lib/screens/auth/login_screen.dart"))
 

@@ -4,6 +4,10 @@
 |---|---|---|
 | Accepted — owner scope decision (option C), with implementation phases reviewed separately | 2026-11-16 | Product owner |
 
+> **2026-11-16 — D-2 and D-4 resolved:** the product is **Arkeo School** for this development line, and a new installation defaults to the **Ethiopian** calendar with a one-time choice by the super admin. [ADR-0026](0026-product-name-and-calendar-default.md) is the record. **D8 is reaffirmed, not lifted:** `API_NAME`, `EXPORT_PREFIX`, PWA cache names, `applicationId` and `apiBaseUrl` stay frozen even where they still read `SSMS` — a package-level rename is a new app identity, not a branding change.
+>
+> **2026-11-16 — D-5 resolved, and D3 narrowed:** the owner has decided there is no age group and no age-based section in this product. [ADR-0023](0023-no-age-group-or-age-section.md) is the record: age is a date of birth and never a classification, `MemberCategory` is deleted rather than shimmed, and D3's "legacy input mapped once" path is closed — legacy rows stay readable but nothing maps them to grades.
+
 > Unlike ADRs 0001–0020, which were written from a finished codebase, this record was written **before** the work. Each clause therefore names the phase that implements it and the evidence that exists today, so a future reader can check whether the claim became true. Clauses that depend on an unanswered owner decision are listed under [Deferred decisions](#deferred-decisions) and are **not** decided here.
 
 ## Context
@@ -75,8 +79,8 @@ These are owner decisions, not engineering choices. They are deliberately **not*
 
 | # | Question | Blocks |
 |---|---|---|
-| D-2 | What is the product called? (name, tagline, Amharic name, app label, PWA name) | Phase 2 |
-| D-4 | Which calendar mode does a **new** installation default to? (the existing deployment stays Ethiopian) | Phase 6 |
+| D-2 | What is the product called? (name, tagline, Amharic name, app label, PWA name) | **CLOSED** — ADR-0026: *Arkeo School* |
+| D-4 | Which calendar mode does a **new** installation default to? (the existing deployment stays Ethiopian) | **CLOSED** — ADR-0026: Ethiopian by default, super admin sets it once |
 | D-5 | How are existing A/B/C and `age_group` rows mapped onto grades and sections — by age, by current class, or by a review queue? | Phase 3 |
 | D-6 | Is single-school tenancy a permanent product constraint, or must the schema carry a school/organisation key? | Any multi-school claim |
 | D-7 | Is dropping the retired church and Mezmur tables authorised, and under what backup evidence? | Phase 7 |

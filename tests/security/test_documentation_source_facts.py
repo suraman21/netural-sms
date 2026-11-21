@@ -160,3 +160,73 @@ def test_general_school_decision_record_exists_and_supersedes_explicitly():
     index = text("docs/adr/README.md")
     assert "0022-general-school-domain.md" in index
     assert "Superseded by ADR-0022" in index
+
+
+def test_age_group_removal_decision_is_recorded_and_bounded():
+    """ADR-0023 removes the age-group concept; pin what that must keep true.
+
+    The risk this guards against is a later "compatibility" shim: an age band
+    reintroduced under a new name, or a migration that quietly maps legacy
+    values onto grades (which is exactly what the decision forbids).
+    """
+    decision = text("docs/adr/0023-no-age-group-or-age-section.md")
+    for clause in ("A1", "A2", "A3", "A4", "A5", "A6"):
+        assert f"**{clause} —" in decision, clause
+    assert "is deleted, not refactored" in decision
+    assert "No rule may assign a member to a class, section, grade or category from it" in decision
+    assert "read-only, never migrated" in decision
+    # The ADR index navigates to it and ADR-0022 points at it as the D-5 answer.
+    assert "0023-no-age-group-or-age-section.md" in text("docs/adr/README.md")
+    assert "D-5 resolved" in text("docs/adr/0022-general-school-domain.md")
+    # The concept still exists in code today (phase 3 has not run). If this
+    # fails, phase 3 landed and this test should assert the opposite.
+    assert (ROOT / "admin/backend/services/MemberCategory.php").is_file()
+
+
+def test_ethiopian_ladder_is_a_seed_not_a_migration():
+    """A migration must not invent an institution's curriculum (ADR-0025 I1).
+
+    The first draft of sql/103 seeded the ladder on an empty install and broke
+    test_school_structure_read, which expects an unconfigured installation to
+    report no levels. Structure and content are pinned apart here so the two
+    cannot drift back together.
+    """
+    migration = text("sql/103_institution_levels_and_exam_gates.sql")
+    assert "school_exam_gates" in migration
+    assert "INSERT" not in migration.upper(), "sql/103 must change structure only"
+    assert "school_education_levels" in migration
+
+    seed_path = ROOT / "sql/seeds/ethiopian_ladder.sql"
+    assert seed_path.exists(), "the ladder must ship as an opt-in seed"
+    seed = seed_path.read_text(encoding="utf-8")
+    assert "NOT A MIGRATION" in seed
+    assert seed.count("WHERE NOT EXISTS (SELECT 1 FROM `school_education_levels`)") == 1
+    # The guard is the whole table, so a configured institution is untouched and
+    # a deleted level is never resurrected.
+    assert "WHERE NOT EXISTS (SELECT 1 FROM `school_education_levels` WHERE" not in seed
+    # It must not be picked up by the migration inventory glob (sql/NNN_*.sql).
+    assert all("seeds" not in p.parts for p in (ROOT / "sql").glob("[0-9][0-9][0-9]_*.sql"))
+    assert [p.name for p in (ROOT / "sql" / "seeds").glob("*.sql")] == ["ethiopian_ladder.sql"]
+
+
+def test_master_plan_inventory_matches_the_tree():
+    """The master plan's document inventory must not drift from reality.
+
+    It is the map people will consult when asking "what is left", so a stale map
+    is worse than no map: it makes a gap look covered. Both directions are
+    checked - a missing file and an invented one are the same bug.
+    """
+    plan = text("docs/MASTER_PLAN.md")
+    on_disk = sorted(
+        p.name for p in (ROOT / "docs" / "adr").glob("[0-9][0-9][0-9][0-9]-*.md")
+    )
+    listed = sorted(re.findall(r"docs/adr/(\d{4}-[a-z0-9-]+\.md)", plan))
+    assert listed == on_disk, (
+        f"missing from the plan: {sorted(set(on_disk) - set(listed))}; "
+        f"invented by the plan: {sorted(set(listed) - set(on_disk))}"
+    )
+    # Every ADR must carry a status the index can state, and the plan must name
+    # the next free migration number correctly (it is what a contributor reads).
+    migrations = sorted((ROOT / "sql").glob("[0-9][0-9][0-9]_*.sql"))
+    assert f"**{migrations[-1].name.split('_')[0]}" not in plan  # sanity: no stale pin
+    assert "104" in plan, "the plan must say which migration number is next"

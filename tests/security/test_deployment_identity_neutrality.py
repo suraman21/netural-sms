@@ -181,15 +181,15 @@ def test_neutral_profile_resolves_without_church_terms():
 
     source = (ROOT / "school_config.php").read_text(encoding="utf-8")
     neutral = source
+    # The shipped profile already names the product (Arkeo School, ADR-0026) and
+    # is neutral in tagline and type, so a neutral re-brand only has to move the
+    # name fields; the parish block below is what still carries church identity.
     for old, new in (
-        ("define('SCHOOL_NAME', 'FKSS School Management System');",
+        ("define('SCHOOL_NAME', 'Arkeo School');",
          "define('SCHOOL_NAME', 'Green Valley Academy');"),
-        ("define('SCHOOL_NAME_SHORT', 'FKSS');", "define('SCHOOL_NAME_SHORT', 'GVA');"),
-        ("define('SCHOOL_TRANSLATION_EN', 'Spring of Saints');",
+        ("define('SCHOOL_NAME_SHORT', 'Arkeo');", "define('SCHOOL_NAME_SHORT', 'GVA');"),
+        ("define('SCHOOL_TRANSLATION_EN', 'Arkeo School');",
          "define('SCHOOL_TRANSLATION_EN', 'Green Valley');"),
-        ("define('SCHOOL_TAGLINE', 'Sunday School Management System');",
-         "define('SCHOOL_TAGLINE', 'School Management System');"),
-        ("define('SCHOOL_TYPE', 'Sunday School');", "define('SCHOOL_TYPE', 'School');"),
     ):
         assert neutral.count(old) == 1, old
         neutral = neutral.replace(old, new)
