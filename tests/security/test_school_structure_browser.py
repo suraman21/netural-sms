@@ -41,10 +41,16 @@ document.title=safe&&saved&&blocked&&noRetry&&reviewed?'PASS':'FAIL';
         with tempfile.TemporaryDirectory(prefix='structure-browser-') as tmp:
             path = Path(tmp) / 'fixture.html'
             path.write_text(html, encoding='utf-8')
+            # 30s was not a margin, it was the observed runtime: CI measured
+            # 30.05s on a loaded runner (the slowest test in the suite), so the
+            # test failed on wall-clock, not on behaviour, and three separate CI
+            # runs died here while proving nothing about the UI. --virtual-time-
+            # budget already bounds the page's own execution; this bounds the
+            # browser's startup, which is what actually varies on a shared runner.
             result = subprocess.run([CHROMIUM, '--headless', '--no-sandbox', '--disable-gpu',
                                      '--disable-dev-shm-usage', '--host-resolver-rules=MAP * ~NOTFOUND',
                                      '--user-data-dir='+tmp+'/profile', '--virtual-time-budget=2000',
-                                     '--dump-dom', path.as_uri()], capture_output=True, text=True, timeout=30,
+                                     '--dump-dom', path.as_uri()], capture_output=True, text=True, timeout=120,
                                     env=dict(os.environ))
             self.assertEqual(result.returncode, 0, result.stderr[-1200:])
             self.assertIsNotNone(re.search(r'<title>PASS</title>', result.stdout), result.stdout[-2000:])
