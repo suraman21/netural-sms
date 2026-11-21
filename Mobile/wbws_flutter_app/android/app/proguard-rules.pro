@@ -46,5 +46,5 @@
 # BackgroundSyncProducer is reached from it and from the platform channel, so
 # R8 must not rename or remove either. The release build runs minifyEnabled +
 # shrinkResources, so without these an alarm would fire into a stripped class.
--keep class com.arkeonethiopia.fkss.BackgroundSyncReceiver { *; }
--keep class com.arkeonethiopia.fkss.BackgroundSyncProducer { *; }
+-keep class com.arkeonethiopia.arkeoschool.BackgroundSyncReceiver { *; }
+-keep class com.arkeonethiopia.arkeoschool.BackgroundSyncProducer { *; }

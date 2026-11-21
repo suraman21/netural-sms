@@ -35,7 +35,7 @@ class ApkManifestTests(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def expect(self, path, package="com.arkeonethiopia.fkss", name="1.7.4", code=41):
+    def expect(self, path, package="com.arkeonethiopia.arkeoschool", name="1.7.4", code=41):
         self.assertEqual(manifest_of(path), {"package": package, "version_name": name, "version_code": code})
 
     def test_utf16_pool_deflated(self):
@@ -48,8 +48,8 @@ class ApkManifestTests(unittest.TestCase):
         self.expect(write_apk(self.tmp / "c.apk", names_by_resource_id_only=True))
 
     def test_beta_package_and_large_build(self):
-        self.expect(write_apk(self.tmp / "d.apk", "com.arkeonethiopia.fkss.beta", "1.10.0", 1234),
-                    "com.arkeonethiopia.fkss.beta", "1.10.0", 1234)
+        self.expect(write_apk(self.tmp / "d.apk", "com.arkeonethiopia.arkeoschool.beta", "1.10.0", 1234),
+                    "com.arkeonethiopia.arkeoschool.beta", "1.10.0", 1234)
 
     def test_not_a_zip(self):
         p = self.tmp / "e.apk"
@@ -64,7 +64,7 @@ class ApkManifestTests(unittest.TestCase):
 
     def test_corrupt_manifest_and_wrong_root(self):
         self.assertIsNone(manifest_of(write_apk(self.tmp / "g.apk", manifest=b"\x03\x00\x08\x00garbage!")))
-        wrong = axml_manifest("com.arkeonethiopia.fkss", "1.0.0", 1, root_element="application")
+        wrong = axml_manifest("com.arkeonethiopia.arkeoschool", "1.0.0", 1, root_element="application")
         self.assertIsNone(manifest_of(write_apk(self.tmp / "h.apk", manifest=wrong)))
 
     def test_crc_mismatch_is_refused(self):

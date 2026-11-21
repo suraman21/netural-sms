@@ -21,7 +21,7 @@
 
     <application
         android:label="Arkeo School"
-        android:name=".FkssApplication"
+        android:name=".ArkeoApplication"
         android:icon="@mipmap/launcher_icon"
         android:allowBackup="false"
         android:fullBackupContent="false"
@@ -96,7 +96,7 @@
             android:enabled="true"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.arkeonethiopia.fkss.action.BACKGROUND_SYNC" />
+                <action android:name="com.arkeonethiopia.arkeoschool.action.BACKGROUND_SYNC" />
             </intent-filter>
         </receiver>
 

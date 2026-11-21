@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 APP = os.path.join(ROOT, "Mobile", "wbws_flutter_app")
 ANDROID = os.path.join(APP, "android", "app")
 KOTLIN = os.path.join(
-    ANDROID, "src", "main", "kotlin", "com", "arkeonethiopia", "fkss"
+    ANDROID, "src", "main", "kotlin", "com", "arkeonethiopia", "arkeoschool"
 )
 LIB = os.path.join(APP, "lib")
 SERVICES = os.path.join(LIB, "services")
@@ -169,7 +169,7 @@ class ColdStartAndroidContract(unittest.TestCase):
         )
         self.assertIsNotNone(block)
         self.assertIn('android:exported="false"', block.group(0))
-        self.assertIn("com.arkeonethiopia.fkss.action.BACKGROUND_SYNC", block.group(0))
+        self.assertIn("com.arkeonethiopia.arkeoschool.action.BACKGROUND_SYNC", block.group(0))
 
     def test_no_second_scheduler_or_runtime_dependency_was_added(self):
         for forbidden in (

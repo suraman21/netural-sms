@@ -44,7 +44,7 @@ class FailureIntelligencePhase0Tests(unittest.TestCase):
         cls.kotlin_trap = (
             ROOT
             / "Mobile/wbws_flutter_app/android/app/src/main/kotlin"
-            / "com/arkeonethiopia/fkss/FkssApplication.kt"
+            / "com/arkeonethiopia/arkeoschool/ArkeoApplication.kt"
         ).read_text(encoding="utf-8")
 
     # ── F17: the committed parse error must never return ─────────────────────

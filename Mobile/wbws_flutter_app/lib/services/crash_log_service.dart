@@ -13,7 +13,7 @@ import 'device_tier_service.dart';
 /// `databases/fkss_bootstrap_error.log`
 ///   * the Dart bootstrap writer appends `=== <ISO-8601> ===` sections
 ///     (offline storage failures, main.dart);
-///   * `FkssApplication.kt` appends `=== CRASH <epochMillis> ===`
+///   * `ArkeoApplication.kt` appends `=== CRASH <epochMillis> ===`
 ///     sections for uncaught Java/Kotlin exceptions (the launch-crash
 ///     class: UnsatisfiedLinkError and friends).
 ///

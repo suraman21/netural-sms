@@ -24,7 +24,7 @@ void main() {
     test('native crash: class + first-party native frame only', () {
       final sig = buildCrashSignature(entryWith(
         'java.lang.UnsatisfiedLinkError: libflutter.so\n'
-        '\tat com.arkeonethiopia.fkss.FkssApplication.onCreate(FkssApplication.kt:31)\n'
+        '\tat com.arkeonethiopia.arkeoschool.ArkeoApplication.onCreate(ArkeoApplication.kt:31)\n'
         '\tat android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1192)\n'
         '\tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:930)\n',
       ));
@@ -32,7 +32,7 @@ void main() {
       expect(sig!.signatureClass, 'java.lang.UnsatisfiedLinkError');
       // Framework/OS frames are deliberately excluded.
       expect(sig.frames, hasLength(1));
-      expect(sig.frames.first, 'FkssApplication.kt:31 onCreate');
+      expect(sig.frames.first, 'ArkeoApplication.kt:31 onCreate');
     });
 
     test('dart bootstrap: class + first-party package frames', () {
@@ -92,7 +92,7 @@ void main() {
 
     test('deterministic: same entry, same signature', () {
       final body =
-          'java.lang.RuntimeException: boom\n\tat com.arkeonethiopia.fkss.A.b(A.kt:1)\n';
+          'java.lang.RuntimeException: boom\n\tat com.arkeonethiopia.arkeoschool.A.b(A.kt:1)\n';
       final a = buildCrashSignature(entryWith(body));
       final b = buildCrashSignature(entryWith(body));
       expect(a!.signatureClass, b!.signatureClass);

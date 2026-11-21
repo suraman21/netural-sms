@@ -66,7 +66,7 @@ The `teacher` and `attendance_taker` roles are class-scoped, while `school_admin
 
 | Concern | Implementation (original baseline plus dated clarifications above) |
 |---|---|
-| Identity | Package `fkss_app`, source checkpoint 1.7.4+41 at `7209278` (not proof of publication); Android `applicationId com.arkeonethiopia.fkss`. The API base URL is in `lib/utils/config.dart` |
+| Identity | Package `fkss_app`, source checkpoint 1.7.4+41 at `7209278` (not proof of publication); Android `applicationId com.arkeonethiopia.arkeoschool`. The API base URL is in `lib/utils/config.dart` |
 | Local storage | SQLite through `sqflite`, file `wbws_offline_v4.db`, schema version 37 (`localDatabaseSchemaVersion` in `lib/services/local_schema_v34.dart`). Stores private read caches **and unsent durable work**. No application-level SQLCipher encryption; app-private/OS storage protection depends on the device. Owner/scope recovery and explicit discard are documented in [the mobile storage guide](../Mobile/wbws_flutter_app/README.md) |
 | Outboxes | `pending_attendance`, `pending_grades`, `pending_hr`, `pending_mezmur`, `pending_hymn_ops`, `comm_outbox`, `comm_drafts`. Bookkeeping in `sync_attempts`, `sync_state`, `sync_log` |
 | Sync | `AttendanceSyncCoordinator` and `BackgroundSyncCoordinator`, plus an Android background producer (`AndroidBackgroundSyncScheduler`). Writes carry `Idempotency-Key` and client-attempt headers, so the server can replay or deduplicate them (`api/v1/core/middleware.php`) |

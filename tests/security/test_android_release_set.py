@@ -27,7 +27,7 @@ class AndroidReleaseSetTests(unittest.TestCase):
             sha = release.digest(apk)
             # Deliberately fabricated tool records. Actual SDK/ELF/signature
             # checks are exercised separately, with real APKs, by Android CI.
-            report = {'package': 'com.arkeonethiopia.fkss', 'version': '1.7.4', 'version_code': 41,
+            report = {'package': 'com.arkeonethiopia.arkeoschool', 'version': '1.7.4', 'version_code': 41,
                       'min_sdk': 24, 'target_sdk': 36, 'sha256': sha,
                       'native_libraries': {f'lib/{abi}/libapp.so': {'abi': abi} for abi in abis}}
             report_name = kind + '.json'

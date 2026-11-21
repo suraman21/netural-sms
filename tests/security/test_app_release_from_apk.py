@@ -142,7 +142,7 @@ class ReleaseFromApkTests(unittest.TestCase):
         out = self.ok(op="load")
         self.assertEqual((out["rel"]["latest_version"], out["rel"]["latest_build"]), ("1.7.4", 41))
         self.assertEqual(out["rel"]["version_source"], "apk")
-        self.assertEqual(out["rel"]["apk_package"], "com.arkeonethiopia.fkss")
+        self.assertEqual(out["rel"]["apk_package"], "com.arkeonethiopia.arkeoschool")
         self.assertEqual((out["phone"]["latest_version"], out["phone"]["latest_build"]), ("1.7.4", 41))
 
     def test_unreadable_apk_falls_back_to_typed_version(self):
@@ -277,7 +277,7 @@ class ReleaseFromApkTests(unittest.TestCase):
         self.cfg()
         write_apk(self.universal, version_code=41)
         other = write_apk(self.tmp / "other.apk", package="com.example.other", version_code=50)
-        beta = write_apk(self.tmp / "beta.apk", package="com.arkeonethiopia.fkss.beta", version_code=50)
+        beta = write_apk(self.tmp / "beta.apk", package="com.arkeonethiopia.arkeoschool.beta", version_code=50)
         older = write_apk(self.tmp / "older.apk", version_code=40)
         same = write_apk(self.tmp / "same.apk", version_code=41)
         newer = write_apk(self.tmp / "newer.apk", version_code=42)
@@ -358,7 +358,7 @@ class ReleaseFromApkTests(unittest.TestCase):
 
     def test_first_upload_and_switching_apps_after_delete(self):
         self.cfg()
-        beta = write_apk(self.tmp / "beta.apk", package="com.arkeonethiopia.fkss.beta", version_code=5)
+        beta = write_apk(self.tmp / "beta.apk", package="com.arkeonethiopia.arkeoschool.beta", version_code=5)
         self.assertFalse(self.inspect(beta, "armeabi-v7a")["ok"], "split without a universal file")
         self.assertTrue(self.inspect(beta)["ok"], "first upload of any FKSS app")
         write_apk(self.universal, version_code=41)
@@ -426,14 +426,14 @@ class ReleaseDashboardJsTests(unittest.TestCase):
     def test_latest_fields_are_read_only_when_taken_from_the_apk(self):
         out = self.run_js("""
             UI.populateForm({ latest_version: '1.7.4', latest_build: 41, version_source: 'apk',
-                              apk_package: 'com.arkeonethiopia.fkss', min_version: '1.0.0', min_build: 1 });
+                              apk_package: 'com.arkeonethiopia.arkeoschool', min_version: '1.0.0', min_build: 1 });
             const a = [els['cfg-latest-version'].readOnly, els['cfg-latest-build'].readOnly, els['cfg-version-source'].textContent];
             UI.populateForm({ latest_version: '1.6.10', latest_build: 36, version_source: 'config', min_version: '1.0.0', min_build: 1 });
             a.push(els['cfg-latest-version'].readOnly);
             console.log(JSON.stringify(a));
         """)
         self.assertEqual(out[:2], [True, True])
-        self.assertTrue("com.arkeonethiopia.fkss" in out[2])
+        self.assertTrue("com.arkeonethiopia.arkeoschool" in out[2])
         self.assertFalse(out[3])
 
     def test_phone_policy_text(self):

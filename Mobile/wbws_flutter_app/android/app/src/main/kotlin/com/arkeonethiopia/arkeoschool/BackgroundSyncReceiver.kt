@@ -1,4 +1,4 @@
-package com.arkeonethiopia.fkss
+package com.arkeonethiopia.arkeoschool
 
 import android.content.BroadcastReceiver
 import android.content.Context

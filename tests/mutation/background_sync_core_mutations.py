@@ -22,7 +22,7 @@ import subprocess, shutil, os, sys
 ROOT="/home/user/SSMS"
 LIB=os.path.join(ROOT,"Mobile/wbws_flutter_app/lib/services")
 ANDROID=os.path.join(ROOT,"Mobile/wbws_flutter_app/android/app")
-KT=os.path.join(ANDROID,"src/main/kotlin/com/arkeonethiopia/fkss")
+KT=os.path.join(ANDROID,"src/main/kotlin/com/arkeonethiopia/arkeoschool")
 REQUEST_BLOCK=(
   "      unawaited(\n"
   "        _coordinator\n"

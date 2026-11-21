@@ -2,7 +2,7 @@
 Mobile target-environment guard.
 
 `main` (production for BOTH remotes) must always build the PRODUCTION app:
-felegekidusan.com API, package com.arkeonethiopia.fkss, label "FKSS".
+felegekidusan.com API, package com.arkeonethiopia.arkeoschool, label "FKSS".
 The FKSS Beta build lives ONLY on the `dev` branch of suraman21/SSMS
 (owner rule 2026-10-20: beta settings must never sync to the production
 repo). If a dev-branch commit is ever merged into main, this test fails
@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 M = ROOT / "Mobile/wbws_flutter_app"
 
 PROD_API = "https://felegekidusan.com/api/v1"
-PROD_PACKAGE = "com.arkeonethiopia.fkss"
+PROD_PACKAGE = "com.arkeonethiopia.arkeoschool"
 
 
 def read(rel):

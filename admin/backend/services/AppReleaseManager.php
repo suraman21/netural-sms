@@ -18,8 +18,8 @@ final class AppReleaseManager
 
     /** Android packages this server may publish (production app and Beta). */
     public const KNOWN_PACKAGES = [
-        'com.arkeonethiopia.fkss' => 'FKSS',
-        'com.arkeonethiopia.fkss.beta' => 'FKSS Beta',
+        'com.arkeonethiopia.arkeoschool' => 'FKSS',
+        'com.arkeonethiopia.arkeoschool.beta' => 'FKSS Beta',
     ];
 
     /**

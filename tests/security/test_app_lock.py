@@ -33,7 +33,7 @@ class AppLockSecurityTests(unittest.TestCase):
         cls.profile = (M / "lib/screens/profile/profile_screen.dart").read_text(encoding="utf-8")
         cls.logout_dialog = (M / "lib/widgets/session_logout_dialog.dart").read_text(encoding="utf-8")
         cls.main_activity = (
-            M / "android/app/src/main/kotlin/com/arkeonethiopia/fkss/MainActivity.kt"
+            M / "android/app/src/main/kotlin/com/arkeonethiopia/arkeoschool/MainActivity.kt"
         ).read_text(encoding="utf-8")
         cls.manifest = (M / "android/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
         cls.pubspec = (M / "pubspec.yaml").read_text(encoding="utf-8")

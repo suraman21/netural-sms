@@ -1,4 +1,4 @@
-package com.arkeonethiopia.fkss
+package com.arkeonethiopia.arkeoschool
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -111,7 +111,7 @@ object BackgroundSyncProducer {
     private const val SOURCE_BACKGROUND = "background"
 
     /** Explicit action, so the PendingIntent can never match anything else. */
-    const val ACTION_WAKE = "com.arkeonethiopia.fkss.action.BACKGROUND_SYNC"
+    const val ACTION_WAKE = "com.arkeonethiopia.arkeoschool.action.BACKGROUND_SYNC"
 
     /**
      * ONE request code means ONE alarm slot. Combined with FLAG_UPDATE_CURRENT
