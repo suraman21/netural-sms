@@ -1,4 +1,4 @@
-package com.arkeonethiopia.fkss
+package com.arkeonethiopia.arkeoschool
 
 import android.app.Application
 import java.io.File
@@ -25,7 +25,7 @@ import java.io.File
  *  - The trap itself must never throw.
  *  - Log content is stack traces only — no user data, no tokens.
  */
-class FkssApplication : Application() {
+class ArkeoApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()

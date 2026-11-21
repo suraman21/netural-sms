@@ -22,7 +22,7 @@ clients remain compatible.
 
 Built by `buildCrashSignature()` in `lib/services/crash_log_service.dart`
 from the crash log (Dart errors and the native trap in
-`android/.../FkssApplication.kt`, which appends Java/Kotlin throwables to
+`android/.../ArkeoApplication.kt`, which appends Java/Kotlin throwables to
 the same log). The signature is deliberately **bounded and low-cardinality**:
 
 | Part | Contract |

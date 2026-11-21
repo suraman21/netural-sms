@@ -64,7 +64,10 @@ class FeatureGateEnforcementTests(unittest.TestCase):
 
     def test_environment_can_override_boolean_defaults(self):
         for name in [
-            "AI_CHATBOT", "GROUPS", "FINANCE", "MATERIAL", "MEZMUR", "ID_CARDS",
+            # GROUPS was removed with the group subsystem (N-4); the feature no
+            # longer exists, so it must not be a gate any more and there is
+            # nothing to declare a default for.
+            "AI_CHATBOT", "FINANCE", "MATERIAL", "MEZMUR", "ID_CARDS",
             "ATTENDANCE", "GRADES", "REPORTS", "EXPORT_PDF", "MONITOR",
         ]:
             self.assertIn(
@@ -73,6 +76,7 @@ class FeatureGateEnforcementTests(unittest.TestCase):
             )
             self.assertIn(f"'FEATURE_{name}'", self.gate)
         self.assertIn("constant($constant) === true", self.gate)
+        self.assertNotIn("FEATURE_GROUPS", self.gate)
 
     def test_browser_and_rest_routes_enforce_flags_server_side(self):
         self.assertIn("FeatureGate::forAdminRequest", self.access)

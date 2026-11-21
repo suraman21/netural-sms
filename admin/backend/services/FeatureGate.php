@@ -11,7 +11,6 @@ final class FeatureGate
 {
     private const CONSTANTS = [
         'ai' => 'FEATURE_AI_CHATBOT',
-        'groups' => 'FEATURE_GROUPS',
         'finance' => 'FEATURE_FINANCE',
         'material' => 'FEATURE_MATERIAL',
         'mezmur' => 'FEATURE_MEZMUR',
@@ -61,7 +60,7 @@ final class FeatureGate
     public static function mobileCapabilities(): array
     {
         $result = [];
-        foreach (['attendance', 'grades', 'finance', 'material', 'groups', 'id_cards', 'reports', 'mezmur', 'attendance_v2'] as $feature) {
+        foreach (['attendance', 'grades', 'finance', 'material', 'id_cards', 'reports', 'mezmur', 'attendance_v2'] as $feature) {
             $result[$feature] = self::isEnabled($feature);
         }
         return $result;
@@ -82,8 +81,6 @@ final class FeatureGate
             'api_ai.php' => 'ai',
             'ai_assistant.php' => 'ai',
             'ai_chatbot_widget.php' => 'ai',
-            'groups.php' => 'groups',
-            'groups_api.php' => 'groups',
             'api_finance.php' => 'finance',
             'finance.php' => 'finance',
             'finance_dept.php' => 'finance',
@@ -156,7 +153,6 @@ final class FeatureGate
             'grades' => 'grades',
             'finance' => 'finance',
             'material' => 'material',
-            'groups' => 'groups',
             'id_cards' => 'id_cards',
             'reports' => 'reports',
             'warnings' => 'attendance_v2',

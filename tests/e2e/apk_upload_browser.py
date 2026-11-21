@@ -60,7 +60,7 @@ def fixture(home: Path, size_mib: int):
     apk = home / 'large.apk'
     with zipfile.ZipFile(apk, 'w', zipfile.ZIP_STORED) as z:
         z.writestr('META-INF/MANIFEST.MF', 'Manifest-Version: 1.0\n')
-        z.writestr('AndroidManifest.xml', axml_manifest('com.arkeonethiopia.fkss', '1.7.4', 41))
+        z.writestr('AndroidManifest.xml', axml_manifest('com.arkeonethiopia.arkeoschool', '1.7.4', 41))
         for name, head in native_headers():
             z.writestr(name, head)
         with z.open('classes.dex', 'w') as f:

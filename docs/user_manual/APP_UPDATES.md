@@ -88,6 +88,6 @@ Disabled controls prevent conflicting operations; do not interpret them as a com
 - [update_banner.dart](../../Mobile/wbws_flutter_app/lib/screens/update/update_banner.dart): optional reminder/update/dismiss behavior.
 - [update_screen.dart](../../Mobile/wbws_flutter_app/lib/screens/update/update_screen.dart): shared route, status/controls, required gate and progress.
 - [app_update_service.dart](../../Mobile/wbws_flutter_app/lib/services/app_update_service.dart): `check`, `downloadApk`, `_download`, `_verifyFile`, `_requireCurrentDownload`, `installReadyApk` and native calls.
-- [MainActivity.kt](../../Mobile/wbws_flutter_app/android/app/src/main/kotlin/com/arkeonethiopia/fkss/MainActivity.kt): Android install permission/settings/installer bridge.
+- [MainActivity.kt](../../Mobile/wbws_flutter_app/android/app/src/main/kotlin/com/arkeonethiopia/arkeoschool/MainActivity.kt): Android install permission/settings/installer bridge.
 
 The server's release policy, uploaded artifact, device signer, actual installation and accessibility on a real phone need separate evidence. See [release operations](../OPERATIONS.md#5-mobile-release) and [manual coverage](COVERAGE.md).

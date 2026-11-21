@@ -752,13 +752,6 @@ if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
                     <span class="font-semibold">ID Cards</span>
                 </button>
 
-            <a href="/admin/groups.php"
-                    class="mobile-touch-target flex items-center gap-3 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition">
-                <span class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center">
-                    <i class="fa-solid fa-layer-group text-sm"></i>
-                </span>
-                <span class="font-semibold">Groups</span>
-            </a>
 
 
 

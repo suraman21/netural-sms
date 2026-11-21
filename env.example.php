@@ -89,7 +89,6 @@ define('TELEMETRY_HASH_SECRET', 'REPLACE_WITH_A_LONG_RANDOM_STRING_5'); // HMAC 
 // quoted strings such as 'false' deliberately fail closed. Disabled modules are
 // blocked by browser and REST routes; clients also hide their controls.
 // define('FEATURE_AI_CHATBOT', false);
-// define('FEATURE_GROUPS', false);
 // define('FEATURE_FINANCE', false);
 // define('FEATURE_MEZMUR', false);
 // define('FEATURE_MATERIAL', false);

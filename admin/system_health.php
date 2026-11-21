@@ -154,7 +154,6 @@ $criticalFiles = [
     'admin/index.php' => ADMIN_PATH . '/index.php',
     'admin/dashboard.php' => ADMIN_PATH . '/dashboard.php',
     'backend/login.php' => ADMIN_PATH . '/backend/login.php',
-    'backend/groups_api.php' => ADMIN_PATH . '/backend/groups_api.php',
     'backend/workflow.php' => ADMIN_PATH . '/backend/workflow.php',
     '.htaccess' => ROOT_PATH . '/.htaccess',
 ];

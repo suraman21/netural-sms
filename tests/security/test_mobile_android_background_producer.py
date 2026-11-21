@@ -38,7 +38,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 APP = os.path.join(ROOT, "Mobile", "wbws_flutter_app")
 LIB = os.path.join(APP, "lib", "services")
 ANDROID = os.path.join(APP, "android", "app")
-KOTLIN = os.path.join(ANDROID, "src", "main", "kotlin", "com", "arkeonethiopia", "fkss")
+KOTLIN = os.path.join(ANDROID, "src", "main", "kotlin", "com", "arkeonethiopia", "arkeoschool")
 
 
 def read(*parts):
@@ -281,10 +281,10 @@ class AndroidBackgroundProducerSource(unittest.TestCase):
         block = re.search(r"<receiver[^>]*BackgroundSyncReceiver.*?</receiver>", self.manifest, re.S)
         self.assertIsNotNone(block)
         self.assertIn('android:exported="false"', block.group(0))
-        self.assertIn("com.arkeonethiopia.fkss.action.BACKGROUND_SYNC", block.group(0))
+        self.assertIn("com.arkeonethiopia.arkeoschool.action.BACKGROUND_SYNC", block.group(0))
 
     def test_the_action_string_matches_kotlin(self):
-        self.assertIn('ACTION_WAKE = "com.arkeonethiopia.fkss.action.BACKGROUND_SYNC"', self.producer)
+        self.assertIn('ACTION_WAKE = "com.arkeonethiopia.arkeoschool.action.BACKGROUND_SYNC"', self.producer)
 
     def test_no_new_permission_was_requested(self):
         granted = set(re.findall(r'uses-permission android:name="android\.permission\.([A-Z_]+)"', self.manifest))
@@ -312,8 +312,8 @@ class AndroidBackgroundProducerSource(unittest.TestCase):
             self.assertNotIn(forbidden, native, forbidden)
 
     def test_r8_keeps_both_native_classes(self):
-        self.assertIn("-keep class com.arkeonethiopia.fkss.BackgroundSyncReceiver", self.proguard)
-        self.assertIn("-keep class com.arkeonethiopia.fkss.BackgroundSyncProducer", self.proguard)
+        self.assertIn("-keep class com.arkeonethiopia.arkeoschool.BackgroundSyncReceiver", self.proguard)
+        self.assertIn("-keep class com.arkeonethiopia.arkeoschool.BackgroundSyncProducer", self.proguard)
 
     # ── engine binding ──────────────────────────────────────────────────
 

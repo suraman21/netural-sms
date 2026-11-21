@@ -47,8 +47,8 @@ jobs:
           done
           grep -qF "static const String apiBaseUrl = 'https://felegekidusan.com/api/v1';" "$M/lib/utils/config.dart" \
             || { echo "::error::apiBaseUrl on main is not the production API."; fail=1; }
-          grep -qF 'applicationId = "com.arkeonethiopia.fkss"' "$M/android/app/build.gradle" \
-            || { echo "::error::applicationId on main is not com.arkeonethiopia.fkss."; fail=1; }
+          grep -qF 'applicationId = "com.arkeonethiopia.arkeoschool"' "$M/android/app/build.gradle" \
+            || { echo "::error::applicationId on main is not com.arkeonethiopia.arkeoschool."; fail=1; }
           test ! -e Mobile/HOW_TO_BUILD_BETA.md \
             || { echo "::error::Mobile/HOW_TO_BUILD_BETA.md exists only on dev; it leaked to main."; fail=1; }
           exit $fail

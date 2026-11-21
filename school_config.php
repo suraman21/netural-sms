@@ -32,11 +32,20 @@ define('SCHOOL_NAME', 'Arkeo School');
 // Short code (shown in headers, nav bars, mobile app)
 define('SCHOOL_NAME_SHORT', 'Arkeo');
 
-// Full Amharic name (shown in landing page, reports, ID cards)
-define('SCHOOL_NAME_AMHARIC', 'አርኪዮ ትምህርት ቤት');
+// Full Amharic name (shown in landing page, reports, ID cards).
+//
+// ADR-0026 P1 / N-1: the owner accepted a transliteration "for now" and asked
+// that it be EASY TO CHANGE. So this is an ordinary configuration value, not a
+// constant buried in code: edit this one line, or set SCHOOL_NAME_AMHARIC in the
+// environment, and every surface follows — landing page, ID cards, report
+// headers, PWA description, copyright. Nothing else needs touching, and no
+// template hardcodes Amharic text.
+define('SCHOOL_NAME_AMHARIC', getenv('SCHOOL_NAME_AMHARIC') ?: 'አርኪዮ ትምህርት ቤት');
 
-// Short Amharic name (shown in sidebar subtitles, compact labels)
-define('SCHOOL_NAME_SHORT_AM', 'አርኪዮ');
+// Short Amharic name (sidebar subtitles, compact labels). Derived from the full
+// name so changing one line changes both; override only if the short form is
+// not simply a prefix of the full one.
+define('SCHOOL_NAME_SHORT_AM', getenv('SCHOOL_NAME_SHORT_AM') ?: 'አርኪዮ');
 
 // English translation of the school name
 define('SCHOOL_TRANSLATION_EN', 'Arkeo School');
@@ -200,7 +209,6 @@ define('THEME_SIDEBAR_BOTTOM', '#702000'); //   warm maroon-brown
 // out-of-web-root secrets/environment file before this file is loaded.
 
 if (!defined('FEATURE_AI_CHATBOT')) define('FEATURE_AI_CHATBOT', true);
-if (!defined('FEATURE_GROUPS')) define('FEATURE_GROUPS', true);
 if (!defined('FEATURE_FINANCE')) define('FEATURE_FINANCE', true);
 if (!defined('FEATURE_MATERIAL')) define('FEATURE_MATERIAL', true);
 if (!defined('FEATURE_MEZMUR')) define('FEATURE_MEZMUR', true);

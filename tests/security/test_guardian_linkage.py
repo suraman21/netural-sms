@@ -218,7 +218,7 @@ class TestP4Audit:
     def test_no_php_concat_leaks_into_js(self):
         # G10-family: PHP string concatenation inside inline JS is a syntax error in the browser
         import re
-        for rel in ["admin/groups.php", "admin/dashboards/school_admin.php", "admin/dashboards/hr-dept.php"]:
+        for rel in ["admin/dashboards/school_admin.php", "admin/dashboards/hr-dept.php"]:
             src = _read(rel)
             for block in re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", src, re.S):
                 stripped = re.sub(r"<\?(?:php|=).*?\?>", "0", block, flags=re.S)
@@ -235,7 +235,7 @@ class TestP4Audit:
         node = shutil.which("node")
         if not node:
             pytest.skip("node not installed")
-        for rel in ["admin/dashboards/hr-dept.php", "admin/dashboards/school_admin.php", "admin/groups.php", "admin/dashboards/info-dept.php"]:
+        for rel in ["admin/dashboards/hr-dept.php", "admin/dashboards/school_admin.php", "admin/dashboards/info-dept.php"]:
             src = _read(rel)
             for block in re.findall(r"<script(?![^>]*\bsrc=)(?![^>]*type=[\"'](?:application/json|text/template|module))[^>]*>(.*?)</script>", src, re.S):
                 js = re.sub(r"<\?(?:php|=).*?\?>", "0", block, flags=re.S)

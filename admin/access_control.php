@@ -181,12 +181,10 @@ if (!defined('ACCESS_CONTROL_LOADED')) {
             'material_department.php' => ['super_admin', 'school_admin', 'material_dept'],
 
             // ---- Groups / associations ----
-            'groups.php'     => ['super_admin', 'school_admin', 'hr_dept'],
 
             // ---- P72 Communication Center: every staff role ----
             'notifications.php' => ['super_admin', 'school_admin', 'info_dept', 'edu_dept', 'finance_dept', 'material_dept', 'mezmur_dept', 'hr_dept', 'teacher', 'attendance_taker', 'mezmur_attendance_taker', 'hr_attendance_taker', 'content_editor'],
             'messages.php'      => ['super_admin', 'school_admin', 'info_dept', 'edu_dept', 'finance_dept', 'material_dept', 'mezmur_dept', 'hr_dept', 'teacher', 'attendance_taker', 'mezmur_attendance_taker', 'hr_attendance_taker', 'content_editor'],
-            'groups_api.php' => ['super_admin', 'school_admin', 'hr_dept'],
 
             // ---- Reports & exports (contain all-member data) ----
             // Member analytics & export centre: Info + HR analyse and export

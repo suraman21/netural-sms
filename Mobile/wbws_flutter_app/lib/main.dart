@@ -38,7 +38,7 @@ void main() async {
   // tolerant — on a platform without the plugin the app still starts.
   try {
     await JustAudioBackground.init(
-      androidNotificationChannelId: 'com.arkeonethiopia.fkss.channel.audio',
+      androidNotificationChannelId: 'com.arkeonethiopia.arkeoschool.channel.audio',
       androidNotificationChannelName: 'መዝሙር · FKSS Mezmur',
       androidNotificationOngoing: true,
     );

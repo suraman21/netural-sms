@@ -81,7 +81,7 @@ def native_headers(abis=("armeabi-v7a", "arm64-v8a", "x86_64")):
             yield f"lib/{abi}/{library}", head
 
 
-def write_apk(path: Path, package: str = "com.arkeonethiopia.fkss", version_name: str = "1.7.4",
+def write_apk(path: Path, package: str = "com.arkeonethiopia.arkeoschool", version_name: str = "1.7.4",
               version_code: int = 41, *, deflate: bool = True, utf8: bool = False,
               names_by_resource_id_only: bool = False, manifest: bytes | None = None,
               padding: int = 2048, abis=("armeabi-v7a", "arm64-v8a", "x86_64")) -> Path:
