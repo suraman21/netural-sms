@@ -24,7 +24,6 @@ DASHBOARDS = [
     "admin/dashboards/super-admin.php",
     "admin/dashboards/teacher.php",
     "admin/dashboards/attendance_taker.php",
-    "admin/groups.php",
     "admin/reports.php",
 ]
 

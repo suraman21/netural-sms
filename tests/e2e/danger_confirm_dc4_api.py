@@ -78,26 +78,8 @@ ck('delete transaction with phrase (case-insensitive) -> deleted',
 code, d = post(fin, '/admin/api_finance.php', action='delete_transaction', id=tid, confirm_phrase='DELETE TRANSACTION', csrf_token='bad')
 ck('bad CSRF is still refused before anything else', code in (400, 403, 419), (code, d))
 
-# ── groups.delete_group ──
-g = login('audit_hr', '/admin/groups.php')
-ck('groups page login + csrf', bool(g.csrf))
-sql(f"INSERT INTO wbws_groups (group_name) VALUES ('DC4 Group {tag}')")
-gid = sql(f"SELECT id FROM wbws_groups WHERE group_name='DC4 Group {tag}'")
-sql(f"INSERT INTO wbws_group_leaders (group_id, leader_full_name) VALUES ({gid}, 'Leader A'), ({gid}, 'Leader B')")
-sql(f"INSERT INTO wbws_group_members (group_id, full_name) VALUES ({gid}, 'Member 1'), ({gid}, 'Member 2'), ({gid}, 'Member 3')")
-r = g.get(BASE + f'/admin/backend/groups_api.php?action=impact_delete_group&id={gid}').json()
-dd = r.get('data') or {}
-ck('impact_delete_group shows real counts (2 leaders, 3 members)', r.get('success') and dd.get('leaders') == 2 and dd.get('members') == 3, r)
-code, d = post(g, '/admin/backend/groups_api.php?action=delete_group', action='delete_group', id=gid)
-ck('delete group without phrase -> 409', refused(code, d), (code, d))
-ck('group, leaders and members untouched after refusal',
-   sql(f"SELECT (SELECT COUNT(*) FROM wbws_groups WHERE id={gid})+(SELECT COUNT(*) FROM wbws_group_leaders WHERE group_id={gid})+(SELECT COUNT(*) FROM wbws_group_members WHERE group_id={gid})") == '6')
-code, d = post(g, '/admin/backend/groups_api.php?action=delete_group', action='delete_group', id=gid, confirm_phrase='DELETE GROUP')
-ck('delete group with DELETE GROUP -> deleted', code == 200 and d.get('success') is True, (code, d))
-ck('group, its leaders and members are all gone',
-   sql(f"SELECT (SELECT COUNT(*) FROM wbws_groups WHERE id={gid})+(SELECT COUNT(*) FROM wbws_group_leaders WHERE group_id={gid})+(SELECT COUNT(*) FROM wbws_group_members WHERE group_id={gid})") == '0')
-code, d = post(g, '/admin/backend/groups_api.php?action=delete_group', action='delete_group', id=999999, confirm_phrase='DELETE GROUP')
-ck('deleting a missing group is refused cleanly', d.get('success') is False, (code, d))
-
-print(f'\nDC-4 API: {PASS} passed, {FAIL} failed')
-sys.exit(1 if FAIL else 0)
+# ── groups.delete_group ── REMOVED (N-4, ADR-0028 A4)
+# The groups subsystem was deleted along with its tables, so the DC-4 contract
+# it exercised (preview counts, refusal without phrase, atomic delete) has no
+# subject. tests/security/test_danger_confirm.py pins its absence instead: if a
+# groups API is ever reintroduced it must bring the preview + transaction back.

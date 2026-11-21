@@ -50,7 +50,6 @@ class ZScaleFallbackPinned(unittest.TestCase):
         "admin/dashboards/school_admin.php",
         "admin/dashboards/finance_department.php",
         "admin/dashboards/material_department.php",
-        "admin/dashboards/groups.php",
         "admin/dashboards/content_editor.php",
         "admin/dashboards/ai_chatbot_widget.php",
         "admin/info_manage_member.php",

@@ -97,32 +97,11 @@ with sync_playwright() as p:
     check(not native(errs), 'finance: no native popups ' + str(native(errs)))
     page.close()
 
-    # ───────── Groups: delete group (HIGH, live counts) + remove leader (MEDIUM) ─────────
-    sql(f"INSERT INTO wbws_groups (group_name) VALUES ('DC4 UI Group {tag}')")
-    gid = sql(f"SELECT id FROM wbws_groups WHERE group_name='DC4 UI Group {tag}'")
-    sql(f"INSERT INTO wbws_group_leaders (group_id, leader_full_name) VALUES ({gid}, 'L1')")
-    sql(f"INSERT INTO wbws_group_members (group_id, full_name) VALUES ({gid}, 'M1'), ({gid}, 'M2')")
-    page, errs = login(br, 'audit_hr', '/admin/groups.php')
-    check(page.evaluate('!!window.DangerConfirm'), 'groups: component loaded')
-    page.evaluate("()=>{window.__p=deleteLeader(1);return 1}")
-    d = dialog(page)
-    check('REMOVE LEADER' in d.inner_text() or 'I want to remove this leader' in d.inner_text(), 'groups: remove leader opens MEDIUM dialog')
-    cancel(page)
-    page.evaluate(f"()=>{{window.__p=confirmDel({gid}, 'DC4 UI Group {tag}');return 1}}")
-    d = dialog(page)
-    page.click('text=I want to delete this group')
-    page.wait_for_function("/1 leader record|2 member record/.test((document.querySelector('[role=alertdialog]')||{}).innerText||'')", timeout=6000)
-    txt = dialog(page).inner_text()
-    check('1 leader record' in txt and '2 member record' in txt, 'groups: step 2 shows the live counts (1 leader, 2 members)')
-    shot(page, 'groups_delete_step2')
-    page.click('text=I have read and understand these effects')
-    page.fill('.dcx-in', 'DELETE GROUP')
-    page.click('[data-dcx-act=final]')
-    page.wait_for_timeout(1500)
-    check(sql(f"SELECT COUNT(*) FROM wbws_groups WHERE id={gid}") == '0' and sql(f"SELECT COUNT(*) FROM wbws_group_members WHERE group_id={gid}") == '0',
-          'groups: group and its members deleted after the 3 steps')
-    check(not native(errs), 'groups: no native popups ' + str(native(errs)))
-    page.close()
+    # ───────── Groups: REMOVED (N-4, ADR-0028 A4) ─────────
+    # The groups page and its API were deleted with the Sunday-school domain, so
+    # the browser contract they exercised has no subject. Absence is pinned in
+    # tests/security/test_danger_confirm.py; a future groups UI must bring the
+    # three-step DC-4 flow back with it.
 
     # ───────── Material: delete item (MEDIUM) + approve request (LOW) ─────────
     page, errs = login(br, 'audit_super', '/admin/dashboards/material_department.php')
