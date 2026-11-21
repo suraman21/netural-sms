@@ -209,7 +209,6 @@ define('THEME_SIDEBAR_BOTTOM', '#702000'); //   warm maroon-brown
 // out-of-web-root secrets/environment file before this file is loaded.
 
 if (!defined('FEATURE_AI_CHATBOT')) define('FEATURE_AI_CHATBOT', true);
-if (!defined('FEATURE_GROUPS')) define('FEATURE_GROUPS', true);
 if (!defined('FEATURE_FINANCE')) define('FEATURE_FINANCE', true);
 if (!defined('FEATURE_MATERIAL')) define('FEATURE_MATERIAL', true);
 if (!defined('FEATURE_MEZMUR')) define('FEATURE_MEZMUR', true);

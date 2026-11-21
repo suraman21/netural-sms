@@ -104,7 +104,6 @@ These files include legacy implementations, shims and shared widgets. Each needs
 | [admin/dashboards/edu_dept.php](../../admin/dashboards/edu_dept.php) | Pending route/control/handler trace |
 | [admin/dashboards/education_department.php](../../admin/dashboards/education_department.php) | Pending route/control/handler trace |
 | [admin/dashboards/finance_department.php](../../admin/dashboards/finance_department.php) | Pending route/control/handler trace |
-| [admin/dashboards/groups.php](../../admin/dashboards/groups.php) | Pending route/control/handler trace |
 | [admin/dashboards/hr-dept.php](../../admin/dashboards/hr-dept.php) | Pending route/control/handler trace |
 | [admin/dashboards/info-dept.php](../../admin/dashboards/info-dept.php) | Pending route/control/handler trace |
 | [admin/dashboards/material_department.php](../../admin/dashboards/material_department.php) | [Core source/handler trace](MATERIALS.md); shared controls and browser acceptance pending |

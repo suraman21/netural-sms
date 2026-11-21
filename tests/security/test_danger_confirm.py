@@ -48,8 +48,6 @@ MIGRATED = [
     'admin/dashboards/finance_department.php',
     'frontend/js/finance.js',
     'admin/dashboards/material_department.php',
-    'admin/groups.php',
-    'admin/dashboards/groups.php',
     'frontend/js/mezmur.js',
     'admin/js/content_editor.js',
     'admin/lesson_attendance.php',
@@ -80,7 +78,6 @@ SERVER_ENFORCED = [
     ('admin/api_identity_migration.php', 'identity.renumber'),
     # DC-4
     ('admin/api_finance.php', 'finance.delete_transaction'),
-    ('admin/backend/groups_api.php', 'groups.delete_group'),
 ]
 
 NATIVE = re.compile(r'(?<![\w.$])(?:window\.)?(confirm|prompt)\s*\(')
@@ -170,7 +167,7 @@ class DangerConfirmMigration(unittest.TestCase):
                     'admin/dashboards/edu_dept.php', 'admin/dashboards/school_admin.php',
                     'admin/dashboards/super-admin.php', 'admin/js/family_link.js', 'admin/js/hr_data_sync.js',
                     'admin/js/app_release.js', 'admin/dashboards/finance_department.php',
-                    'frontend/js/finance.js', 'admin/dashboards/groups.php', 'admin/groups.php')
+                    'frontend/js/finance.js')
                 if (ROOT / p).exists()])
             self.assertTrue(found, f'{key}: dialog phrase {phrase!r} not found in any page')
 
@@ -217,13 +214,14 @@ class DangerConfirmMigration(unittest.TestCase):
                         break
         self.assertEqual(bad, [])
 
-    def test_dc4_group_delete_is_atomic_and_previewed(self):
-        api = read('admin/backend/groups_api.php')
-        i = api.index("$action === 'delete_group'")
-        body = api[i:i + 2600]
-        self.assertIn('begin_transaction', body)
-        self.assertIn('rollback', body)
-        self.assertIn("$action === 'impact_delete_group'", api)
+    def test_dc4_group_delete_is_gone_not_regressed(self):
+        # The groups endpoint was removed with the group subsystem (N-4), so the
+        # atomic-delete contract it used to satisfy no longer has a subject. Pin
+        # the removal rather than deleting the test silently: if a future change
+        # reintroduces a groups API it must bring the DC-4 preview + transaction
+        # with it, and this test is where that gets noticed.
+        self.assertFalse((ROOT / 'admin/backend/groups_api.php').exists())
+        self.assertNotIn('groups.delete_group', php_phrases())
 
     def test_dc4_attendance_resave_guard(self):
         sheet = read('admin/js/attendance-sheet.js')
@@ -297,7 +295,7 @@ class DangerConfirmPhp(unittest.TestCase):
         # Audit 2026-10-22: confirm_phrase[]=... must give a clean refusal (409),
         # never a PHP TypeError (500).
         inc = "require 'admin/backend/danger_confirm.php';"
-        out = self.run_php(inc + "try { echo dc_phrase_ok('groups.delete_group',['confirm_phrase'=>['DELETE GROUP']]) ? 'Y':'N'; } catch (Throwable $e) { echo 'ERR'; }")
+        out = self.run_php(inc + "try { echo dc_phrase_ok('finance.delete_transaction',['confirm_phrase'=>['a','b']]) ? 'Y':'N'; } catch (Throwable $e) { echo 'ERR'; }")
         self.assertEqual(out, 'N')
 
     def test_php_lint(self):

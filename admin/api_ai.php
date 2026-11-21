@@ -309,17 +309,10 @@ function collectDataSnapshot($conn, $scope = 'overview') {
         } catch (Exception $e) { $data['finance_summary'] = null; }
     }
     
-    // ── Groups data ──
-    if (in_array($scope, ['overview', 'groups'])) {
-        try {
-            $r = $conn->query("SELECT g.group_name, g.current_male, g.current_female, 
-                (g.current_male + g.current_female) as total_members
-                FROM wbws_groups g ORDER BY total_members DESC LIMIT 15");
-            $data['groups'] = [];
-            if ($r) while ($row = $r->fetch_assoc()) $data['groups'][] = $row;
-        } catch (Exception $e) {}
-    }
-    
+    // Groups/associations were removed with the Sunday-school domain (N-4):
+    // a group was a parish-level association with its own person table, which
+    // the school model replaced with a student in a programme stage.
+
     // ── Users / System ──
     try {
         $r = $conn->query("SELECT role, COUNT(*) as cnt, SUM(is_active=1) as active_cnt 

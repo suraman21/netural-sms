@@ -308,7 +308,6 @@ $criticalFiles = [
     'admin/index.php' => ADMIN_PATH . '/index.php',
     'admin/dashboard.php' => ADMIN_PATH . '/dashboard.php',
     'backend/login.php' => ADMIN_PATH . '/backend/login.php',
-    'backend/groups_api.php' => ADMIN_PATH . '/backend/groups_api.php',
     '.htaccess' => ROOT_PATH . '/.htaccess',
 ];
 $fileIntegrity = [];
@@ -385,7 +384,6 @@ if ($__healthCache !== null) {
 // 1. API Endpoint Health Check
 $apiEndpoints = [];
 $apiFiles = [
-    'Groups API' => ADMIN_PATH . '/backend/groups_api.php',
     'Teachers API' => ADMIN_PATH . '/api_teachers.php',
     'Education API' => ADMIN_PATH . '/api_education.php',
     'Subjects API' => ADMIN_PATH . '/api_subjects.php',
@@ -430,8 +428,6 @@ if (isset($conn) && !$conn->connect_error) {
     $integrityChecks = [
         ['name' => 'Members with valid status', 'sql' => "SELECT COUNT(*) as c FROM members WHERE status IN ('active','inactive','archived','waiting')"],
         ['name' => 'Users with valid roles', 'sql' => "SELECT COUNT(*) as c FROM users WHERE role IN ('super_admin','school_admin','hr_dept','info_dept','edu_dept','finance_dept','material_dept','mezmur_dept','teacher','attendance_taker')"],
-        ['name' => 'Group members with valid groups', 'sql' => "SELECT COUNT(*) as c FROM wbws_group_members gm LEFT JOIN wbws_groups g ON gm.group_id=g.id WHERE g.id IS NOT NULL", 'total_sql' => "SELECT COUNT(*) as c FROM wbws_group_members"],
-        ['name' => 'Group leaders with valid groups', 'sql' => "SELECT COUNT(*) as c FROM wbws_group_leaders gl LEFT JOIN wbws_groups g ON gl.group_id=g.id WHERE g.id IS NOT NULL", 'total_sql' => "SELECT COUNT(*) as c FROM wbws_group_leaders"],
     ];
     foreach ($integrityChecks as $ic) {
         try {
@@ -450,9 +446,7 @@ if (isset($conn) && !$conn->connect_error) {
 
     // Check for orphaned group members
     try {
-        $r = $conn->query("SELECT COUNT(*) as c FROM wbws_group_members gm LEFT JOIN wbws_groups g ON gm.group_id=g.id WHERE g.id IS NULL");
         $orphanedMembers = $r ? (int)$r->fetch_assoc()['c'] : 0;
-        $r = $conn->query("SELECT COUNT(*) as c FROM wbws_group_leaders gl LEFT JOIN wbws_groups g ON gl.group_id=g.id WHERE g.id IS NULL");
         $orphanedLeaders = $r ? (int)$r->fetch_assoc()['c'] : 0;
     } catch (Exception $e) { $orphanedMembers = $orphanedLeaders = 0; }
 }
@@ -504,7 +498,6 @@ $scanFiles = [
     ROOT_PATH . '/config.php',
     ADMIN_PATH . '/index.php',
     ADMIN_PATH . '/dashboard.php',
-    ADMIN_PATH . '/backend/groups_api.php',
     ADMIN_PATH . '/backend/login.php',
 ];
 // Also scan all API files

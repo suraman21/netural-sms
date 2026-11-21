@@ -228,5 +228,10 @@ def test_master_plan_inventory_matches_the_tree():
     # Every ADR must carry a status the index can state, and the plan must name
     # the next free migration number correctly (it is what a contributor reads).
     migrations = sorted((ROOT / "sql").glob("[0-9][0-9][0-9]_*.sql"))
-    assert f"**{migrations[-1].name.split('_')[0]}" not in plan  # sanity: no stale pin
-    assert "104" in plan, "the plan must say which migration number is next"
+    latest = int(migrations[-1].name.split("_")[0])
+    # Derive the expected next number instead of hardcoding it: a literal here
+    # goes stale on the very next migration and then the test fails for the
+    # wrong reason (as it just did with 104 -> 105).
+    assert f"next free number is **{latest + 1}**" in plan, (
+        f"the plan must say the next free migration number is {latest + 1}"
+    )

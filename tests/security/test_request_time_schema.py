@@ -98,7 +98,6 @@ class RequestTimeSchemaTests(unittest.TestCase):
             "dept_settings",
             "academic_terms",
             "class_enrollments",
-            "wbws_groups",
             "wbws_group_leaders",
             "wbws_group_members",
             "wbws_audit_log",
@@ -111,10 +110,10 @@ class RequestTimeSchemaTests(unittest.TestCase):
 
     def test_legacy_debug_schema_endpoint_is_removed(self):
         self.assertFalse((ROOT / "admin/scratch_get_cols.php").exists())
-        groups = (ROOT / "admin/backend/groups_api.php").read_text(encoding="utf-8")
-        self.assertNotIn("action === 'diagnose'", groups)
-        self.assertNotIn("csrf_token_preview", groups)
-        self.assertNotIn("session_id()", groups)
+        # The groups endpoint was removed with the group subsystem (N-4), so
+        # there is no longer a file that could leak a debug schema. Assert the
+        # stronger fact instead of a weaker one about a deleted file.
+        self.assertFalse((ROOT / "admin/backend/groups_api.php").exists())
 
     def test_archive_and_branding_compatibility_are_migrated(self):
         for column in (
