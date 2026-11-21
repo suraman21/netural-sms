@@ -44,6 +44,7 @@
 | [product/GLOSSARY.md](product/GLOSSARY.md): domain, calendar and technical terms | Canonical |
 | [architecture/TECHNICAL_DESIGN.md](architecture/TECHNICAL_DESIGN.md): technical design (arc42, C4 diagrams, runtime and deployment views) | Canonical |
 | [adr/README.md](adr/README.md): dated decisions ADR-0001 to ADR-0027 and a template | Maintained index; preserve original decisions and explicit supersession boundaries |
+| [MASTER_PLAN.md](MASTER_PLAN.md): single index of every document, the build sequence, verified gaps/contradictions and open decisions | Start here when asking "what is left" or "where is X documented"; it is the map, the sources are the territory |
 | [rfc/README.md](rfc/README.md): proposals for significant changes; [RFC 0001](rfc/0001-repository-structure.md) repository structure | Reference |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Canonical |
 | [FAILURE_INTELLIGENCE.md](FAILURE_INTELLIGENCE.md), [mobile client contract](../Mobile/wbws_flutter_app/docs/FAILURE_INTELLIGENCE_CLIENT.md) | Reference |

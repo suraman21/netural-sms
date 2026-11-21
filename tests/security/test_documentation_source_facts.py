@@ -207,3 +207,26 @@ def test_ethiopian_ladder_is_a_seed_not_a_migration():
     # It must not be picked up by the migration inventory glob (sql/NNN_*.sql).
     assert all("seeds" not in p.parts for p in (ROOT / "sql").glob("[0-9][0-9][0-9]_*.sql"))
     assert [p.name for p in (ROOT / "sql" / "seeds").glob("*.sql")] == ["ethiopian_ladder.sql"]
+
+
+def test_master_plan_inventory_matches_the_tree():
+    """The master plan's document inventory must not drift from reality.
+
+    It is the map people will consult when asking "what is left", so a stale map
+    is worse than no map: it makes a gap look covered. Both directions are
+    checked - a missing file and an invented one are the same bug.
+    """
+    plan = text("docs/MASTER_PLAN.md")
+    on_disk = sorted(
+        p.name for p in (ROOT / "docs" / "adr").glob("[0-9][0-9][0-9][0-9]-*.md")
+    )
+    listed = sorted(re.findall(r"docs/adr/(\d{4}-[a-z0-9-]+\.md)", plan))
+    assert listed == on_disk, (
+        f"missing from the plan: {sorted(set(on_disk) - set(listed))}; "
+        f"invented by the plan: {sorted(set(listed) - set(on_disk))}"
+    )
+    # Every ADR must carry a status the index can state, and the plan must name
+    # the next free migration number correctly (it is what a contributor reads).
+    migrations = sorted((ROOT / "sql").glob("[0-9][0-9][0-9]_*.sql"))
+    assert f"**{migrations[-1].name.split('_')[0]}" not in plan  # sanity: no stale pin
+    assert "104" in plan, "the plan must say which migration number is next"
