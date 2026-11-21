@@ -368,12 +368,13 @@ function getSystemPrompt($conn = null) {
     ];
     
     $accessRule = $roleRules[$role] ?? 'You have limited access. Do NOT reveal sensitive system data.';
-    $schoolContext = defined('AI_SCHOOL_CONTEXT') ? AI_SCHOOL_CONTEXT : 'an Ethiopian Orthodox Sunday school';
+    // No church identity is assumed when a deployment has not configured one.
+$schoolContext = defined('AI_SCHOOL_CONTEXT') ? AI_SCHOOL_CONTEXT : 'a school';
 
     // What the system can DO — lets the assistant answer "what does X do?".
     $systemKnowledge = <<<'SYS'
 ABOUT THIS SYSTEM (use this to explain how it works, what a section/button/status does):
-This is a Sunday School Management System with role-based dashboards. Main areas:
+This is a school management system with role-based dashboards. Main areas:
 - Members: register & manage students ("members"). Each has a unique member code, profile, photo, age group, gender, phone, and a status: active, warning (becoming irregular), inactive, or archived.
 - Old Members Archive: members whose status is "archived" — people who left, graduated, or went inactive long-term. Kept for historical records, excluded from active counts and daily lists, and can be restored.
 - Manage Members: add, edit, approve waiting registrations, change status, archive/restore.

@@ -9,12 +9,27 @@ namespace App\Services;
  */
 final class TelegramBotMessages
 {
+    /**
+     * The school name used inside default copy.
+     *
+     * The welcome message used to hardcode a DIFFERENT school's name, which
+     * is exactly what this service exists to prevent (ADR-0022 D7). Falls back
+     * through the configured constants so the bot can never address a parent
+     * with another deployment's identity.
+     */
+    private static function schoolName(): string
+    {
+        if (defined('SCHOOL_NAME_AMHARIC') && \SCHOOL_NAME_AMHARIC !== '') return \SCHOOL_NAME_AMHARIC;
+        if (defined('SCHOOL_NAME') && \SCHOOL_NAME !== '') return \SCHOOL_NAME;
+        return 'School';
+    }
+
     /** @return array<string,array{am:string,en?:string}> */
     public static function defaults(): array
     {
         return [
             'welcome' => [
-                'am' => "ሰላም! እንኳን ወደ ውሉደ ብርሃን የአባላት ምዝገባ ስርዓት በደህና መጡ።\n\nእዚህ አዲስ አባል መመዝገብ፣ የቀድሞ አባል መረጃ መፈለግ እና የምዝገባ ሂደትን ማስተዳደር ይችላሉ።",
+                'am' => "ሰላም! እንኳን ወደ " . self::schoolName() . " የአባላት ምዝገባ ስርዓት በደህና መጡ።\n\nእዚህ አዲስ አባል መመዝገብ፣ የቀድሞ አባል መረጃ መፈለግ እና የምዝገባ ሂደትን ማስተዳደር ይችላሉ።",
             ],
             'access_denied' => [
                 'am' => "ይህ መለያ ገና አልተፈቀደም።\n\nTelegram ID: {telegram_id}\nPairing request: {pairing_id}\nAsk an administrator to link it to your active system account.",
