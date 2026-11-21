@@ -41,6 +41,8 @@ Records 0001–0020 were written on 2026-10-22 from the code, the commit history
 
 | [ADR-0027](0027-members-is-not-one-thing.md) | `members` holds learners **and** staff in one row; a student is a student and a teacher is a teacher, so the rename is a split per referrer | Accepted — owner decision | 2026-11-16 |
 
+| [ADR-0028](0028-name-identity-groups-and-codes.md) | Amharic name configurable; Android package renamed; wire contract unchanged; groups removed; identity-code mapping report | Accepted — owner decision, closes N-1–N-5 | 2026-11-16 |
+
 Supersession is recorded in three places and must stay consistent: the status column above, a dated blockquote in the superseded record, and the new record's decision it replaces. Two records are only *partially* superseded (ADR-0008 calendar scope, ADR-0009 attendance ownership) — read the blockquote before citing them as dead.
 
 ## Writing a new ADR

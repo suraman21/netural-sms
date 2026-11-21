@@ -85,6 +85,7 @@ Auto-generated from the working tree, so it cannot drift from what exists. Statu
 | `docs/adr/0025-institution-levels-and-ethiopian-workflow.md` | ADR | — | ADR-0025: An institution configures its levels; KG–12 fo | stale terms: 1 |
 | `docs/adr/0026-product-name-and-calendar-default.md` | ADR | Accepted — owner decision, 2026-11-16 | ADR-0026 — The product is Arkeo School; a new installati | stale terms: 2 |
 | `docs/adr/0027-members-is-not-one-thing.md` | ADR | Accepted — owner decision 2026-11-16. | ADR-0027 — `members` is not one thing: the rename is a s | stale terms: 10 |
+| `docs/adr/0028-name-identity-groups-and-codes.md` | ADR | Accepted — owner decision, 2026-11-16 | ADR-0028 — Product name, app identity, group removal and | stale terms: 2 |
 | `docs/adr/README.md` | ADR index | — | Architecture decision records (ADRs) | stale terms: 5 |
 | `docs/adr/template.md` | ADR index | — | ADR-NNNN: Title in plain words |  |
 | `docs/api/FINANCE_CONTRACT.md` | Reference | — | Finance browser API: action reference |  |
@@ -151,10 +152,10 @@ W1 identity ──► W2 split (students │ staff) ──► W2 rename per refe
 | **3c** | ADR-0027 decision; schema split (`students` / staff) | next | 3b |
 | **3d** | Rename per referrer (M5), delete `MemberCategory`, `member_type`, `age_group`, `baptismal` | after 3c | 3c |
 | **4** | Surfaces: dashboards, exports, ID cards, Amharic copy | after 3d | 3d |
-| **5** | API + mobile wire (with a compatibility window) | after 3d | 3d, N-3 |
+| **5** | API + mobile wire (field names UNCHANGED — ADR-0028 A3) | after 3d | 3d |
 | **6** | Guard test: fails on `member`/`age_group`/`baptismal` reappearing | **any time** | — |
 
-**Why 5 cannot run before 4.** The phone reads `member_id` from JSON and posts it back. Renaming the wire field mid-release breaks installed clients; the release gate (`min_version` in `api/v1/routes/app.php`) is what makes a compatibility window possible, and that window has to be decided (N-3) before either side moves.
+**Why 5 is now mostly a naming exercise, not a contract change.** The phone reads `member_id` from JSON and posts it back, and ADR-0028 A3 decided the wire names stay as they are. So phase 5 renames PHP variables, SQL columns and UI labels; the JSON keys do not change. When a later release wants `student_id` on the wire it needs a compatibility window (accept both, ship the app, drop the old after a cycle) and its own record.
 
 ---
 
@@ -213,11 +214,11 @@ Closed decisions stay in the table on purpose: a future reader needs to know the
 | D-7 | Mezmur table authorisation | OPEN — largely moot under S6 |
 | D-8 | Student codes = plain sequential, no prefix | CLOSED (ADR-0024 S5) |
 | D-9 | Staff vs students are disjoint | CLOSED (ADR-0027 M1–M5) |
-| N-1 | Amharic product name (currently my transliteration አርኪዮ ትምህርት ቤት) | OPEN |
-| N-2 | Does the Android package identity follow the rename? | OPEN |
-| N-3 | Wire compatibility: accept `member_id` for one release, or cut hard? | OPEN |
-| N-4 | `wbws_group_members` — group member, or student of the institution? | OPEN |
-| N-5 | Do existing paper/printed ID codes need a mapping report? | OPEN |
+| N-1 | Amharic product name (currently my transliteration አርኪዮ ትምህርት ቤት) | CLOSED — ADR-0028 A1: configurable via env / one line; transliteration retained |
+| N-2 | Does the Android package identity follow the rename? | CLOSED — ADR-0028 A2: renamed to com.arkeonethiopia.arkeoschool (new app identity) |
+| N-3 | Wire compatibility: accept `member_id` for one release, or cut hard? | CLOSED — ADR-0028 A3: wire field names unchanged this release |
+| N-4 | `wbws_group_members` — group member, or student of the institution? | CLOSED — ADR-0028 A4: groups removed entirely (code + sql/104) |
+| N-5 | Do existing paper/printed ID codes need a mapping report? | CLOSED — ADR-0028 A5: admin/tools/id_code_mapping_report.php (read-only) |
 
 ---
 
