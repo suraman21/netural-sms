@@ -4,6 +4,8 @@
 |---|---|---|
 | Accepted — owner scope decision (option C), with implementation phases reviewed separately | 2026-11-16 | Product owner |
 
+> **2026-11-16 — D-5 resolved, and D3 narrowed:** the owner has decided there is no age group and no age-based section in this product. [ADR-0023](0023-no-age-group-or-age-section.md) is the record: age is a date of birth and never a classification, `MemberCategory` is deleted rather than shimmed, and D3's "legacy input mapped once" path is closed — legacy rows stay readable but nothing maps them to grades.
+
 > Unlike ADRs 0001–0020, which were written from a finished codebase, this record was written **before** the work. Each clause therefore names the phase that implements it and the evidence that exists today, so a future reader can check whether the claim became true. Clauses that depend on an unanswered owner decision are listed under [Deferred decisions](#deferred-decisions) and are **not** decided here.
 
 ## Context
