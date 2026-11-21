@@ -19,16 +19,62 @@
 require_once __DIR__ . '/ethiopian_date.php';
 
 /**
- * Get the system calendar mode from database
- * Caches in session to avoid repeated DB queries
+ * The only value of a configuration row that may select Gregorian.
+ *
+ * ADR-0026 P2: anything other than an explicit 'gregorian' — an unset mode, a
+ * NULL row, a value written by something other than the setup service — is the
+ * Ethiopian default. Pure so it can be tested without a database.
+ */
+function wbws_calendar_mode_from_row(mixed $row): string {
+    return (is_array($row) && ($row['mode'] ?? null) === 'gregorian') ? 'gregorian' : 'ethiopian';
+}
+
+/**
+ * Get the system calendar mode.
+ *
+ * ADR-0026 P2: Ethiopian is the default for every installation. The ONE thing
+ * that may change it is the row a super admin wrote at setup through
+ * SchoolCalendarInitialSetup::choose() — one-time, super-admin-only, audited.
+ *
+ * Two older sources stay ignored on purpose, and the reason is the same for
+ * both: they can be stale, and a stale value must not flip every date in the
+ * UI. The legacy `dept_settings.calendar_mode` row is not read at all, and a
+ * `$_SESSION['wbws_calendar_mode']` value is never trusted as input — it is
+ * only written, as a display cache.
+ *
+ * Every failure path here degrades to Ethiopian rather than throwing: date
+ * display must render even when sql/095 has not been applied yet.
  */
 function wbws_get_calendar_mode($conn = null) {
-    // Ethiopian calendar is mandatory system-wide (attendance alerting
-    // requirements §10, 2026-10-19). The former dept_settings.calendar_mode
-    // / session override is intentionally ignored so a stale 'gregorian'
-    // row or session value can never switch user-facing dates back.
+    static $resolved = null;
+    if ($resolved !== null) {
+        return $resolved;
+    }
+
+    // Callers frequently have no connection to hand (a template formatting one
+    // date), so fall back to the request's own connection before deciding.
+    if (!($conn instanceof mysqli)) {
+        $conn = ($GLOBALS['conn'] ?? null);
+    }
+    $row = null;
+    if ($conn instanceof mysqli) {
+        try {
+            $result = $conn->query('SELECT mode FROM school_calendar_configuration WHERE id=1');
+            if ($result instanceof mysqli_result) {
+                try { $row = $result->fetch_assoc(); } finally { $result->free(); }
+            }
+        } catch (\Throwable $ignored) {
+            // Table absent, connection closed, server gone: the default.
+            $row = null;
+        }
+    }
+
+    $resolved = wbws_calendar_mode_from_row($row);
     if (session_status() === PHP_SESSION_ACTIVE) {
-        $_SESSION['wbws_calendar_mode'] = 'ethiopian';
+        $_SESSION['wbws_calendar_mode'] = $resolved;
+    }
+    if ($resolved === 'gregorian') {
+        return 'gregorian';
     }
     return 'ethiopian';
 }

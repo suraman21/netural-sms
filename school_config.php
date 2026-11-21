@@ -27,27 +27,27 @@ define('ACTIVE_THEME', 'fkss');
 // └─────────────────────────────────────────────────────────────┘
 
 // Full system name (shown in page titles, API responses)
-define('SCHOOL_NAME', 'FKSS School Management System');
+define('SCHOOL_NAME', 'Arkeo School');
 
 // Short code (shown in headers, nav bars, mobile app)
-define('SCHOOL_NAME_SHORT', 'FKSS');
+define('SCHOOL_NAME_SHORT', 'Arkeo');
 
 // Full Amharic name (shown in landing page, reports, ID cards)
-define('SCHOOL_NAME_AMHARIC', 'ፈለገ ቅዱሳን ሰንበት ትምህርት ቤት');
+define('SCHOOL_NAME_AMHARIC', 'አርኪዮ ትምህርት ቤት');
 
 // Short Amharic name (shown in sidebar subtitles, compact labels)
-define('SCHOOL_NAME_SHORT_AM', 'ፈለገ ቅዱሳን');
+define('SCHOOL_NAME_SHORT_AM', 'አርኪዮ');
 
-// English translation of school name (Felege Kidusan = "Spring of Saints")
-define('SCHOOL_TRANSLATION_EN', 'Spring of Saints');
+// English translation of the school name
+define('SCHOOL_TRANSLATION_EN', 'Arkeo School');
 
 // Tagline — English and Amharic
-define('SCHOOL_TAGLINE', 'Sunday School Management System');
-define('SCHOOL_TAGLINE_AM', 'የሰንበት ትምህርት ቤት አስተዳደር');
+define('SCHOOL_TAGLINE', 'School Management System');
+define('SCHOOL_TAGLINE_AM', 'የትምህርት ቤት አስተዳደር ስርዓት');
 
 // What type of school is this? (used in labels, categories, AI prompts)
-define('SCHOOL_TYPE', 'Sunday School');
-define('SCHOOL_TYPE_AM', 'ሰንበት ት/ቤት');
+define('SCHOOL_TYPE', 'School');
+define('SCHOOL_TYPE_AM', 'ትምህርት ቤት');
 
 
 // ┌─────────────────────────────────────────────────────────────┐

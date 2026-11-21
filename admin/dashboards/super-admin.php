@@ -1096,15 +1096,18 @@ if (!in_array($activeSection, $saAllowedSections, true)) {
             <section id="section-settings" class="section <?= $activeSection === 'settings' ? 'active' : '' ?>"<?= $activeSection === 'settings' ? '' : ' hidden' ?>>
                 <div class="sec-header"><h2 class="sec-title"><i class="fa-solid fa-gear"></i> Settings</h2><p class="sec-desc">System configuration</p></div>
                 <div class="grid-2">
-                    <!-- CALENDAR SYSTEM (fixed: Ethiopian only) -->
+                    <!-- CALENDAR SYSTEM (Ethiopian by default; set once by the super admin, ADR-0026) -->
                     <div class="card" style="border:2px solid #7c3aed">
                         <h3 class="card-title"><i class="fa-solid fa-calendar-days" style="color:#7c3aed"></i> Calendar System</h3>
-                        <p style="font-size:.75rem;color:#94a3b8;margin-bottom:.85rem">The Ethiopian calendar is used system-wide — every dashboard, date picker, report and export. This is a fixed policy and is not configurable.</p>
+                        <p style="font-size:.75rem;color:#94a3b8;margin-bottom:.85rem">The calendar applies to every dashboard, date picker, report and export. An installation starts on the Ethiopian calendar; the Super Admin sets it once, at setup.</p>
+                        <?php if ($calendarMode !== 'gregorian'): ?>
+                        <p style="margin:0 0 .85rem"><a href="calendar_setup.php" style="font-size:.78rem;font-weight:700;color:#a78bfa"><i class="fa-solid fa-gear"></i> Set up the school calendar (one time)</a></p>
+                        <?php endif; ?>
                         <div style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;border-radius:12px;border:2px solid #7c3aed;background:rgba(124,58,237,.1)">
                             <i class="fa-solid fa-lock" style="color:#a78bfa"></i>
                             <div>
                                 <div style="font-weight:700;color:#e2e8f0;font-size:.85rem">🇪🇹 Ethiopian Calendar <span style="font-family:'Noto Sans Ethiopic';font-size:.75rem">(ዓ.ም.)</span></div>
-                                <div style="font-size:.7rem;color:#94a3b8">መስከረም to ጳጉሜ • 13 months • Based on Ge'ez calendar • system-wide, not configurable</div>
+                                <div style="font-size:.7rem;color:#94a3b8">መስከረም to ጳጉሜ • 13 months • Based on Ge'ez calendar • installation default</div>
                             </div>
                         </div>
                         <div style="margin-top:.75rem;padding:.6rem .85rem;background:rgba(124,58,237,.08);border-radius:10px;border:1px solid rgba(124,58,237,.15)">

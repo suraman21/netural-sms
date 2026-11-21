@@ -26,16 +26,19 @@
 
 // ── Core identity ─────────────────────────────────────────────
 if (!defined('ACTIVE_THEME'))           define('ACTIVE_THEME', 'fkss');
-// Neutral by design (ADR-0022): these are the values an unconfigured or
-// partially-configured deployment gets. A church deployment sets its own in
-// school_config.php; it must not be the default for everyone else.
-if (!defined('SCHOOL_NAME'))            define('SCHOOL_NAME', 'School');
+// The product is Arkeo School (ADR-0026 P1). These are the values an
+// unconfigured or partially-configured deployment gets: the product's name,
+// never an institution's. A deployment names its own school in
+// school_config.php, and a church deployment sets its own identity there; no
+// church identity is baked in here (ADR-0022).
+if (!defined('SCHOOL_NAME'))            define('SCHOOL_NAME', 'Arkeo School');
 if (!defined('SCHOOL_NAME_SHORT'))      define('SCHOOL_NAME_SHORT', SCHOOL_NAME);
-if (!defined('SCHOOL_NAME_AMHARIC'))    define('SCHOOL_NAME_AMHARIC', SCHOOL_NAME);
+// Amharic is a transliteration the owner has not confirmed (ADR-0026 P1).
+if (!defined('SCHOOL_NAME_AMHARIC'))    define('SCHOOL_NAME_AMHARIC', 'አርኪዮ ትምህርት ቤት');
 if (!defined('SCHOOL_NAME_SHORT_AM'))   define('SCHOOL_NAME_SHORT_AM', SCHOOL_NAME_AMHARIC);
 if (!defined('SCHOOL_TRANSLATION_EN'))  define('SCHOOL_TRANSLATION_EN', SCHOOL_NAME_SHORT);
-if (!defined('SCHOOL_TAGLINE'))         define('SCHOOL_TAGLINE', '');
-if (!defined('SCHOOL_TAGLINE_AM'))      define('SCHOOL_TAGLINE_AM', '');
+if (!defined('SCHOOL_TAGLINE'))         define('SCHOOL_TAGLINE', 'School Management System');
+if (!defined('SCHOOL_TAGLINE_AM'))      define('SCHOOL_TAGLINE_AM', 'የትምህርት ቤት አስተዳደር ስርዓት');
 if (!defined('SCHOOL_TYPE'))            define('SCHOOL_TYPE', 'School');
 if (!defined('SCHOOL_TYPE_AM'))         define('SCHOOL_TYPE_AM', 'ትምህርት ቤት');
 
@@ -48,7 +51,7 @@ if (!defined('RELIGIOUS_INVOCATION'))   define('RELIGIOUS_INVOCATION', '');
 
 // ── ID card texts ─────────────────────────────────────────────
 if (!defined('ID_CARD_TITLE_AM'))       define('ID_CARD_TITLE_AM', SCHOOL_NAME_SHORT_AM . ' ' . SCHOOL_TYPE_AM . ' አባል መታወቂያ ካርድ');
-if (!defined('ID_CARD_TITLE_EN'))       define('ID_CARD_TITLE_EN', SCHOOL_TRANSLATION_EN . ' ' . SCHOOL_TYPE . ' Member ID Card');
+if (!defined('ID_CARD_TITLE_EN'))       define('ID_CARD_TITLE_EN', SCHOOL_TRANSLATION_EN . ' ' . SCHOOL_TYPE . ' ID Card');
 if (!defined('ID_CARD_FOOTER_AM'))      define('ID_CARD_FOOTER_AM', '');
 if (!defined('ID_CARD_SIG_HEAD_AM'))    define('ID_CARD_SIG_HEAD_AM', 'የ' . SCHOOL_TYPE_AM . 'ቱ ሃላፊ ስምና ፊርማ');
 if (!defined('ID_CARD_SIG_ADMIN_AM'))   define('ID_CARD_SIG_ADMIN_AM', 'የደብሩ አስተዳደር ስምና ፊርማ');
