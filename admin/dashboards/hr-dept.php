@@ -168,7 +168,7 @@ if (isset($conn)) {
             SUM(status='active')            AS active_cnt,
             SUM(status='warning')           AS warning_cnt,
             SUM(status='inactive')          AS inactive_cnt,
-            SUM(status='archived')          AS archived_cnt,
+            SUM(status='archived')          AS archived_cnt
          FROM students"
     );
 

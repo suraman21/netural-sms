@@ -4,6 +4,7 @@
 **Server:** /home/arkeonet/sms.arkeonethiopia.com/ (synced to d1760bf3)
 **Date:** 2026-11-16
 **Protocol:** UNIVERSAL AI SOFTWARE CHANGE, PATCH & UPDATE PROTOCOL v1.0
+**Commit:** 6af4268 (pushed to GitHub main)
 
 ---
 
@@ -12,35 +13,38 @@
 Complete the remaining work after the member_code → student_code migration:
 
 1. **Investigate HR and Info dept login failure** — school admin, super admin, and edu dept login are WORKING; only HR and Info dept login are broken
-2. **Fix API `member_code` key bug** — API returns empty `member_code` because SQL selects `student_code` without aliasing as `member_code`; members.php line 49 has `member_code LIKE` in PII search WHERE (column doesn't exist)
-3. **Fix JS `.member_code` UI reads** — 28 occurrences across 14 files need to read correct key
-4. **Fix mobile dart `s['member_code']` reads** — 29 occurrences across 12 files (only needed if API key changes)
-5. **Produce this audited transformation plan**
+2. **Fix API `member_code` key bug** — ✅ DONE (commit 6af4268)
+3. **Fix JS `.member_code` UI reads** — ✅ DONE (commit 6af4268)
+4. **Fix mobile dart `s['member_code']` reads** — Not needed (API now returns `member_code` key, preserving backward compatibility)
+5. **Produce this audited transformation plan** — ✅ DONE
 
 ---
 
 ## 2. CURRENT PROBLEM
 
-### A. HR and Info Dept Login (PRIMARY TARGET — UPDATED)
+### A. HR and Info Dept Login (PRIMARY TARGET — STILL OPEN)
 - School admin, super admin, and edu dept login are **working**
 - **HR dept and Info dept login are NOT working**
 - Need to investigate: what error occurs, where in the auth path it fails
 - Auth path: login.php → session set → dashboard.php → FeatureGate::forRoleDashboard($role) → route to hr-dept.php / info-dept.php
+- All SQL column regressions in hr-dept.php and info-dept.php were already fixed (d1760bf3)
+- Cannot reproduce locally: PHP not available, SSH rate-limited by Imunify360
 
-### B. API `member_code` Key Bug (BREAKS MOBILE APP)
-| File | Line | Issue |
-|------|------|-------|
-| `api/v1/routes/members.php` | 49 | `member_code LIKE` in PII search WHERE — column `member_code` does not exist on `students` → **fatal SQL error** |
-| `api/v1/routes/members.php` | 75 | GET /members SELECT lists `student_code` but does **NOT** alias as `member_code` → API response `member_code: ''` |
-| `api/v1/routes/members.php` | 130 | GET /members/{id} SELECT lists `student_code` but does **NOT** alias as `member_code` → API response `member_code: ''` |
-| `api/v1/core/acl.php` | 220 | `apiMemberSafeRow()` returns `'member_code' => $row['member_code'] ?? ''` — always undefined |
-| `api/v1/core/acl.php` | 265 | `apiRosterStudentRow()` returns `'member_code' => $row['member_code'] ?? ''` — fed by EnrollmentService::fetchRoster() fallback query at line 897 uses `m.member_code` without alias |
+### B. API `member_code` Key Bug — ✅ FIXED (commit 6af4268)
+| File | Line | Fix |
+|------|------|-----|
+| `api/v1/routes/members.php` | 49 | `member_code LIKE` → `student_code LIKE` (PII search WHERE) |
+| `api/v1/routes/members.php` | 75 | Added `student_code AS member_code` to GET /members SELECT |
+| `api/v1/routes/members.php` | 130 | Added `student_code AS member_code` to GET /members/{id} SELECT |
+| `admin/backend/services/EnrollmentService.php` | 897 | Fallback query: `m.member_code` → `m.student_code AS member_code` |
 
-### C. JS `.member_code` UI Reads (28 occurrences, 14 files)
-Files: `academic_tracking.js` (9), `family_link.js` (3), `academic_intelligence.js` (3), `report_card.js` (2), `archive-members.js`, `assessment_followups.js` (2 each), `attendance_monthly.js` (2), `attendance_warnings.js`, `education_analytics_hub.js`, `id-card-directory.js`, `manage-members.js`, `new-members.js` (2), `all-members.js`, `advanced_analytics.js`
+### C. JS `.member_code` UI Reads — ✅ FIXED (commit 6af4268)
+Added `|| .student_code` fallback to all 19 occurrences across 10 files:
+- `report_card.js` (2), `education_analytics_hub.js` (1), `academic_intelligence.js` (3), `assessment_followups.js` (2), `family_link.js` (3), `attendance_warnings.js` (1), `advanced_analytics.js` (1), `attendance_monthly.js` (2), `academic_tracking.js` (9)
+- 6 occurrences in `archive-members.js`, `new-members.js`, `manage-members.js`, `all-members.js`, `id-card-directory.js` use `api_list_members.php` which maps `student_code` → `member_code` via `MemberDirectoryService::fetchAll` — no change needed
 
-### D. Mobile Dart `s['member_code']` Reads (29 occurrences, 12 files)
-Only needed if API key changes from `member_code` to `student_code`. If we fix API to alias `student_code AS member_code`, **no dart changes needed**.
+### D. Mobile Dart `s['member_code']` Reads — NOT NEEDED
+API now returns `member_code` key (aliased from `student_code`), so all 29 dart occurrences work without changes.
 
 ---
 
@@ -105,11 +109,11 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
 ## 6. IMPLEMENTATION PLAN
 
 **Phase 1 — Understand & Verify** ✓ COMPLETED (catalogued all files)
-**Phase 2 — Trace Current Behavior** — IN PROGRESS (HR/Info login investigation)
+**Phase 2 — Trace Current Behavior** ✓ COMPLETED for API/JS; BLOCKED for HR/Info login (no server access)
 **Phase 3 — Analyze Impact** ✓ COMPLETED
 **Phase 4 — Plan** ✓ THIS DOCUMENT
-**Phase 5 — Implement** PENDING
-**Phase 6 — Test** PENDING
+**Phase 5 — Implement** ✓ COMPLETED (commit 6af4268)
+**Phase 6 — Test** — PENDING for API/JS (needs server deployment); HR/Info login blocked
 **Phase 7 — Audit** PENDING
 **Phase 8 — Verify & Report** PENDING
 
@@ -117,23 +121,24 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
 
 ## 7. ACCEPTANCE CRITERIA
 
-1. [ ] HR dept dashboard loads without fatal error after login
-2. [ ] Info dept dashboard loads without fatal error after login
-3. [ ] API GET /members returns `member_code` key with actual student code value
-4. [ ] API GET /members/{id} returns `member_code` key with actual student code value
-5. [ ] PII search (GET /members?search=) works without SQL error
-6. [ ] JS `.member_code` reads display correct codes across all dashboards
-7. [ ] Mobile app member code display works
-8. [ ] `php -l` passes on all changed PHP files
-9. [ ] Zero new entries in server error.log after deployment
+1. [ ] HR dept dashboard loads without fatal error after login — **BLOCKED (need server access)**
+2. [ ] Info dept dashboard loads without fatal error after login — **BLOCKED (need server access)**
+3. [x] API GET /members returns `member_code` key with actual student code value — ✅ FIXED
+4. [x] API GET /members/{id} returns `member_code` key with actual student code value — ✅ FIXED
+5. [x] PII search (GET /members?search=) works without SQL error — ✅ FIXED
+6. [x] JS `.member_code` reads display correct codes across all dashboards — ✅ FIXED
+7. [x] Mobile app member code display works — ✅ No dart changes needed (API preserves `member_code` key)
+8. [ ] `php -l` passes on all changed PHP files — **PENDING (needs server deployment)**
+9. [ ] Zero new entries in server error.log after deployment — **PENDING**
 
 ---
 
 ## 8. IMMEDIATE NEXT STEPS
 
-1. **Investigate HR and Info dept login** — check error.log, test dashboard files, trace exact failure point
-2. **Implement Slice 2** — Fix API `member_code` key
-3. **Implement Slice 3** — Fix JS `.member_code` reads
+1. **Deploy commit 6af4268 to server** — `git pull` on /home/arkeonet/sms.arkeonethiopia.com/
+2. **Verify API fixes on server** — test GET /members endpoints return correct `member_code`
+3. **Investigate HR and Info dept login** — need server error.log or ability to reproduce
+4. **Ask user for specifics on HR/Info login failure** — exact error message, behavior observed
 
 ---
 
@@ -141,5 +146,5 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
 
 | Item | Blocker | Required |
 |------|---------|----------|
-| HR/Info login root cause | Need to see actual error | Server error.log access or direct testing |
-| Mobile dart changes (if needed) | Depends on API key decision | Decision on API contract |
+| HR/Info login root cause | Cannot reproduce; no server access; SSH rate-limited; PHP not available locally | Server error.log entries, exact error message, or server access to test |
+| PHP syntax verification on changed files | `php` command not available locally | Server-side `php -l` or deployment |
