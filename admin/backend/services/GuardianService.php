@@ -121,7 +121,7 @@ class GuardianService
      */
     public static function syncLegacy(\mysqli $conn, int $guardianId, int $onlyMemberId = 0): int
     {
-        $sql = 'UPDATE members m JOIN member_guardians mg ON mg.member_id = m.id JOIN guardians g ON g.id = mg.guardian_id
+        $sql = 'UPDATE students m JOIN member_guardians mg ON mg.member_id = m.id JOIN guardians g ON g.id = mg.guardian_id
                 SET m.guardian_name = g.display_name, m.guardian_phone1 = g.phone_primary, m.guardian_phone2 = g.phone_alt
                 WHERE mg.guardian_id = ? AND mg.is_primary = 1';
         if ($onlyMemberId > 0) {
@@ -196,7 +196,7 @@ class GuardianService
      */
     public static function attachFromLegacy(\mysqli $conn, int $memberId, int $pickedGuardianId = 0, string $source = 'hr'): array
     {
-        $stmt = $conn->prepare('SELECT guardian_name, guardian_phone1, guardian_phone2, guardian_city, guardian_sub_city, guardian_woreda, guardian_mender, guardian_block_number, guardian_house FROM members WHERE id = ?');
+        $stmt = $conn->prepare('SELECT guardian_name, guardian_phone1, guardian_phone2, guardian_city, guardian_sub_city, guardian_woreda, guardian_mender, guardian_block_number, guardian_house FROM students WHERE id = ?');
         if (!$stmt) {
             return ['guardian_id' => 0, 'mode' => 'none'];
         }
@@ -311,7 +311,7 @@ class GuardianService
      */
     private static function familyNameGuardianMatch(\mysqli $conn, int $memberId, string $guardianName): int
     {
-        $stmt = $conn->prepare('SELECT father_name, grandfather_name FROM members WHERE id = ?');
+        $stmt = $conn->prepare('SELECT father_name, grandfather_name FROM students WHERE id = ?');
         if (!$stmt) {
             return 0;
         }
@@ -329,7 +329,7 @@ class GuardianService
             "SELECT g.id, g.display_name, m2.father_name, m2.grandfather_name
                FROM member_guardians mg
                JOIN guardians g ON g.id = mg.guardian_id
-               JOIN members m2 ON m2.id = mg.member_id
+               JOIN students m2 ON m2.id = mg.member_id
               WHERE mg.member_id <> ?
                 AND g.status = 'active'
                 AND m2.status <> 'archived'
@@ -423,7 +423,7 @@ class GuardianService
         if ($g['status'] === 'merged') {
             throw new \InvalidArgumentException('That guardian was merged into #' . (int)$g['merged_into'] . ' — link the surviving record instead.');
         }
-        $mc = $conn->prepare('SELECT id FROM members WHERE id = ?');
+        $mc = $conn->prepare('SELECT id FROM students WHERE id = ?');
         if ($mc) {
             $mc->bind_param('i', $memberId);
             $mc->execute();
@@ -651,7 +651,7 @@ class GuardianService
     public static function siblingsOf(\mysqli $conn, int $memberId): array
     {
         $out = [];
-        $stmt = $conn->prepare('SELECT DISTINCT m.id, m.member_code, m.student_name, m.full_name_am, m.current_section FROM member_guardians mg JOIN member_guardians sg ON sg.guardian_id = mg.guardian_id AND sg.member_id != mg.member_id JOIN members m ON m.id = sg.member_id WHERE mg.member_id = ? AND m.status != \'archived\' ORDER BY m.student_name');
+        $stmt = $conn->prepare('SELECT DISTINCT m.id, m.student_code, m.student_name, m.full_name_am FROM member_guardians mg JOIN member_guardians sg ON sg.guardian_id = mg.guardian_id AND sg.member_id != mg.member_id JOIN students m ON m.id = sg.member_id WHERE mg.member_id = ? AND m.status != \'archived\' ORDER BY m.student_name');
         if ($stmt) {
             $stmt->bind_param('i', $memberId);
             $stmt->execute();
@@ -725,7 +725,7 @@ class GuardianService
     public static function childrenOf(\mysqli $conn, int $guardianId, int $limit = 50): array
     {
         $kids = [];
-        $s = $conn->prepare('SELECT m.id, m.member_code, m.student_name, m.full_name_am, m.current_section, m.status, m.gender, mg.relation, mg.contact_priority, mg.is_primary, mg.verified_by IS NOT NULL AS is_verified, mg.verified_at FROM member_guardians mg JOIN members m ON m.id = mg.member_id WHERE mg.guardian_id = ? ORDER BY m.student_name LIMIT ' . max(1, (int)$limit));
+        $s = $conn->prepare('SELECT m.id, m.student_code, m.student_name, m.full_name_am, m.status, m.gender, mg.relation, mg.contact_priority, mg.is_primary, mg.verified_by IS NOT NULL AS is_verified, mg.verified_at FROM member_guardians mg JOIN students m ON m.id = mg.member_id WHERE mg.guardian_id = ? ORDER BY m.student_name LIMIT ' . max(1, (int)$limit));
         if ($s) {
             $s->bind_param('i', $guardianId);
             $s->execute();
@@ -750,8 +750,8 @@ class GuardianService
             'guardians' => (int)$q("SELECT COUNT(*) FROM guardians WHERE status = 'active'"),
             'families_multi' => (int)$q("SELECT COUNT(*) FROM (SELECT guardian_id FROM member_guardians GROUP BY guardian_id HAVING COUNT(*) >= 2) t"),
             'members_linked' => (int)$q("SELECT COUNT(DISTINCT member_id) FROM member_guardians"),
-            'members_unlinked' => (int)$q("SELECT COUNT(*) FROM members m WHERE m.status != 'archived' AND TRIM(COALESCE(m.guardian_name,'')) != '' AND NOT EXISTS (SELECT 1 FROM member_guardians mg WHERE mg.member_id = m.id)"),
-            'members_no_guardian' => (int)$q("SELECT COUNT(*) FROM members m WHERE m.status != 'archived' AND TRIM(COALESCE(m.guardian_name,'')) = '' AND NOT EXISTS (SELECT 1 FROM member_guardians mg WHERE mg.member_id = m.id)"),
+            'members_unlinked' => (int)$q("SELECT COUNT(*) FROM students m WHERE m.status != 'archived' AND TRIM(COALESCE(m.guardian_name,'')) != '' AND NOT EXISTS (SELECT 1 FROM member_guardians mg WHERE mg.member_id = m.id)"),
+            'members_no_guardian' => (int)$q("SELECT COUNT(*) FROM students m WHERE m.status != 'archived' AND TRIM(COALESCE(m.guardian_name,'')) = '' AND NOT EXISTS (SELECT 1 FROM member_guardians mg WHERE mg.member_id = m.id)"),
             'pending_reviews' => (int)$q("SELECT COUNT(*) FROM guardian_link_suggestions WHERE status = 'pending'"),
             'links_unverified' => (int)$q("SELECT COUNT(*) FROM member_guardians WHERE verified_by IS NULL"),
             'merged' => (int)$q("SELECT COUNT(*) FROM guardians WHERE status = 'merged'"),
@@ -829,7 +829,7 @@ class GuardianService
         $off = ($page - 1) * $per;
         $sql = "SELECT g.id, g.display_name, g.phone_primary, g.phone_alt, g.city, g.sub_city, g.status, g.source, g.updated_at,
                 (SELECT COUNT(*) FROM member_guardians mg WHERE mg.guardian_id = g.id) AS children_count,
-                (SELECT GROUP_CONCAT(COALESCE(NULLIF(m.student_name,''), m.full_name_am) ORDER BY m.student_name SEPARATOR ', ') FROM member_guardians mg JOIN members m ON m.id = mg.member_id WHERE mg.guardian_id = g.id) AS children_names
+                (SELECT GROUP_CONCAT(COALESCE(NULLIF(m.student_name,''), m.full_name_am) ORDER BY m.student_name SEPARATOR ', ') FROM member_guardians mg JOIN students m ON m.id = mg.member_id WHERE mg.guardian_id = g.id) AS children_names
                 {$base} {$having} ORDER BY g.updated_at DESC, g.id DESC LIMIT {$per} OFFSET {$off}";
         $st = $conn->prepare($sql);
         $rows = [];
@@ -853,7 +853,7 @@ class GuardianService
         $per = max(5, min(100, $per));
         $page = max(1, $page);
         $cond = "m.status != 'archived' AND TRIM(COALESCE(m.guardian_name,'')) != '' AND NOT EXISTS (SELECT 1 FROM member_guardians mg WHERE mg.member_id = m.id)";
-        $r = $conn->query("SELECT COUNT(*) FROM members m WHERE {$cond}");
+        $r = $conn->query("SELECT COUNT(*) FROM students m WHERE {$cond}");
         $total = $r ? (int)$r->fetch_row()[0] : 0;
         $pages = max(1, (int)ceil($total / $per));
         $page = min($page, $pages);
@@ -865,7 +865,7 @@ class GuardianService
         $order = $asc ? 'ORDER BY m.id ASC' : 'ORDER BY m.id DESC';
         $limit = $asc ? "LIMIT {$per}" : "LIMIT {$per} OFFSET {$off}";
         $rows = [];
-        $res = $conn->query("SELECT m.id, m.member_code, m.student_name, m.full_name_am, m.current_section, m.guardian_name, m.guardian_phone1, m.guardian_phone2 FROM members m WHERE {$cond}{$extra} {$order} {$limit}");
+        $res = $conn->query("SELECT m.id, m.student_code, m.student_name, m.full_name_am, m.guardian_name, m.guardian_phone1, m.guardian_phone2 FROM students m WHERE {$cond}{$extra} {$order} {$limit}");
         if ($res) {
             while ($x = $res->fetch_assoc()) {
                 $rows[] = $x;
