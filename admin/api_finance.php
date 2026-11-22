@@ -44,7 +44,7 @@ function financeCategory(?int $id, string $type): void {
 function financeMember(?int $id): void {
     global $conn;
     if ($id === null) return;
-    $stmt = $conn->prepare('SELECT id FROM members WHERE id=?');
+    $stmt = $conn->prepare('SELECT id FROM students WHERE id=?');
     $stmt->bind_param('i', $id); $stmt->execute();
     $exists = (bool)$stmt->get_result()->fetch_assoc(); $stmt->close();
     if (!$exists) throw new LedgerInputException('Member not found.');
@@ -97,7 +97,7 @@ case 'dashboard':
     $data['pending_amount'] = (float)$row['a'];
 
     // Recent transactions
-    $r = $conn->query("SELECT t.*, c.name as category_name, m.student_name as member_name FROM finance_transactions t LEFT JOIN finance_categories c ON t.category_id=c.id LEFT JOIN members m ON t.member_id=m.id ORDER BY t.transaction_date DESC, t.id DESC LIMIT 20");
+    $r = $conn->query("SELECT t.*, c.name as category_name, m.student_name as member_name FROM finance_transactions t LEFT JOIN finance_categories c ON t.category_id=c.id LEFT JOIN students m ON t.member_id=m.id ORDER BY t.transaction_date DESC, t.id DESC LIMIT 20");
     $data['recent'] = [];
     while ($row = $r->fetch_assoc()) $data['recent'][] = $row;
 
@@ -137,7 +137,7 @@ case 'transactions':
     if ($status) { $where[] = "t.status=?"; $params[] = $status; }
     if ($search) { $where[] = "(t.description LIKE ? OR t.receipt_number LIKE ? OR m.student_name LIKE ?)"; $s="%$search%"; $params[]=$s; $params[]=$s; $params[]=$s; }
 
-    $sql = "SELECT t.*, c.name as category_name, m.student_name as member_name FROM finance_transactions t LEFT JOIN finance_categories c ON t.category_id=c.id LEFT JOIN members m ON t.member_id=m.id WHERE ".implode(' AND ',$where)." ORDER BY t.transaction_date DESC, t.id DESC LIMIT $limit";
+    $sql = "SELECT t.*, c.name as category_name, m.student_name as member_name FROM finance_transactions t LEFT JOIN finance_categories c ON t.category_id=c.id LEFT JOIN students m ON t.member_id=m.id WHERE ".implode(' AND ',$where)." ORDER BY t.transaction_date DESC, t.id DESC LIMIT $limit";
     $stmt = $conn->prepare($sql);
     if ($params) { $types = str_repeat('s', count($params)); $stmt->bind_param($types, ...$params); }
     $stmt->execute();
@@ -261,7 +261,7 @@ case 'member_fees':
         $limit = $perPage; $offset = ($page - 1) * $perPage;
         $pageInfo = ['total' => $total, 'page' => $page, 'total_pages' => $totalPages, 'per_page' => $perPage];
     }
-    $sql = "SELECT f.*, m.student_name, m.member_code FROM finance_member_fees f LEFT JOIN members m ON f.member_id=m.id WHERE ".implode(' AND ',$where)." ORDER BY f.ec_year DESC, f.ec_month DESC, f.id DESC LIMIT ".(int)$limit." OFFSET ".(int)$offset;
+    $sql = "SELECT f.*, m.student_name, m.student_code FROM finance_member_fees f LEFT JOIN students m ON f.member_id=m.id WHERE ".implode(' AND ',$where)." ORDER BY f.ec_year DESC, f.ec_month DESC, f.id DESC LIMIT ".(int)$limit." OFFSET ".(int)$offset;
     $stmt = $conn->prepare($sql);
     if ($params) { $stmt->bind_param($types, ...$params); }
     $stmt->execute();
