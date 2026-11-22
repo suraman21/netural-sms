@@ -140,7 +140,7 @@ class SubmissionService
         $out = [];
         try {
             $ph = implode(',', array_fill(0, count($ids), '?'));
-            $st = $conn->prepare("SELECT id, student_name, father_name, member_code FROM students WHERE id IN ($ph)");
+            $st = $conn->prepare("SELECT id, student_name, father_name, student_code FROM students WHERE id IN ($ph)");
             if ($st) {
                 $st->bind_param(str_repeat('i', count($ids)), ...$ids);
                 $st->execute();
@@ -2092,7 +2092,7 @@ class SubmissionService
             return ['status' => 'error', 'code' => 'not_found', 'message' => 'This student is not in this class.'];
         }
 
-        $st = $conn->prepare('SELECT id, student_name, father_name, member_code FROM students WHERE id = ?');
+        $st = $conn->prepare('SELECT id, student_name, father_name, student_code FROM students WHERE id = ?');
         $st->bind_param('i', $memberId);
         $st->execute();
         $m = $st->get_result()->fetch_assoc();

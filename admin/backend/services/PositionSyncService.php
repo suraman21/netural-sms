@@ -131,7 +131,7 @@ final class PositionSyncService
                 }
             }
 
-            $stmt = $conn->prepare('SELECT member_code FROM students WHERE id = ? FOR UPDATE');
+            $stmt = $conn->prepare('SELECT student_code FROM students WHERE id = ? FOR UPDATE');
             $stmt->bind_param('i', $memberId);
             $stmt->execute();
             $member = $stmt->get_result()->fetch_assoc();
@@ -139,7 +139,7 @@ final class PositionSyncService
             if (!$member) {
                 throw new RuntimeException('Member not found.');
             }
-            $oldCode = (string)($member['member_code'] ?? '');
+            $oldCode = (string)($member['student_code'] ?? '');
 
             $clear = $conn->prepare('DELETE FROM member_staff_positions WHERE member_id = ?');
             $clear->bind_param('i', $memberId);
@@ -159,7 +159,7 @@ final class PositionSyncService
 
             $newCode = self::computeCode($conn, $memberId, (string)($member['age_group'] ?? ''));
 
-            $update = $conn->prepare('UPDATE students SET member_code = ? WHERE id = ?');
+            $update = $conn->prepare('UPDATE students SET student_code = ? WHERE id = ?');
             $update->bind_param('si', $newCode, $memberId);
             $update->execute();
             $update->close();

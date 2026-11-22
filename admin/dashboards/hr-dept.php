@@ -251,8 +251,8 @@ $recentMembers = array_map(function ($row) {
 // ------------------------------------------------------------
 function generate_next_member_code(mysqli $conn): string
 {
-    $res = db_fetch_all_assoc($conn, "SELECT member_code FROM students WHERE member_code IS NOT NULL AND member_code <> '' ORDER BY id DESC LIMIT 1");
-    $last = $res[0]['member_code'] ?? null;
+    $res = db_fetch_all_assoc($conn, "SELECT student_code FROM students WHERE student_code IS NOT NULL AND student_code <> '' ORDER BY id DESC LIMIT 1");
+    $last = $res[0]['student_code'] ?? null;
     if (!$last) return '0001';
     $num = preg_replace('/\D/', '', $last);
     $next = str_pad((int)$num + 1, 4, '0', STR_PAD_LEFT);

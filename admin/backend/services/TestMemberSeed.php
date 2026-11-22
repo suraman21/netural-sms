@@ -412,7 +412,7 @@ class TestMemberSeed
         $city = self::CITY;
         $job = self::PROFESSION;
         $stmt = $conn->prepare(
-            "SELECT id, member_code, full_name_am FROM students
+            "SELECT id, student_code, full_name_am FROM students
              WHERE full_name_am = ? AND (city = ? )
              LIMIT 1"
         );

@@ -463,7 +463,7 @@ final class AttendanceWarningService
 
     private static function memberName(\mysqli $conn, int $memberId): string
     {
-        $stmt = $conn->prepare('SELECT student_name, father_name, member_code FROM students WHERE id = ? LIMIT 1');
+        $stmt = $conn->prepare('SELECT student_name, father_name, student_code FROM students WHERE id = ? LIMIT 1');
         if (!$stmt) {
             return '#' . $memberId;
         }

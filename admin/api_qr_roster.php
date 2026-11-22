@@ -142,7 +142,7 @@ if ($dept === 'edu') {
 } else {
     $countStmt = $conn->prepare(
         "SELECT COUNT(*) AS c FROM students
-         WHERE current_section = ? AND status = 'active'"
+         WHERE current_class_id = ? AND status = 'active'"
     );
     $countStmt->bind_param('s', $section);
     $countStmt->execute();
@@ -151,7 +151,7 @@ if ($dept === 'edu') {
     $stmt = $conn->prepare(
         "SELECT id, student_name, student_code
          FROM students
-         WHERE current_section = ? AND status = 'active'
+         WHERE current_class_id = ? AND status = 'active'
          ORDER BY student_code, id
          LIMIT ? OFFSET ?"
     );

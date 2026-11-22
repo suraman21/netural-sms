@@ -100,7 +100,7 @@ final class IdentityMigrationService
                         : IdentityCodeService::allocateStaff($conn, [$prefix]);
 
                     $update = $conn->prepare(
-                        'UPDATE students SET legacy_student_code = ?, member_code = ? WHERE id = ?'
+                        'UPDATE students SET legacy_student_code = ?, student_code = ? WHERE id = ?'
                     );
                     $update->bind_param('ssi', $old, $newCode, $memberId);
                     if (!$update->execute()) {

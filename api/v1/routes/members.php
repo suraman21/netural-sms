@@ -43,8 +43,7 @@ if ($method === 'GET' && $id === null) {
 
     if ($status) { $where[] = "status = ?"; $params[] = $status; $types .= 's'; }
     if ($gender) { $where[] = "gender = ?"; $params[] = $gender; $types .= 's'; }
-    if ($section) { $where[] = "current_section = ?"; $params[] = $section; $types .= 's'; }
-    if ($ageGroup) { $where[] = "age_group = ?"; $params[] = $ageGroup; $types .= 's'; }
+    if ($section) { $where[] = "current_class_id = ?"; $params[] = $section; $types .= 's'; }
     if ($search) {
         if ($canPii) {
             $where[] = "(student_name LIKE ? OR father_name LIKE ? OR member_code LIKE ? OR phone_number LIKE ? OR full_name_am LIKE ?)";
