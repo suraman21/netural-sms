@@ -96,6 +96,7 @@ $validRoles = [
     'finance_dept',
     'material_dept',
     'mezmur_dept',
+    'school_registrar',
     'teacher',
     'attendance_taker',
     // Website/CMS manager (2026-08-31): created by the super admin here;

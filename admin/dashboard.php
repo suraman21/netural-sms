@@ -67,6 +67,16 @@ switch ($role) {
         }
         break;
 
+    case 'school_registrar':
+        $registrarFile = __DIR__ . '/dashboards/registrar.php';
+        if (file_exists($registrarFile)) {
+            require $registrarFile;
+        } else {
+            // Fallback to school-admin dashboard if registrar.php is missing
+            require __DIR__ . '/dashboards/school_admin.php';
+        }
+        break;
+
     case 'hr_dept':
         require __DIR__ . '/dashboards/hr-dept.php';
         break;

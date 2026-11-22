@@ -161,19 +161,20 @@ if (!defined('ACCESS_CONTROL_LOADED')) {
             // ---- Member management (Information department) ----
             // finance_dept included: the finance dashboard fetches the student
             // roster to assign fees (frontend/js/finance.js → members.php).
-            'hr_register_member.php'  => ['super_admin', 'school_admin', 'hr_dept'],
-            'api_list_members.php'    => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'edu_dept', 'finance_dept'],
-            'members.php'             => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'edu_dept', 'finance_dept'],
-            'api_check_duplicate.php' => ['super_admin', 'school_admin', 'hr_dept'],
-            'members_check.php'       => ['super_admin', 'school_admin', 'hr_dept'],
-            'info_manage_member.php'        => ['super_admin', 'school_admin', 'info_dept', 'hr_dept'],
-            'member_file.php'               => ['super_admin', 'school_admin', 'info_dept', 'hr_dept'],
-            'info_archive_member.php'       => ['super_admin', 'school_admin', 'info_dept', 'hr_dept'],
-            'info_restore_member.php'       => ['super_admin', 'school_admin', 'info_dept', 'hr_dept'],
-            'info_get_archived_members.php' => ['super_admin', 'school_admin', 'info_dept', 'hr_dept'],
-            'print_member.php'  => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'edu_dept'],
+            'hr_register_member.php'  => ['super_admin', 'school_admin', 'hr_dept', 'school_registrar'],
+            'api_list_members.php'    => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'edu_dept', 'finance_dept', 'school_registrar'],
+            'members.php'             => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'edu_dept', 'finance_dept', 'school_registrar'],
+            'api_check_duplicate.php' => ['super_admin', 'school_admin', 'hr_dept', 'school_registrar'],
+            'members_check.php'       => ['super_admin', 'school_admin', 'hr_dept', 'school_registrar'],
+            'info_manage_member.php'        => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'school_registrar'],
+            'member_file.php'               => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'school_registrar'],
+            'info_archive_member.php'       => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'school_registrar'],
+            'info_restore_member.php'       => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'school_registrar'],
+            'info_get_archived_members.php' => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'school_registrar'],
+            'print_member.php'  => ['super_admin', 'school_admin', 'info_dept', 'hr_dept', 'edu_dept', 'school_registrar'],
             'info-dept.php'     => ['super_admin', 'school_admin', 'info_dept'],
             'hr-dept.php'       => ['super_admin', 'school_admin', 'hr_dept'],
+            'registrar.php'     => ['super_admin', 'school_admin', 'school_registrar'],
 
             // ---- Material department ----
             'api_material.php'      => ['super_admin', 'school_admin', 'material_dept'],
