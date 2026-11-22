@@ -521,7 +521,7 @@ try {
         $types .= 'i';
         $vals[] = $upgrade_id;
         
-        $sql = "UPDATE members SET " . implode(', ', $setClauses) . " WHERE id = ?";
+        $sql = "UPDATE students SET " . implode(', ', $setClauses) . " WHERE id = ?";
         $stmt = $conn->prepare($sql);
         if (!$stmt) throw new Exception('Prepare failed: ' . $conn->error);
         $stmt->bind_param($types, ...$vals);
@@ -532,7 +532,7 @@ try {
     } else {
         $columns      = array_keys($data);
         $placeholders = array_fill(0, count($columns), '?');
-        $sql = "INSERT INTO members (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
+        $sql = "INSERT INTO students (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
 
         $stmt = $conn->prepare($sql);
         if (!$stmt) throw new Exception('Prepare failed: ' . $conn->error);
