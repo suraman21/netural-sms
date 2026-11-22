@@ -38,8 +38,8 @@ final class IdentityMigrationService
 
         while (true) {
             $stmt = $conn->prepare(
-                "SELECT id, member_code, age_group, student_name, father_name
-                 FROM members
+                "SELECT id, member_code, student_name, father_name
+                 FROM students
                  WHERE status != 'archived' AND id > ?
                  ORDER BY id ASC LIMIT " . self::PAGE
             );
@@ -100,7 +100,7 @@ final class IdentityMigrationService
                         : IdentityCodeService::allocateStaff($conn, [$prefix]);
 
                     $update = $conn->prepare(
-                        'UPDATE members SET legacy_member_code = ?, member_code = ? WHERE id = ?'
+                        'UPDATE students SET legacy_student_code = ?, member_code = ? WHERE id = ?'
                     );
                     $update->bind_param('ssi', $old, $newCode, $memberId);
                     if (!$update->execute()) {
