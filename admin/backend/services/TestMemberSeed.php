@@ -40,9 +40,9 @@ class TestMemberSeed
         $city = self::CITY;
         $job = self::PROFESSION;
         $stmt = $conn->prepare(
-            "SELECT COUNT(*) AS c FROM members
+            "SELECT COUNT(*) AS c FROM students
              WHERE status <> 'archived'
-               AND (city = ? OR work_profession = ?)"
+               AND (city = ? )"
         );
         if (!$stmt) {
             return 0;
@@ -226,7 +226,7 @@ class TestMemberSeed
         $city = self::CITY;
         $job = self::PROFESSION;
         $stmt = $conn->prepare(
-            "DELETE FROM members WHERE city = ? OR work_profession = ?"
+            "DELETE FROM students WHERE city = ? "
         );
         if ($stmt) {
             $stmt->bind_param('ss', $city, $job);
@@ -254,10 +254,10 @@ class TestMemberSeed
         }
         $city = self::CITY;
         $sql = "SELECT c.class_name, c.id AS class_id, COUNT(*) AS cnt
-                FROM members m
+                FROM students m
                 LEFT JOIN class_enrollments ce ON ce.member_id = m.id AND ce.status = 'active'
                 LEFT JOIN classes c ON c.id = ce.class_id
-                WHERE m.status <> 'archived' AND (m.city = ? OR m.work_profession = ?)
+                WHERE m.status <> 'archived' AND m.city = ?
                 GROUP BY c.id, c.class_name";
         $stmt = $conn->prepare($sql);
         if ($stmt) {
@@ -412,8 +412,8 @@ class TestMemberSeed
         $city = self::CITY;
         $job = self::PROFESSION;
         $stmt = $conn->prepare(
-            "SELECT id, member_code, full_name_am FROM members
-             WHERE full_name_am = ? AND (city = ? OR work_profession = ?)
+            "SELECT id, member_code, full_name_am FROM students
+             WHERE full_name_am = ? AND (city = ? )
              LIMIT 1"
         );
         if (!$stmt) {
@@ -441,10 +441,7 @@ class TestMemberSeed
             'phone_primary' => $phone,
             'guardian_phone1' => $phone,
             'city' => self::CITY,
-            'work_profession' => self::PROFESSION,
             'status' => 'active',
-            'member_type' => 'regular',
-            'registration_type' => 'direct',
             'membership_tier' => 'permanent',
             'registered_at' => date('Y-m-d'),
         ];
@@ -476,7 +473,7 @@ class TestMemberSeed
         }
         $fields = array_keys($use);
         $placeholders = implode(',', array_fill(0, count($fields), '?'));
-        $sql = 'INSERT INTO members (`' . implode('`,`', $fields) . '`) VALUES (' . $placeholders . ')';
+        $sql = 'INSERT INTO students (`' . implode('`,`', $fields) . '`) VALUES (' . $placeholders . ')';
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             return 0;
@@ -510,7 +507,7 @@ class TestMemberSeed
             return;
         }
         $vals[] = $id;
-        $sql = 'UPDATE members SET ' . implode(', ', $sets) . ' WHERE id = ?';
+        $sql = 'UPDATE students SET ' . implode(', ', $sets) . ' WHERE id = ?';
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             return;
@@ -543,7 +540,7 @@ class TestMemberSeed
         $city = self::CITY;
         $job = self::PROFESSION;
         $stmt = $conn->prepare(
-            "SELECT id FROM members WHERE city = ? OR work_profession = ?"
+            "SELECT id FROM students WHERE city = ? "
         );
         if (!$stmt) {
             return [];
@@ -562,7 +559,7 @@ class TestMemberSeed
     private static function memberColumns(\mysqli $conn): array
     {
         $cols = [];
-        $r = $conn->query('SHOW COLUMNS FROM members');
+        $r = $conn->query('SHOW COLUMNS FROM students');
         if ($r) {
             while ($row = $r->fetch_assoc()) {
                 $cols[] = $row['Field'];
