@@ -380,7 +380,7 @@ switch ($action) {
             exit;
         }
 
-        $stmt = $conn->prepare("SELECT student_name, father_name, member_code FROM members WHERE id = ?");
+        $stmt = $conn->prepare("SELECT student_name, father_name, student_code FROM students WHERE id = ?");
         $stmt->bind_param("i", $memberId);
         $stmt->execute();
         $member = $stmt->get_result()->fetch_assoc();
@@ -776,7 +776,7 @@ switch ($action) {
 
             // Update promoted_at (column added by migration/config auto-fix)
             try {
-                $stmt = $conn->prepare("UPDATE members SET promoted_at = CURDATE() WHERE id = ?");
+                $stmt = $conn->prepare("UPDATE students SET promoted_at = CURDATE() WHERE id = ?");
                 $stmt->bind_param("i", $memberId);
                 $stmt->execute();
                 $stmt->close();
@@ -1851,7 +1851,7 @@ switch ($action) {
         $reason = trim($_POST['reason'] ?? '');
         if (!$enrollmentId || !$toClassId) { echo json_encode(['status'=>'error','message'=>'Enrollment and target class required']); exit; }
         if (!$currentYear) { echo json_encode(['status'=>'error','message'=>'No active academic year']); exit; }
-        $stmt = $conn->prepare("SELECT ce.*, m.student_name, m.father_name FROM class_enrollments ce JOIN members m ON ce.member_id=m.id WHERE ce.id=?");
+        $stmt = $conn->prepare("SELECT ce.*, m.student_name, m.father_name FROM class_enrollments ce JOIN students m ON ce.member_id=m.id WHERE ce.id=?");
         $stmt->bind_param("i", $enrollmentId); $stmt->execute(); $enr = $stmt->get_result()->fetch_assoc();
         if (!$enr) { echo json_encode(['status'=>'error','message'=>'Enrollment not found']); exit; }
         $stmt = $conn->prepare("SELECT id FROM class_enrollments WHERE member_id=? AND class_id=? AND academic_year_id=? AND status='active'");
@@ -1920,17 +1920,15 @@ switch ($action) {
         $offset=max(0,(int)($_GET['offset']??0));
         if (!$currentYear) { echo json_encode(['status'=>'success','members'=>[],'total'=>0]); exit; }
         $w=["m.status='active'"]; $p=[]; $t='';
-        if ($search!=='') { $w[]="(m.student_name LIKE ? OR m.father_name LIKE ? OR m.member_code LIKE ? OR m.baptismal_name LIKE ?)"; $st="%$search%"; $p=array_merge($p,[$st,$st,$st,$st]); $t.='ssss'; }
+        if ($search!=='') { $w[]="(m.student_name LIKE ? OR m.father_name LIKE ? OR m.student_code LIKE ?)"; $st="%$search%"; $p=array_merge($p,[$st,$st,$st]); $t.='sss'; }
         if ($genderFilter!=='' && in_array($genderFilter,['male','female'])) { $w[]="m.gender=?"; $p[]=$genderFilter; $t.='s'; }
-        if ($ageGroupFilter!=='' && in_array($ageGroupFilter, MemberCategory::groups(), true)) { $w[]="m.age_group=?"; $p[]=$ageGroupFilter; $t.='s'; }
-        if ($memberTypeFilter!=='' && in_array($memberTypeFilter,['regular','special_regular','honorary'])) { $w[]="m.member_type=?"; $p[]=$memberTypeFilter; $t.='s'; }
         $wc=implode(' AND ',$w);
-        $csql="SELECT COUNT(*) as total FROM members m WHERE $wc AND m.id NOT IN (SELECT ce.member_id FROM class_enrollments ce WHERE ce.academic_year_id=? AND ce.status='active')";
+        $csql="SELECT COUNT(*) as total FROM students m WHERE $wc AND m.id NOT IN (SELECT ce.member_id FROM class_enrollments ce WHERE ce.academic_year_id=? AND ce.status='active')";
         $cp=array_merge($p,[$currentYear['id']]); $ct=$t.'i';
         if(!empty($cp)) { $stmt=$conn->prepare($csql); $stmt->bind_param($ct,...$cp); $stmt->execute(); }
         else { $stmt=$conn->prepare($csql); $stmt->execute(); }
         $total=(int)$stmt->get_result()->fetch_assoc()['total'];
-        $sql="SELECT m.id, m.student_name, m.father_name, m.grandfather_name, m.member_code, m.gender, m.phone_number, m.phone_primary, m.age_group, m.current_section, m.date_of_birth, m.age, m.baptismal_name, m.education_level, m.is_teacher, m.member_type, m.is_staff, m.is_committee, m.is_volunteer, m.registered_at FROM members m WHERE $wc AND m.id NOT IN (SELECT ce.member_id FROM class_enrollments ce WHERE ce.academic_year_id=? AND ce.status='active') ORDER BY m.student_name LIMIT ? OFFSET ?";
+        $sql="SELECT m.id, m.student_name, m.father_name, m.grandfather_name, m.student_code, m.gender, m.phone_number, m.phone_primary, m.date_of_birth, m.age, m.education_level, m.registered_at FROM students m WHERE $wc AND m.id NOT IN (SELECT ce.member_id FROM class_enrollments ce WHERE ce.academic_year_id=? AND ce.status='active') ORDER BY m.student_name LIMIT ? OFFSET ?";
         $fp=array_merge($p,[$currentYear['id'],$limit,$offset]); $ft=$t.'iii';
         $stmt=$conn->prepare($sql); $stmt->bind_param($ft,...$fp); $stmt->execute();
         $members=[]; $r=$stmt->get_result(); while($row=$r->fetch_assoc()) $members[]=$row;
@@ -1946,7 +1944,7 @@ switch ($action) {
         if ($search!=='') { $w[]="(u.full_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)"; $st="%$search%"; $p=[$st,$st,$st]; $t='sss'; }
         $wc=implode(' AND ',$w);
         $yc=$currentYear ? " AND ta.academic_year_id=".(int)$currentYear['id'] : "";
-        $sql="SELECT u.id, u.full_name, u.username, u.email, u.member_id, COALESCE(m.member_code,'') as member_code, COALESCE(m.phone_number,'') as phone FROM users u LEFT JOIN members m ON u.member_id=m.id WHERE $wc AND u.id NOT IN (SELECT ta.teacher_id FROM teacher_assignments ta WHERE ta.is_active=1 $yc) ORDER BY u.full_name";
+        $sql="SELECT u.id, u.full_name, u.username, u.email, u.member_id, COALESCE(m.student_code,'') as member_code, COALESCE(m.phone_number,'') as phone FROM users u LEFT JOIN students m ON u.member_id=m.id WHERE $wc AND u.id NOT IN (SELECT ta.teacher_id FROM teacher_assignments ta WHERE ta.is_active=1 $yc) ORDER BY u.full_name";
         if (!empty($p)) { $stmt=$conn->prepare($sql); $stmt->bind_param($t,...$p); $stmt->execute(); $result=$stmt->get_result(); }
         else $result=$conn->query($sql);
         $teachers=[]; if($result) while($row=$result->fetch_assoc()) $teachers[]=$row;
@@ -1965,7 +1963,7 @@ switch ($action) {
                 COALESCE(enr.total,0) as enrolled_count, COALESCE(enr.male_count,0) as male_count, COALESCE(enr.female_count,0) as female_count,
                 COALESCE(tch.teacher_count,0) as teacher_count, COALESCE(tch.class_teacher_name,'') as class_teacher_name
             FROM classes c
-            LEFT JOIN (SELECT ce.class_id, COUNT(*) as total, SUM(CASE WHEN m.gender='male' THEN 1 ELSE 0 END) as male_count, SUM(CASE WHEN m.gender='female' THEN 1 ELSE 0 END) as female_count FROM class_enrollments ce JOIN members m ON ce.member_id=m.id WHERE ce.academic_year_id=? AND ce.status='active' GROUP BY ce.class_id) enr ON c.id=enr.class_id
+            LEFT JOIN (SELECT ce.class_id, COUNT(*) as total, SUM(CASE WHEN m.gender='male' THEN 1 ELSE 0 END) as male_count, SUM(CASE WHEN m.gender='female' THEN 1 ELSE 0 END) as female_count FROM class_enrollments ce JOIN students m ON ce.member_id=m.id WHERE ce.academic_year_id=? AND ce.status='active' GROUP BY ce.class_id) enr ON c.id=enr.class_id
             LEFT JOIN (SELECT ta.class_id, COUNT(DISTINCT ta.teacher_id) as teacher_count, (SELECT u2.full_name FROM teacher_assignments ta2 JOIN users u2 ON ta2.teacher_id=u2.id WHERE ta2.class_id=ta.class_id AND ta2.is_class_teacher=1 AND ta2.is_active=1 LIMIT 1) as class_teacher_name FROM teacher_assignments ta WHERE ta.is_active=1 GROUP BY ta.class_id) tch ON c.id=tch.class_id
             WHERE c.is_active=1 ORDER BY c.level_order";
             $stmt=$conn->prepare($sql); $stmt->bind_param("i",$currentYear['id']); $stmt->execute();
@@ -1977,25 +1975,25 @@ switch ($action) {
                     COALESCE(enr.total,0) as enrolled_count, COALESCE(enr.male_count,0) as male_count, COALESCE(enr.female_count,0) as female_count,
                     0 as teacher_count, '' as class_teacher_name
                 FROM classes c
-                LEFT JOIN (SELECT ce.class_id, COUNT(*) as total, SUM(CASE WHEN m.gender='male' THEN 1 ELSE 0 END) as male_count, SUM(CASE WHEN m.gender='female' THEN 1 ELSE 0 END) as female_count FROM class_enrollments ce JOIN members m ON ce.member_id=m.id WHERE ce.academic_year_id=? AND ce.status='active' GROUP BY ce.class_id) enr ON c.id=enr.class_id
+                LEFT JOIN (SELECT ce.class_id, COUNT(*) as total, SUM(CASE WHEN m.gender='male' THEN 1 ELSE 0 END) as male_count, SUM(CASE WHEN m.gender='female' THEN 1 ELSE 0 END) as female_count FROM class_enrollments ce JOIN students m ON ce.member_id=m.id WHERE ce.academic_year_id=? AND ce.status='active' GROUP BY ce.class_id) enr ON c.id=enr.class_id
                 WHERE c.is_active=1 ORDER BY c.level_order");
                 $stmt->bind_param("i",$currentYear['id']); $stmt->execute();
                 $r=$stmt->get_result(); while($row=$r->fetch_assoc()) $classes[]=$row;
             } catch (Exception $e2) { /* tables don't exist yet */ }
         }
-        $totalM=0; $r=$conn->query("SELECT COUNT(*) c FROM members WHERE status='active'"); if($r) $totalM=(int)$r->fetch_assoc()['c'];
+        $totalM=0; $r=$conn->query("SELECT COUNT(*) c FROM students WHERE status='active'"); if($r) $totalM=(int)$r->fetch_assoc()['c'];
         $totalE=0; $stmt=$conn->prepare("SELECT COUNT(DISTINCT ce.member_id) c FROM class_enrollments ce WHERE ce.academic_year_id=? AND ce.status='active'");
         $stmt->bind_param("i",$currentYear['id']); $stmt->execute(); $r=$stmt->get_result(); if($r) $totalE=(int)$r->fetch_assoc()['c'];
         $totalT=0; $r2=$conn->query("SELECT COUNT(*) c FROM users WHERE role='teacher' AND is_active=1"); if($r2) $totalT=(int)$r2->fetch_assoc()['c'];
         $assignedT=0; try { $yc2=$currentYear?" AND ta.academic_year_id=".(int)$currentYear['id']:""; $r3=$conn->query("SELECT COUNT(DISTINCT ta.teacher_id) c FROM teacher_assignments ta WHERE ta.is_active=1 $yc2"); if($r3) $assignedT=(int)$r3->fetch_assoc()['c']; } catch(Exception $e){}
         // Member type breakdown
         $typeBreakdown=['regular'=>0,'special_regular'=>0,'honorary'=>0];
-        try { $r4=$conn->query("SELECT member_type, COUNT(*) as c FROM members WHERE status='active' GROUP BY member_type");
+        try { $r4=$conn->query("SELECT 'regular' as member_type, COUNT(*) as c FROM students WHERE status='active'");
             if($r4) while($rw=$r4->fetch_assoc()) { $typeBreakdown[$rw['member_type']??'regular']=(int)$rw['c']; }
         } catch(Exception $e){}
         // Enrolled by type
         $enrolledByType=['regular'=>0,'special_regular'=>0,'honorary'=>0];
-        if($currentYear) { try { $stmt4=$conn->prepare("SELECT m.member_type, COUNT(DISTINCT ce.member_id) c FROM class_enrollments ce JOIN members m ON ce.member_id=m.id WHERE ce.academic_year_id=? AND ce.status='active' GROUP BY m.member_type");
+        if($currentYear) { try { $stmt4=$conn->prepare("SELECT 'regular' as member_type, COUNT(DISTINCT ce.member_id) c FROM class_enrollments ce WHERE ce.academic_year_id=? AND ce.status='active'");
             $stmt4->bind_param("i",$currentYear['id']); $stmt4->execute(); $r5=$stmt4->get_result();
             if($r5) while($rw=$r5->fetch_assoc()) { $enrolledByType[$rw['member_type']??'regular']=(int)$rw['c']; } $stmt4->close();
         } catch(Exception $e){} }
@@ -2027,12 +2025,12 @@ switch ($action) {
         $limit=min(30,max(5,(int)($_GET['limit']??15))); $unassigned=isset($_GET['unassigned'])&&$_GET['unassigned']==='1';
         if (strlen($q)<1) { echo json_encode(['status'=>'success','members'=>[]]); exit; }
         $w=["m.status='active'"]; $p=[]; $t='';
-        $w[]="(m.student_name LIKE ? OR m.father_name LIKE ? OR m.member_code LIKE ? OR m.baptismal_name LIKE ?)";
-        $st="%$q%"; $p=[$st,$st,$st,$st]; $t='ssss';
+        $w[]="(m.student_name LIKE ? OR m.father_name LIKE ? OR m.student_code LIKE ?)";
+        $st="%$q%"; $p=[$st,$st,$st]; $t='sss';
         if ($excClass>0 && $currentYear) { $w[]="m.id NOT IN (SELECT ce.member_id FROM class_enrollments ce WHERE ce.class_id=? AND ce.academic_year_id=? AND ce.status='active')"; $p[]=$excClass; $p[]=$currentYear['id']; $t.='ii'; }
         if ($unassigned && $currentYear) { $w[]="m.id NOT IN (SELECT ce.member_id FROM class_enrollments ce WHERE ce.academic_year_id=? AND ce.status='active')"; $p[]=$currentYear['id']; $t.='i'; }
         $wc=implode(' AND ',$w); $p[]=$limit; $t.='i';
-        $sql="SELECT m.id, m.student_name, m.father_name, m.member_code, m.gender, m.age_group, m.phone_number, m.current_section, m.is_teacher, m.member_type FROM members m WHERE $wc ORDER BY m.student_name LIMIT ?";
+        $sql="SELECT m.id, m.student_name, m.father_name, m.student_code, m.gender, m.phone_number FROM students m WHERE $wc ORDER BY m.student_name LIMIT ?";
         $stmt=$conn->prepare($sql); $stmt->bind_param($t,...$p); $stmt->execute();
         $members=[]; $r=$stmt->get_result(); while($row=$r->fetch_assoc()) $members[]=$row;
         echo json_encode(['status'=>'success','members'=>edu_scrub_phone($members, $__maskPhone)]);
@@ -2074,21 +2072,11 @@ switch ($action) {
             $p[] = $gender;
             $t .= 's';
         }
-        if ($ageGroup !== '' && in_array($ageGroup, MemberCategory::groups(), true)) {
-            $w[] = 'm.age_group = ?';
-            $p[] = $ageGroup;
-            $t .= 's';
-        }
-        if ($memberType !== '' && in_array($memberType, ['regular', 'special_regular', 'honorary'], true)) {
-            $w[] = 'm.member_type = ?';
-            $p[] = $memberType;
-            $t .= 's';
-        }
         if ($q !== '') {
-            $w[] = '(m.student_name LIKE ? OR m.father_name LIKE ? OR m.grandfather_name LIKE ? OR m.member_code LIKE ? OR m.baptismal_name LIKE ? OR m.phone_number LIKE ?)';
+            $w[] = '(m.student_name LIKE ? OR m.father_name LIKE ? OR m.grandfather_name LIKE ? OR m.student_code LIKE ? OR m.phone_number LIKE ?)';
             $st = '%' . $q . '%';
-            array_push($p, $st, $st, $st, $st, $st, $st);
-            $t .= 'ssssss';
+            array_push($p, $st, $st, $st, $st, $st);
+            $t .= 'sssss';
         }
 
         // H2: dedupe enrollments to ONE row per member BEFORE joining, so a
@@ -2145,7 +2133,7 @@ switch ($action) {
 
         $orderMap = [
             'name' => 'm.student_name',
-            'code' => 'm.member_code',
+            'code' => 'm.student_code',
             'class' => 'c.level_order',
             'gender' => 'm.gender',
             'date' => 'ce.enrolled_at',
@@ -2153,7 +2141,7 @@ switch ($action) {
         $orderCol = $orderMap[$sort] ?? 'm.student_name';
         $wc = implode(' AND ', $w);
 
-        $countSql = "SELECT COUNT(DISTINCT m.id) AS total FROM members m $join WHERE $wc";
+        $countSql = "SELECT COUNT(DISTINCT m.id) AS total FROM students m $join WHERE $wc";
         $stmt = $conn->prepare($countSql);
         if (!$stmt) {
             echo json_encode(['status' => 'error', 'message' => 'Query prepare failed.']);
@@ -2166,12 +2154,11 @@ switch ($action) {
         $total = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
         $stmt->close();
 
-        $sql = "SELECT m.id, m.member_code, m.student_name, m.father_name, m.grandfather_name,
-                       m.baptismal_name, m.gender, m.age, m.age_group, m.member_type, m.status,
-                       m.phone_number, m.current_section, m.education_level, m.is_teacher,
+        $sql = "SELECT m.id, m.student_code, m.student_name, m.father_name, m.grandfather_name,
+                       m.gender, m.age, m.status, m.phone_number, m.education_level,
                        ce.id AS enrollment_id, ce.enrolled_at, ce.status AS enrollment_status,
                        c.id AS class_id, c.class_name, c.class_name_en, c.class_code
-                FROM members m
+                FROM students m
                 $join
                 WHERE $wc
                 ORDER BY $orderCol $dir, m.student_name ASC
@@ -2234,7 +2221,7 @@ switch ($action) {
         }
         $wc = implode(' AND ', $w);
 
-        $csql = "SELECT COUNT(*) AS total FROM users u LEFT JOIN members m ON u.member_id = m.id WHERE $wc";
+        $csql = "SELECT COUNT(*) AS total FROM users u LEFT JOIN students m ON u.member_id = m.id WHERE $wc";
         if ($t !== '') {
             $stmt = $conn->prepare($csql);
             $stmt->bind_param($t, ...$p);
@@ -2247,11 +2234,11 @@ switch ($action) {
         }
 
         $sql = "SELECT u.id, u.full_name, u.username, u.email, u.is_active, u.member_id,
-                       COALESCE(m.member_code,'') AS member_code,
-                       COALESCE(m.phone_number,'') AS phone,
-                       (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta WHERE ta.teacher_id = u.id AND ta.is_active = 1 $yc) AS assigned_classes
+                COALESCE(m.student_code,'') AS member_code,
+                COALESCE(m.phone_number,'') AS phone,
+                (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta WHERE ta.teacher_id = u.id AND ta.is_active = 1 $yc) AS assigned_classes
                 FROM users u
-                LEFT JOIN members m ON u.member_id = m.id
+                LEFT JOIN students m ON u.member_id = m.id
                 WHERE $wc
                 ORDER BY u.full_name
                 LIMIT ? OFFSET ?";
