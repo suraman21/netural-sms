@@ -46,7 +46,7 @@ if ($method === 'GET' && $id === null) {
     if ($section) { $where[] = "current_class_id = ?"; $params[] = $section; $types .= 's'; }
     if ($search) {
         if ($canPii) {
-            $where[] = "(student_name LIKE ? OR father_name LIKE ? OR member_code LIKE ? OR phone_number LIKE ? OR full_name_am LIKE ?)";
+            $where[] = "(student_name LIKE ? OR father_name LIKE ? OR student_code LIKE ? OR phone_number LIKE ? OR full_name_am LIKE ?)";
             $s = "%{$search}%";
             $params = array_merge($params, [$s, $s, $s, $s, $s]);
             $types .= 'sssss';
@@ -72,7 +72,7 @@ if ($method === 'GET' && $id === null) {
     $total = (int)$countStmt->get_result()->fetch_assoc()['total'];
     $countStmt->close();
 
-    $sql = "SELECT id, student_code, student_name, father_name, grandfather_name,
+    $sql = "SELECT id, student_code AS member_code, student_name, father_name, grandfather_name,
                    full_name_am, gender, status,
                    current_class_id, student_photo_path, created_at,
                    phone_number, phone_primary
@@ -113,7 +113,7 @@ if ($method === 'GET' && is_int($id) && $sub === null) {
     }
 
     $stmt = $conn->prepare(
-        "SELECT id, student_code, student_name, father_name, grandfather_name, full_name_am,
+        "SELECT id, student_code AS member_code, student_name, father_name, grandfather_name, full_name_am,
                 gender, date_of_birth, age, status, education_level,
                 phone_number, phone_primary, alt_phone_number,
                 guardian_name, guardian_phone1, guardian_phone2,

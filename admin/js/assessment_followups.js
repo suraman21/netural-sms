@@ -104,7 +104,7 @@
           ? pill('score', num(it.latest_score) + ' / ' + num(it.latest_max_score) + (it.latest_percentage != null ? ' (' + it.latest_percentage + '%)' : ''))
           : (it.original_score != null ? '<span class="rc-muted">orig. ' + num(it.original_score) + '</span>' : '<span class="rc-muted">—</span>');
         return '<tr data-id="' + it.id + '">' +
-          '<td><a href="' + esc(cfg.memberUrl + it.member_id) + '" target="_blank" rel="noopener">' + esc(it.member_name) + '</a><br><span class="rc-muted">' + esc(it.member_code) + '</span></td>' +
+          '<td><a href="' + esc(cfg.memberUrl + it.member_id) + '" target="_blank" rel="noopener">' + esc(it.member_name) + '</a><br><span class="rc-muted">' + esc(it.member_code || it.student_code) + '</span></td>' +
           '<td>' + esc(it.assessment_name) + '<br><span class="rc-muted">' + esc(it.subject_name || it.subject_name_en) + ' · ' + esc(it.class_name) + '</span></td>' +
           '<td class="opt">' + esc(it.due_date_ec || '—') + '</td>' +
           '<td class="opt">' + esc((it.inactive_from_ec || '') + ' – ' + (it.inactive_to_ec || '')) + '</td>' +
@@ -192,7 +192,7 @@
         '<h2>' + esc(it.assessment_name) + ' · ' + esc(it.member_name) + '</h2>' +
         '<div class="rc-subtitle">' + esc(it.subject_name || it.subject_name_en) + ' · ' + esc(it.class_name) + ' · ' + pill(it.decision, label(it.decision)) + '</div>' +
         '<div class="af-grid">' +
-        '<div><b>Member code</b>' + esc(it.member_code) + '</div>' +
+        '<div><b>Member code</b>' + esc(it.member_code || it.student_code) + '</div>' +
         '<div><b>Due date (EC)</b>' + esc(it.due_date_ec || '—') + '</div>' +
         '<div><b>Inactive period (EC)</b>' + esc((it.inactive_from_ec || '') + ' – ' + (it.inactive_to_ec || '')) + '</div>' +
         '<div><b>Max score</b>' + esc(num(it.assessment_max_score)) + '</div>' +

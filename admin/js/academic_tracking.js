@@ -135,7 +135,7 @@
           cell: function (r, self) {
             return '<div style="display:flex;flex-direction:column">'
               + '<span class="amharic" style="font-weight:700;color:#1e293b">' + esc(self.nameOf(r)) + '</span>'
-              + '<span style="font-size:.68rem;color:#94a3b8">' + esc(r.member_code || '—') + '</span>'
+              + '<span style="font-size:.68rem;color:#94a3b8">' + esc(r.member_code || r.student_code || '—') + '</span>'
               + '</div>';
           }
         },
@@ -193,8 +193,8 @@
           // A login without a members row is legal, so say so plainly rather
           // than rendering an empty cell that looks like a loading failure.
           cell: function (r) {
-            return r.member_code
-              ? '<code style="font-size:.7rem;background:#f1f5f9;padding:2px 6px;border-radius:4px">' + esc(r.member_code) + '</code>'
+            return r.member_code || r.student_code
+              ? '<code style="font-size:.7rem;background:#f1f5f9;padding:2px 6px;border-radius:4px">' + esc(r.member_code || r.student_code) + '</code>'
               : '<span style="color:#94a3b8;font-size:.72rem">Not linked</span>';
           }
         },
@@ -1631,7 +1631,7 @@
       sub = '<span style="color:' + PALETTE.bad + '">Details unavailable</span>';
     } else if (d) {
       var bits = [];
-      if (d.student.member_code) bits.push(esc(d.student.member_code));
+      if (d.student.member_code || d.student.student_code) bits.push(esc(d.student.member_code || d.student.student_code));
       if (d.class.class_name) {
         bits.push(esc(d.class.class_name) + (d.class.class_name_en ? ' · ' + esc(d.class.class_name_en) : ''));
       }
@@ -2270,7 +2270,7 @@
       sub = '<span style="color:' + PALETTE.bad + '">Details unavailable</span>';
     } else if (d && d.teacher) {
       var bits = [];
-      if (d.teacher.member_code) bits.push(esc(d.teacher.member_code));
+      if (d.teacher.member_code || d.teacher.student_code) bits.push(esc(d.teacher.member_code || d.teacher.student_code));
       if (d.teacher.username) bits.push('@' + esc(d.teacher.username));
       // A teacher login need not be linked to a member record, so the code
       // is genuinely absent rather than empty. Say so.
@@ -2914,7 +2914,7 @@
       return '<tr>'
         + '<td><span class="amharic" style="font-weight:700;color:#1e293b">' + esc(t.full_name || '') + '</span>'
         + '<div style="font-size:.67rem;color:#94a3b8">'
-        + esc(t.member_code || ('@' + (t.username || ''))) + '</div></td>'
+        + esc(t.member_code || t.student_code || ('@' + (t.username || ''))) + '</div></td>'
         + '<td>' + role + standing + '</td>'
         + '<td>' + (t.is_active
             ? '<span class="ch ch-ok">Active</span>' : '<span class="ch ch-d">Inactive</span>') + '</td>'
@@ -2962,7 +2962,7 @@
       return '<tr>'
         + '<td><span class="amharic" style="font-weight:700;color:#1e293b">'
         + esc([s.student_name, s.father_name].filter(Boolean).join(' ')) + '</span></td>'
-        + '<td>' + esc(s.member_code || '\u2014') + '</td>'
+        + '<td>' + esc(s.member_code || s.student_code || '\u2014') + '</td>'
         + '<td>' + (s.status
             ? '<span class="ch ' + (s.status === 'active' ? 'ch-ok' : 'ch-d') + '">'
               + esc(titleCase(s.status)) + '</span>' : '\u2014') + '</td>'
@@ -3411,7 +3411,7 @@
       return '<tr>'
         + '<td><span class="amharic" style="font-weight:700;color:#1e293b">'
         + esc([s.student_name, s.father_name].filter(Boolean).join(' ')) + '</span></td>'
-        + '<td>' + esc(s.member_code || '\u2014') + '</td>'
+        + '<td>' + esc(s.member_code || s.student_code || '\u2014') + '</td>'
         + '<td>' + (s.status
             ? '<span class="ch ' + (s.status === 'active' ? 'ch-ok' : 'ch-d') + '">'
               + esc(titleCase(s.status)) + '</span>' : '\u2014') + '</td>'
@@ -3529,7 +3529,7 @@
       return '<tr>'
         + '<td><span class="amharic" style="font-weight:700;color:#1e293b">' + esc(t.full_name || '') + '</span>'
         + '<div style="font-size:.67rem;color:#94a3b8">'
-        + esc(t.member_code || ('@' + (t.username || ''))) + '</div></td>'
+        + esc(t.member_code || t.student_code || ('@' + (t.username || ''))) + '</div></td>'
         + '<td>' + what + '</td><td>' + role + standing + '</td>'
         + '<td>' + (t.is_active
             ? '<span class="ch ch-ok">Active</span>' : '<span class="ch ch-d">Inactive</span>') + '</td>'

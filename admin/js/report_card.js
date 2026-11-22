@@ -88,7 +88,7 @@
           '<div class="rc-pvalue am rc-pname">' + esc(s.student_name || '') + '</div>' +
           '<div class="rc-prow"><div><div class="rc-plabel">Father · <span class="am">አባት</span></div><div class="rc-pvalue am">' + esc(s.father_name || '—') + '</div></div>' +
           '<div><div class="rc-plabel">Christian name</div><div class="rc-pvalue am">' + esc(s.christian_name || '—') + '</div></div></div>' +
-          '<div class="rc-prow"><div><div class="rc-plabel">Student ID</div><div class="rc-pvalue">' + esc(s.member_code || '—') + '</div></div>' +
+          '<div class="rc-prow"><div><div class="rc-plabel">Student ID</div><div class="rc-pvalue">' + esc(s.member_code || s.student_code || '—') + '</div></div>' +
           '<div><div class="rc-plabel">Gender · <span class="am">ጾታ</span></div><div class="rc-pvalue">' + esc(s.gender === 'male' ? 'Male' : (s.gender === 'female' ? 'Female' : '—')) + '</div></div></div>' +
         '</div>' +
       '</div>';
@@ -244,7 +244,7 @@
         '<div class="rc-cover-strip">' +
           '<div><div class="rc-plabel">Student · <span class="am">ተማሪ</span></div><div class="am rc-strip-name">' + esc(s.student_name || '') + '</div></div>' +
           '<div><div class="rc-plabel">Class · <span class="am">ክፍል</span></div><div class="am rc-strip-class">' + esc(cl.class_name || '') + (cl.class_name_en ? ' <small>(' + esc(cl.class_name_en) + ')</small>' : '') + '</div></div>' +
-          '<div class="rc-strip-id"><div class="rc-plabel">Student ID</div><div class="rc-strip-code">' + esc(s.member_code || '—') + '</div></div>' +
+          '<div class="rc-strip-id"><div class="rc-plabel">Student ID</div><div class="rc-strip-code">' + esc(s.member_code || s.student_code || '—') + '</div></div>' +
         '</div>' +
       '</div>';
 

@@ -429,7 +429,7 @@
                   const eDays = s.excused_days || 0;
                   const breakdown = raw.hasAtt ? ` (${pDays}P · ${aDays}A${lDays > 0 ? ' · ' + lDays + 'L' : ''}${eDays > 0 ? ' · ' + eDays + 'E' : ''})` : '';
                   return [
-                    `Class: ${s.class_name || '—'} · Code: ${s.member_code || '—'}`,
+                    `Class: ${s.class_name || '—'} · Code: ${s.member_code || s.student_code || '—'}`,
                     `Grade Average: ${raw.y}% (Grade ${raw.letter})`,
                     `Attendance: ${attText}${breakdown}`,
                     '👉 Click node to open full Report Card'

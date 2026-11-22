@@ -514,7 +514,7 @@
         sel.innerHTML = '<option value="0">Select a student\u2026</option>'
           + students.map(function (st) {
             var label = st.student_name + (st.father_name ? ' ' + st.father_name : '')
-              + (st.member_code ? ' \u00b7 ' + st.member_code : '');
+              + (st.member_code || st.student_code ? ' \u00b7 ' + (st.member_code || st.student_code) : '');
             return '<option value="' + st.member_id + '"'
               + (String(st.member_id) === String(self.state.member_id) ? ' selected' : '')
               + '>' + esc(label) + '</option>';
@@ -816,7 +816,7 @@
       + '<div><div style="font-size:1.1rem;font-weight:800;color:#1e293b">' + esc(fullName) + '</div>'
       + '<div style="font-size:.75rem;color:#64748b;margin-top:.15rem">'
       + (s.christian_name ? 'Christian name: ' + esc(s.christian_name) + ' · ' : '')
-      + (s.member_code ? 'Code: ' + esc(s.member_code) : '') + '</div>'
+      + (s.member_code || s.student_code ? 'Code: ' + esc(s.member_code || s.student_code) : '') + '</div>'
       + '<div style="margin-top:.4rem">'
       + drillBtn('class', { class_id: s.class_id }, s.class_name || 'Class', 'Open the class view')
       + '</div></div>'
@@ -1057,7 +1057,7 @@
         + td(st.rank ? ('#' + st.rank + (st.rank_tied ? '*' : '')) : '—', 'text-align:right;color:#64748b')
         + td(drillBtn('student', { member_id: st.member_id, class_id: s.class_id },
           [st.student_name, st.father_name].filter(Boolean).join(' '), 'Open this student')
-          + (st.member_code ? '<div style="font-size:.66rem;color:#94a3b8">' + esc(st.member_code) + '</div>' : ''))
+          + (st.member_code || st.student_code ? '<div style="font-size:.66rem;color:#94a3b8">' + esc(st.member_code || st.student_code) + '</div>' : ''))
         + td(esc(st.gender || '—'))
         + td('<strong>' + num(st.overall_average, '%') + '</strong>', 'text-align:right')
         + td(gradeChip(st.grade_letter))

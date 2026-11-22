@@ -255,7 +255,7 @@
               <div>${esc(s.student_name || '')} ${esc(s.father_name || '')}</div>
               ${s.christian_name ? `<div style="font-size:.65rem;color:#94a3b8"><i class="fa-solid fa-cross" style="font-size:.55rem"></i> ${esc(s.christian_name)}</div>` : ''}
             </td>
-            <td><code style="font-size:.7rem;background:#f1f5f9;padding:2px 6px;border-radius:4px">${esc(s.member_code || '—')}</code></td>
+            <td><code style="font-size:.7rem;background:#f1f5f9;padding:2px 6px;border-radius:4px">${esc(s.member_code || s.student_code || '—')}</code></td>
             <td><span class="amharic" style="font-weight:600;font-size:.78rem">${esc(s.class_name || '—')}</span></td>
             <td><span class="chip ${isMale ? 'chip-info' : 'chip-success'}" style="font-size:.65rem">${isMale ? 'M' : 'F'}</span></td>
             <td>

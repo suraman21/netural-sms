@@ -221,7 +221,7 @@
       var mid = parseInt(k.id, 10);
       var gid = parseInt(g.id, 10);
       var verified = parseInt(k.is_verified, 10) === 1;
-      return '<tr><td><a href="#" onclick="FamilyLink.profile(' + mid + ');return false;" class="font-semibold text-slate-800 hover:text-emerald-600">' + esc(kidName(k)) + '</a><div class="text-[11px] text-slate-400">' + esc(k.member_code || 'no code') + (k.current_section ? ' · ' + esc(k.current_section) : '') + (k.status && k.status !== 'active' ? ' · <span class="text-amber-600">' + esc(k.status) + '</span>' : '') + '</div></td>' +
+      return '<tr><td><a href="#" onclick="FamilyLink.profile(' + mid + ');return false;" class="font-semibold text-slate-800 hover:text-emerald-600">' + esc(kidName(k)) + '</a><div class="text-[11px] text-slate-400">' + esc(k.member_code || k.student_code || 'no code') + (k.current_section ? ' · ' + esc(k.current_section) : '') + (k.status && k.status !== 'active' ? ' · <span class="text-amber-600">' + esc(k.status) + '</span>' : '') + '</div></td>' +
         '<td><select class="fam-input fam-input-sm" onchange="FamilyLink.setRelation(' + gid + ',' + mid + ',this.value,null)">' + ['father', 'mother', 'other'].map(function (r) { return '<option value="' + r + '"' + (k.relation === r ? ' selected' : '') + '>' + relLabel(r) + '</option>'; }).join('') + '</select></td>' +
         '<td class="text-center">' + (parseInt(k.is_primary, 10) === 1 ? '<span class="fam-pill fam-pill-ok" title="This guardian is the primary contact for ' + esc(kidName(k)) + '">&#9733; Primary</span>' : '<button class="fam-btn fam-btn-sm" title="Make this guardian the primary contact for ' + esc(kidName(k)) + '" onclick="FamilyLink.setRelation(' + gid + ',' + mid + ',null,1)">Make primary</button>') + '</td>' +
         '<td class="text-center whitespace-nowrap">' + (verified ? '<span class="fam-pill fam-pill-ok" title="Office-verified' + (k.verified_at ? ' ' + esc(k.verified_at) : '') + '">&#10003; Verified</span> <button class="fam-btn fam-btn-sm" title="Clear verification (the link stays)" onclick="FamilyLink.unverify(' + gid + ',' + mid + ')">Clear</button>' : '<button class="fam-btn fam-btn-sm fam-btn-primary" title="Confirm this office-checked relationship" onclick="FamilyLink.verify(' + gid + ',' + mid + ')">Verify</button>') + '</td>' +
@@ -304,7 +304,7 @@
       fetch('/admin/api_list_members.php?q=' + encodeURIComponent(q) + '&limit=8', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
         var rows = (d && d.members) || [];
         if (!rows.length) { list.innerHTML = '<div class="fam-dd-empty">No member found</div>'; list.style.display = 'block'; return; }
-        list.innerHTML = rows.map(function (m) { return '<button type="button" data-mid="' + parseInt(m.id, 10) + '" class="fam-dd-item"><b>' + esc(m.student_name || m.full_name_am) + '</b> <span class="text-slate-400">' + esc(m.member_code || '') + (m.current_section ? ' · ' + esc(m.current_section) : '') + '</span>' + (m.guardian_name ? '<div class="text-[11px] text-slate-400">guardian on record: ' + esc(m.guardian_name) + '</div>' : '') + '</button>'; }).join('');
+        list.innerHTML = rows.map(function (m) { return '<button type="button" data-mid="' + parseInt(m.id, 10) + '" class="fam-dd-item"><b>' + esc(m.student_name || m.full_name_am) + '</b> <span class="text-slate-400">' + esc(m.member_code || m.student_code || '') + (m.current_section ? ' · ' + esc(m.current_section) : '') + '</span>' + (m.guardian_name ? '<div class="text-[11px] text-slate-400">guardian on record: ' + esc(m.guardian_name) + '</div>' : '') + '</button>'; }).join('');
         list.style.display = 'block';
         Array.prototype.forEach.call(list.querySelectorAll('[data-mid]'), function (b) {
           b.addEventListener('mousedown', function (e) { e.preventDefault(); });
@@ -447,7 +447,7 @@
       }
       box.innerHTML = '<table class="fam-table"><thead><tr><th>Member</th><th>Guardian on record</th><th>Phone</th><th class="text-right">Action</th></tr></thead><tbody>' + rows.map(function (m) {
         var mid = parseInt(m.id, 10);
-        return '<tr><td><a href="#" onclick="FamilyLink.profile(' + mid + ');return false;" class="font-semibold text-slate-800 hover:text-emerald-600">' + esc(m.student_name || m.full_name_am) + '</a><div class="text-[11px] text-slate-400">' + esc(m.member_code || 'no code') + (m.current_section ? ' · ' + esc(m.current_section) : '') + '</div></td>' +
+        return '<tr><td><a href="#" onclick="FamilyLink.profile(' + mid + ');return false;" class="font-semibold text-slate-800 hover:text-emerald-600">' + esc(m.student_name || m.full_name_am) + '</a><div class="text-[11px] text-slate-400">' + esc(m.member_code || m.student_code || 'no code') + (m.current_section ? ' · ' + esc(m.current_section) : '') + '</div></td>' +
           '<td class="text-slate-700">' + esc(m.guardian_name) + '</td><td class="text-slate-600">' + esc(m.guardian_phone1 || '—') + '</td>' +
           '<td class="text-right"><button class="fam-btn fam-btn-sm fam-btn-primary" onclick="FamilyLink.attach(' + mid + ',this)"><i class="fa-solid fa-link"></i> Link</button></td></tr>';
       }).join('') + '</tbody></table>';

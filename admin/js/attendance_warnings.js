@@ -81,7 +81,7 @@
       if (w.auto_deactivated) flags += ' ' + pill('critical', 'auto-deactivated');
       return '<tr data-id="' + esc(w.id) + '">' +
         '<td><a href="' + esc(cfg.memberUrl + w.member_id) + '" target="_blank" rel="noopener">' + esc(w.member_name || ('#' + w.member_id)) + '</a>' +
-        (w.member_code ? '<div class="rc-muted">' + esc(w.member_code) + (w.section ? ' · ' + esc(w.section) : '') + '</div>' : '') + '</td>' +
+        (w.member_code || w.student_code ? '<div class="rc-muted">' + esc(w.member_code || w.student_code) + (w.section ? ' · ' + esc(w.section) : '') + '</div>' : '') + '</td>' +
         '<td>' + deptPill(w) + '</td>' +
         '<td>' + esc(w.reason) + '<div class="rc-muted amh">' + esc(w.reason_am) + '</div>' + flags + '</td>' +
         '<td>' + stagePill(w) + '</td>' +

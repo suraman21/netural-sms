@@ -894,7 +894,7 @@ class EnrollmentService
             // Slimmer query if a newer member column is missing on this database.
             $sql = "SELECT ce.id AS enrollment_id, ce.enrolled_at, ce.status AS enrollment_status,
                            ce.academic_year_id, m.id AS member_id, m.id, m.student_name,
-                           m.father_name, m.member_code, m.gender
+                           m.father_name, m.student_code AS member_code, m.gender
                     FROM class_enrollments ce
                     JOIN students m ON ce.member_id = m.id
                     WHERE ce.class_id = ? AND ce.status = 'active'";

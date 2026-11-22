@@ -165,7 +165,7 @@
       var bar = r.rate == null ? '' : '<span class="am-bar"><i style="width:' + Math.max(0, Math.min(100, r.rate)) + '%"></i></span>';
       html += '<tr class="' + (r.below_threshold ? 'below' : '') + '" data-id="' + r.member_id + '">' +
         '<td>' + (state.offset + i + 1) + '</td>' +
-        '<td><a href="#" class="am-member" data-id="' + r.member_id + '"><strong>' + esc(r.name) + '</strong></a><div class="am-note">' + esc(r.member_code) + (r.gender ? ' · ' + esc(r.gender) : '') + '</div></td>' +
+        '<td><a href="#" class="am-member" data-id="' + r.member_id + '"><strong>' + esc(r.name) + '</strong></a><div class="am-note">' + esc(r.member_code || r.student_code) + (r.gender ? ' · ' + esc(r.gender) : '') + '</div></td>' +
         '<td class="opt">' + esc(r.group) + '</td>' +
         '<td class="num">' + r.sessions + '</td><td class="num opt">' + r.present + '</td><td class="num opt">' + r.late + '</td><td class="num opt">' + r.excused + '</td><td class="num">' + r.absent + '</td>' +
         '<td class="num">' + esc(fmtRate(r.rate)) + bar + '</td>' +
@@ -228,7 +228,7 @@
       var months = j.months || [];
       var html = '<div class="am-modal" role="dialog" aria-modal="true"><div class="am-dialog">' +
         '<h2>' + esc(row ? row.name : 'Member #' + id) + '</h2>' +
-        '<div class="am-note">' + esc(row ? row.member_code + ' · ' + row.group : '') + ' · ' + esc(j.department_label || '') + '</div>';
+        '<div class="am-note">' + esc(row ? (row.member_code || row.student_code) + ' · ' + row.group : '') + ' · ' + esc(j.department_label || '') + '</div>';
       if (!months.length) {
         html += '<div class="am-empty" style="margin-top:10px">No monthly data yet.</div>';
       } else {
