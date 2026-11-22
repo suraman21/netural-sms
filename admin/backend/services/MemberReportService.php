@@ -88,7 +88,7 @@ final class MemberReportService
                     COALESCE(SUM(CASE WHEN gender = 'female' THEN 1 ELSE 0 END), 0) AS female,
                     COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) AS active,
                     COALESCE(SUM(CASE WHEN status = 'warning' THEN 1 ELSE 0 END), 0) AS warning
-             FROM members WHERE {$this->whereSql}"
+             FROM students WHERE {$this->whereSql}"
         );
         $this->execute($statement);
         $row = $statement->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -130,7 +130,7 @@ final class MemberReportService
         }, $projection));
         $statement = $this->connection->prepare(
             "SELECT {$columns}
-             FROM `members`
+             FROM `students`
              WHERE {$this->whereSql}
              ORDER BY `student_name` ASC, `father_name` ASC, `id` ASC
              LIMIT " . self::MAX_ROWS
