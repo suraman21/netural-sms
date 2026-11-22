@@ -29,7 +29,7 @@ final class AttendancePreparationService
             throw new AttendancePreparationDenied('PREPARATION_BOUND_AUTH_REQUIRED');
         }
         $tables = ['users','academic_years','api_refresh_sessions','classes','teacher_assignments',
-            'class_enrollments','members','timetable_class_days','timetable_makeup_classes',
+            'class_enrollments','students','timetable_class_days','timetable_makeup_classes',
             'school_day_offs','school_holidays'];
         $tables = array_merge($tables, AttendancePreparationWorkflow::tables());
         if (FeatureGate::isEnabled('attendance_v2')) $tables[] = 'member_department_periods';

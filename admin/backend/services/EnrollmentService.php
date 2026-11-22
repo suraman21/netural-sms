@@ -121,7 +121,7 @@ class EnrollmentService
     {
         // A per-member lock serializes new enrollments as well as transfers;
         // locking only existing enrollments cannot protect a first enrollment.
-        $stmt = $conn->prepare('SELECT id, status FROM members WHERE id=? FOR UPDATE');
+        $stmt = $conn->prepare('SELECT id, status FROM students WHERE id=? FOR UPDATE');
         $stmt->bind_param('i', $memberId); $stmt->execute();
         $member = $stmt->get_result()->fetch_assoc(); $stmt->close();
         if (!$member || $member['status'] === 'archived') throw new \DomainException('Member not found or archived.');
@@ -574,8 +574,8 @@ class EnrollmentService
         self::requirePreparationIds($classId, $rosterYearId);
         $exclusion = DepartmentStatusService::exclusionSql($conn, 'edu', 'm.id', $date, true);
         $rows = self::preparationRows($conn,
-            "SELECT m.id AS member_id, m.student_name, m.father_name, m.member_code
-             FROM class_enrollments ce LEFT JOIN members m ON ce.member_id = m.id
+            "SELECT m.id AS member_id, m.student_name, m.father_name, m.student_code AS member_code
+             FROM class_enrollments ce LEFT JOIN students m ON ce.member_id = m.id
              WHERE ce.class_id = ? AND ce.status = 'active'
                AND (ce.academic_year_id = ? OR ce.academic_year_id IS NULL OR ce.academic_year_id = 0)"
                 . $exclusion . ' ORDER BY m.student_name, m.id',
@@ -614,14 +614,14 @@ class EnrollmentService
         foreach ($exclusions as $date => $exclusion) {
             $literal = $conn->real_escape_string($date); // Already exact valid Gregorian date.
             $parts[] = "SELECT '{$literal}' AS on_date, m.id AS member_id
-                FROM class_enrollments ce LEFT JOIN members m ON ce.member_id=m.id
+                FROM class_enrollments ce LEFT JOIN students m ON ce.member_id=m.id
                 WHERE ce.class_id=? AND ce.status='active'
                   AND (ce.academic_year_id=? OR ce.academic_year_id IS NULL OR ce.academic_year_id=0)" . $exclusion;
             array_push($params, $classId, $rosterYearId); $types .= 'ii';
         }
         $rows = self::preparationRows($conn,
             'SELECT eligible.on_date, eligible.member_id FROM (' . implode(' UNION ALL ', $parts) . ') eligible
-             LEFT JOIN members ordered_member ON eligible.member_id=ordered_member.id
+             LEFT JOIN students ordered_member ON eligible.member_id=ordered_member.id
              ORDER BY eligible.on_date, ordered_member.student_name, eligible.member_id', $types, $params);
         $byDate = array_fill_keys($dates, []); $seen = []; $ids = [];
         foreach ($rows as $row) {
@@ -636,8 +636,9 @@ class EnrollmentService
         if ($ids !== []) {
             // Only validated positive integer identities, never client SQL.
             $idSql = implode(',', array_keys($ids));
+            // ADR-0028 A3: wire key 'member_code' is frozen — alias student_code AS member_code.
             $identities = self::preparationRows($conn,
-                'SELECT id AS member_id, student_name, father_name, member_code FROM members WHERE id IN (' . $idSql . ') ORDER BY id', '', []);
+                'SELECT id AS member_id, student_name, father_name, student_code AS member_code FROM students WHERE id IN (' . $idSql . ') ORDER BY id', '', []);
             foreach ($identities as $row) {
                 $id = (int)$row['member_id'];
                 if (!isset($ids[$id]) || isset($memberSeen[$id])) {
@@ -833,12 +834,11 @@ class EnrollmentService
         $sql = "SELECT ce.id AS enrollment_id, ce.enrolled_at, ce.status AS enrollment_status,
                        ce.notes AS enrollment_notes, ce.academic_year_id,
                        m.id AS member_id, m.id, m.student_name, m.father_name, m.grandfather_name,
-                       m.member_code, m.gender, m.age_group, m.date_of_birth, m.age,
-                       m.baptismal_name, m.education_level, m.member_type,
-                       m.is_teacher, m.is_staff, m.is_committee, m.is_volunteer,
-                       m.student_photo_path, m.status, m.current_section
+                       m.student_code, m.gender, m.date_of_birth, m.age,
+                       m.education_level,
+                       m.student_photo_path, m.status
                 FROM class_enrollments ce
-                JOIN members m ON ce.member_id = m.id
+                JOIN students m ON ce.member_id = m.id
                 WHERE ce.class_id = ? AND ce.status = 'active'";
         $params = [$classId];
         $types = 'i';
@@ -856,25 +856,25 @@ class EnrollmentService
         $sql .= $deptExclusion;
 
         if ($search !== '') {
-            $sql .= " AND (m.student_name LIKE ? OR m.father_name LIKE ? OR m.member_code LIKE ? OR m.baptismal_name LIKE ?)";
+            // baptismal_name was removed from the learner model (ADR-0027 S6); search only identity fields.
+            $sql .= " AND (m.student_name LIKE ? OR m.father_name LIKE ? OR m.student_code LIKE ?)";
             $st = '%' . $search . '%';
-            array_push($params, $st, $st, $st, $st);
-            $types .= 'ssss';
+            array_push($params, $st, $st, $st);
+            $types .= 'sss';
         }
         if ($gender !== '' && in_array($gender, ['male', 'female'], true)) {
             $sql .= " AND m.gender = ?";
             $params[] = $gender;
             $types .= 's';
         }
+        // member_type was removed from the learner model (ADR-0027); no filter by it.
         if ($memberType !== '' && in_array($memberType, ['regular', 'special_regular', 'honorary'], true)) {
-            $sql .= " AND m.member_type = ?";
-            $params[] = $memberType;
-            $types .= 's';
+            // No-op: column does not exist on students. Filter is silently dropped.
         }
 
         $order = 'm.student_name';
         if ($sort === 'code') {
-            $order = 'm.member_code';
+            $order = 'm.student_code';
         } elseif ($sort === 'date') {
             $order = 'ce.enrolled_at DESC';
         } elseif ($sort === 'gender') {
@@ -889,7 +889,7 @@ class EnrollmentService
                            ce.academic_year_id, m.id AS member_id, m.id, m.student_name,
                            m.father_name, m.member_code, m.gender
                     FROM class_enrollments ce
-                    JOIN members m ON ce.member_id = m.id
+                    JOIN students m ON ce.member_id = m.id
                     WHERE ce.class_id = ? AND ce.status = 'active'";
             $params = [$classId];
             $types = 'i';
