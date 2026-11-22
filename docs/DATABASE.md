@@ -42,6 +42,40 @@ At `7e28157` (2026-10-28) plus migrations 079 (ACM P0), 080 (Telegram registrati
 
 Both fail loudly, so no data is at risk — but an installation built from this chain silently lacks `idx_members_tier_id` and `permanent_eligibility_notified_at`. Seventeen files query the column, including `admin/api_export_members.php`, whose default tier is `'permanent'`. This is a pre-existing defect, independent of the member→student remodel, and is recorded rather than fixed here.
 
+### The migration chain cannot rebuild the production database (measured 2026-11-16)
+
+The live schema was supplied as a dump (2026-10-08, 96 tables, 1,035 columns) and compared against a database built from `sql/legacy/database_schema.sql` + `012` + `013` + every numbered migration. **A second source of DDL exists**: 24 tables are created by PHP migrations under `sql/legacy/php-migrations/`, not by any `sql/*.sql` file.
+
+**15 production tables are never created by the `.sql` chain.** Twelve are buildable via the PHP migrations; three are the groups tables retired by N-4 (`wbws_groups`, `wbws_group_leaders`, `wbws_group_members`), whose absence is correct.
+
+| Created only by PHP migrations | cols |
+|---|---|
+| `assessments` | 16 |
+| `subjects` | 7 |
+| `department_tasks` | 18 |
+| `finance_budgets` | 7 |
+| `finance_categories` | 6 |
+| `material_categories` | 5 |
+| `material_items` | 15 |
+| `material_requests` | 11 |
+| `material_transactions` | 9 |
+| `member_changes` | 12 |
+| `shared_documents` | 15 |
+| `migration_055_mezmur_link_quarantine` | 7 |
+
+**Four tables that DO exist in the chain are missing production columns:**
+
+| Table | Missing |
+|---|---|
+| `finance_transactions` | 13 — `type`, `category_id`, `amount`, `description`, `receipt_number`, `payment_method`, `transaction_date`, `ec_month`, `ec_year`, `recorded_by`, `status`, `created_at`, `updated_at` |
+| `finance_member_fees` | 8 — `fee_type`, `amount`, `ec_month`, `ec_year`, `paid_date`, `status`, `recorded_by`, `created_at` |
+| `departments` | 1 — `sort_order` |
+| `members` | 1 — `membership_tier` |
+
+So the finance module in this repository is a **shell**: `sql/003` adds foreign keys to columns that the `.sql` chain never creates. This is why `provision_env.sh` carries an explicit workaround that extracts `CREATE TABLE` statements out of PHP files — a workaround that only the *test* harness has, not the deployment path.
+
+Every gap above is now explained, which means none of them is unaccounted data loss. Repairs belong in a dedicated migration (`107`) that formalises the PHP-only DDL as SQL, so a database can be rebuilt from `sql/` alone.
+
 ## 3. Migration rules in force
 
 - **Shared hosting:** use plain SQL that is safe for MariaDB. Migrations must be additive and idempotent where possible (`IF NOT EXISTS`, information_schema guards). There is no server-side tooling.

@@ -45,6 +45,27 @@
 -- `education_level` is KEPT: it is the institution's own level name
 -- (ADR-0025), data the school configures, not a derived age band.
 --
+-- ═══ TWO OWNER DECISIONS TAKEN AFTER THE PRODUCTION SCHEMA WAS PROVIDED ═══
+--
+-- The live database (dump of 2026-10-08) shows four columns this file already
+-- excluded, and the owner has now confirmed the exclusion by name:
+--
+--   membership_tier enum('temporary','permanent')
+--       "we don't need a membership related things for students"
+--   member_type     enum('regular','special_regular','honorary')
+--       membership by another name; no student equivalent (ADR-0024)
+--   registration_type enum('waiting','transfer','direct') + waiting_since
+--       "we don't need a temporary registration"
+--
+-- So a student is enrolled or not enrolled. There is no waiting list, no
+-- probationary tier, and no honour conferred by a membership class. The
+-- `assessments`/`subjects` shape of the product is unaffected: only the
+-- membership vocabulary leaves.
+--
+-- NOTE: `membership_tier` EXISTS in production and no migration creates it.
+-- That was not visible from `sql/` alone and is recorded in docs/DATABASE.md
+-- and docs/phase3d/README.md as a chain defect to be repaired by 107.
+--
 -- ═══ SAFETY ═══
 --
 -- · Idempotent: every object is guarded, so a second run is a no-op.
