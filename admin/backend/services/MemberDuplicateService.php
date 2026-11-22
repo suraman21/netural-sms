@@ -84,7 +84,7 @@ final class MemberDuplicateService
         }
         $where[] = '(' . implode(' OR ', $signals) . ')';
         $sql = "SELECT id, member_code, status, student_name, father_name, grandfather_name
-                FROM members WHERE " . implode(' AND ', $where)
+                FROM students WHERE " . implode(' AND ', $where)
             . " ORDER BY (status = 'archived') ASC, id DESC LIMIT 1"
             . ($lock ? ' FOR UPDATE' : '');
         $statement = $conn->prepare($sql);
@@ -204,7 +204,7 @@ final class MemberDuplicateService
                        phone_primary, alt_phone_number, phone_guardian,
                        guardian_phone1, guardian_phone2, guardian_name, status,
                        student_photo_path, registered_at, created_at
-                FROM members
+                FROM students
                 WHERE student_name = ? AND father_name = ?
                 ORDER BY status ASC, id DESC LIMIT {$limit}";
         $statement = $conn->prepare($sql);
