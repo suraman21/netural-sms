@@ -388,7 +388,7 @@ final class AttendanceMonthRollupService
         }
         $q = trim((string)($f['q'] ?? ''));
         if ($q !== '') {
-            $where .= ' AND (m.student_name LIKE ? OR m.father_name LIKE ? OR m.member_code LIKE ?)';
+            $where .= ' AND (m.student_name LIKE ? OR m.father_name LIKE ? OR m.student_code LIKE ?)';
             $like = '%' . $q . '%';
             $types .= 'sss';
             array_push($params, $like, $like, $like);
@@ -419,7 +419,7 @@ final class AttendanceMonthRollupService
             : '0';
         $sql = "SELECT r.member_id, r.sessions, r.present, r.absent, r.late, r.excused, r.present_eq, r.absent_eq,
                        r.rate, r.band, r.below_threshold, r.threshold_value, r.computed_at,
-                       m.member_code, m.student_name, m.father_name, m.gender, m.status AS member_status,
+                       m.student_code AS member_code, m.student_name, m.father_name, m.gender, m.status AS member_status,
                        cl.id AS class_id, cl.class_name, {$sectionExpr} AS section,
                        {$openWarnings} AS open_warnings
                 FROM " . self::TABLE . " r {$joins}

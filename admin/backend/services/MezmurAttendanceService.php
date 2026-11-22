@@ -134,7 +134,7 @@ final class MezmurAttendanceService
         // Attendance alerting §11: members inactive in Mezmur on the sheet date are not on the sheet.
         $excl = DepartmentStatusService::exclusionSql($conn, 'mezmur', 'members.id', $onDate);
         $res = $conn->query(
-            "SELECT id, member_code, student_name, father_name, full_name_am, $photo,
+            "SELECT id, student_code AS member_code, student_name, father_name, full_name_am, $photo,
                     $secExpr AS section
              FROM students
              WHERE status = 'active'{$excl}
@@ -404,7 +404,7 @@ final class MezmurAttendanceService
         $secExpr = MemberCategory::sqlSectionExpr('members', 'current_class_id', 'current_class_id');
         $excl = DepartmentStatusService::exclusionSql($conn, 'mezmur', 'members.id', $onDate);
         $stmt = $conn->prepare(
-            "SELECT id, member_code, student_name, father_name, $photo
+            "SELECT id, student_code AS member_code, student_name, father_name, $photo
              FROM students
              WHERE status = 'active'{$excl}
                AND ($secExpr = ? OR current_class_id = ?)
@@ -690,7 +690,7 @@ final class MezmurAttendanceService
         }
         if ($search !== '') {
             $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], mb_substr($search, 0, 100)) . '%';
-            $where[] = "(m.student_name LIKE ? OR m.father_name LIKE ? OR m.member_code LIKE ?)";
+            $where[] = "(m.student_name LIKE ? OR m.father_name LIKE ? OR m.student_code LIKE ?)";
             $types .= 'sss'; $params[] = $like; $params[] = $like; $params[] = $like;
         }
         $whereSql = implode(' AND ', $where);
@@ -699,7 +699,7 @@ final class MezmurAttendanceService
         $photoExpr = self::photoSelectExpr($conn);
 
         $sql = "
-            SELECT m.id, m.member_code, m.student_name, m.father_name, m.full_name_am, $photoExpr,
+            SELECT m.id, m.student_code AS member_code, m.student_name, m.father_name, m.full_name_am, $photoExpr,
                    $secExpr AS section,
                    $held AS sessions_held,
                    COALESCE(agg.present, 0) AS present,
@@ -880,7 +880,7 @@ final class MezmurAttendanceService
         // departments). Legacy shared takers live with super admin.
         $res = $conn->query(
             "SELECT u.id, u.username, u.full_name, u.is_active, u.created_at,
-                    m.student_name, m.member_code
+                    m.student_name, m.student_code AS member_code
              FROM users u
              LEFT JOIN students m ON u.member_id = m.id
              WHERE u.role = 'mezmur_attendance_taker'

@@ -841,7 +841,7 @@ class EnrollmentService
         $sql = "SELECT ce.id AS enrollment_id, ce.enrolled_at, ce.status AS enrollment_status,
                        ce.notes AS enrollment_notes, ce.academic_year_id,
                        m.id AS member_id, m.id, m.student_name, m.father_name, m.grandfather_name,
-                       m.student_code, m.gender, m.date_of_birth, m.age,
+                       m.student_code AS member_code, m.gender, m.date_of_birth, m.age,
                        m.education_level,
                        m.student_photo_path, m.status
                 FROM class_enrollments ce

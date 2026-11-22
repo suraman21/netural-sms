@@ -193,7 +193,7 @@ final class MezmurSubmissionService
             return false;
         }
         $canonical = MemberCategory::canonicalizeSection($section);
-        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_section', 'age_group');
+        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_class_id', 'current_class_id');
         try {
             $stmt = $conn->prepare(
                 "SELECT 1
@@ -882,10 +882,10 @@ final class MezmurSubmissionService
             return [];
         }
         $canonical = MemberCategory::canonicalizeSection($section);
-        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_section', 'age_group');
+        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_class_id', 'current_class_id');
         try {
             $stmt = $conn->prepare(
-                "SELECT a.member_id, a.status, a.notes, m.student_name, m.father_name, m.member_code
+                "SELECT a.member_id, a.status, a.notes, m.student_name, m.father_name, m.student_code AS member_code
                  FROM mezmur_attendance a
                  JOIN students m ON m.id = a.member_id
                  WHERE a.attendance_date = ?

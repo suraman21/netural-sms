@@ -143,6 +143,20 @@ final class MemberDirectoryService
 
         $members = [];
         while ($row = $statement->fetch(PDO::FETCH_ASSOC)) {
+            // Backward-compatible keys for JS UIs that still read the
+            // SSMS-era column names. The SMS students table stores these
+            // under different names; we map them here so existing browser
+            // code keeps working without changes.
+            $row['member_code'] = $row['student_code'] ?? '';
+            $row['current_section'] = $row['current_class_id'] ?? '';
+            $row['age_group'] = $row['age'] ?? '';
+            $row['registration_type'] = $row['registration_type'] ?? '';
+            $row['member_type'] = $row['member_type'] ?? '';
+            $row['work_profession'] = $row['work_profession'] ?? '';
+            $row['baptismal_name'] = $row['baptismal_name'] ?? '';
+            $row['mender'] = $row['mender'] ?? '';
+            $row['block_number'] = $row['block_number'] ?? '';
+            $row['house_number'] = $row['house_number'] ?? '';
             $members[] = $row;
         }
         $statement->closeCursor();
