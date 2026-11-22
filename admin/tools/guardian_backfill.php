@@ -95,9 +95,9 @@ $cursor = 0;
 while (true) {
     $stmt = $conn->prepare(
         'SELECT m.id, m.student_name, m.guardian_name, m.guardian_phone1, m.guardian_phone2,
-                m.guardian_city, m.guardian_sub_city, m.guardian_woreda, m.guardian_mender,
-                m.guardian_block_number, m.guardian_house
-         FROM members m
+                m.city, m.sub_city, m.woreda, m.mender,
+                m.block_number, m.house_number
+         FROM students m
          LEFT JOIN member_guardians mg ON mg.member_id = m.id AND mg.is_primary = 1
          WHERE mg.member_id IS NULL
            AND (COALESCE(m.guardian_name, \'\') <> \'\' OR COALESCE(m.guardian_phone1, \'\') <> \'\')
@@ -180,12 +180,12 @@ try {
         $n91 = GuardianMatchService::phoneN9($p1);
         $n92 = GuardianMatchService::phoneN9($p2);
         $addr = $c['addr'];
-        $city = bf_first_nonempty(array_column($addr, 'guardian_city'));
-        $sub = bf_first_nonempty(array_column($addr, 'guardian_sub_city'));
-        $wor = bf_first_nonempty(array_column($addr, 'guardian_woreda'));
-        $men = bf_first_nonempty(array_column($addr, 'guardian_mender'));
-        $blk = bf_first_nonempty(array_column($addr, 'guardian_block_number'));
-        $hou = bf_first_nonempty(array_column($addr, 'guardian_house'));
+        $city = bf_first_nonempty(array_column($addr, 'city'));
+        $sub = bf_first_nonempty(array_column($addr, 'sub_city'));
+        $wor = bf_first_nonempty(array_column($addr, 'woreda'));
+        $men = bf_first_nonempty(array_column($addr, 'mender'));
+        $blk = bf_first_nonempty(array_column($addr, 'block_number'));
+        $hou = bf_first_nonempty(array_column($addr, 'house_number'));
 
         $aliasVariants = array_values(array_unique(array_filter(
             array_map(static fn($v) => trim((string)$v), $c['names']),

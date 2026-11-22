@@ -62,21 +62,21 @@ $conn->set_charset('utf8mb4');
  * S5). This is a PROJECTION for the report only — it is never written, and the
  * sequence is derived from the current row order so the sheet is reproducible.
  */
-$sql = "SELECT id, member_code, legacy_member_code, student_name, father_name,
+$sql = "SELECT id, student_code, legacy_student_code, student_name, father_name,
                status, registered_at
-        FROM members
+        FROM students
         ORDER BY id ASC";
 $result = $conn->query($sql);
 if (!$result) {
     // A deployment that has not run every migration still gets a usable report.
     $result = $conn->query(
-        "SELECT id, member_code, NULL AS legacy_member_code, student_name,
+        "SELECT id, student_code, NULL AS legacy_student_code, student_name,
                 father_name, status, registered_at
-         FROM members ORDER BY id ASC"
+         FROM students ORDER BY id ASC"
     );
 }
 if (!$result) {
-    fwrite(STDERR, "FATAL: the members table could not be read.\n");
+    fwrite(STDERR, "FATAL: the students table could not be read.\n");
     exit(1);
 }
 

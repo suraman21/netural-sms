@@ -25,7 +25,7 @@ if ($memberId <= 0 || !isset($allowedFields[$field])) {
     exit('File not found.');
 }
 
-$stmt = $conn->prepare("SELECT `{$field}` AS stored_path FROM members WHERE id=? LIMIT 1");
+$stmt = $conn->prepare("SELECT `{$field}` AS stored_path FROM students WHERE id=? LIMIT 1");
 if (!$stmt) {
     reportInternalError('Private member file lookup prepare failed', $conn->error);
     http_response_code(503);

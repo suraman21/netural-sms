@@ -40,7 +40,7 @@ if ($id <= 0) {
 }
 
 // Verify member exists and is not already archived
-$checkStmt = $conn->prepare("SELECT id, student_name, father_name, status FROM members WHERE id = ?");
+$checkStmt = $conn->prepare("SELECT id, student_name, father_name, status FROM students WHERE id = ?");
 $checkStmt->bind_param("i", $id);
 $checkStmt->execute();
 $result = $checkStmt->get_result();
@@ -62,7 +62,7 @@ $archiveType = ($reason === 'failed_observation') ? 'failed_observation' : 'perm
 $archivedBy = (string)$_SESSION['admin_username'];
 
 // Archive the member and preserve a reviewable reason trail.
-$sql = "UPDATE members
+$sql = "UPDATE students
         SET status='archived', archived_at=NOW(), archived_by=?, archive_reason=?,
             archive_notes=?, archive_type=?
         WHERE id=?";

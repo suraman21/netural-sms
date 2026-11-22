@@ -107,7 +107,7 @@ if (isset($conn) && !$conn->connect_error) {
         $r = $conn->query("SELECT 
             DATE_FORMAT(created_at, '%Y-%m') as month,
             COUNT(*) as count
-            FROM members 
+            FROM students 
             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
             ORDER BY month ASC");

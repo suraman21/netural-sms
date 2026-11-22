@@ -33,7 +33,7 @@ if ($id <= 0) {
 }
 
 // Verify member exists and is archived
-$checkStmt = $conn->prepare("SELECT id, student_name, father_name, status FROM members WHERE id = ?");
+$checkStmt = $conn->prepare("SELECT id, student_name, father_name, status FROM students WHERE id = ?");
 $checkStmt->bind_param("i", $id);
 $checkStmt->execute();
 $result = $checkStmt->get_result();
@@ -53,7 +53,7 @@ if ($member['status'] !== 'archived') {
 // Archive metadata columns are deployment-managed by migration 013.
 $restoredBy = (string)$_SESSION['admin_username'];
 $stmt = $conn->prepare(
-    "UPDATE members
+    "UPDATE students
      SET status='active', archived_at=NULL, archived_by=NULL, archive_reason=NULL,
          archive_notes=NULL, archive_type=NULL, restored_at=NOW(), restored_by=?
      WHERE id=?"
