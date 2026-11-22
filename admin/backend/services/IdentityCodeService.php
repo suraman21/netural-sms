@@ -30,7 +30,7 @@
  *
  * Security & scale:
  *  - every value reaching SQL comes from ascii config tables or a
- *    validated A–Z token; uniqueness enforced by the members.member_code
+ *    validated A–Z token; uniqueness enforced by the students.student_code
  *    UNIQUE key with bounded retries over an indexed probe (O(1));
  *  - no sequence tables and no table scans — the
  *    retired per-letter sequence machinery (sql/018) remains in the
@@ -155,9 +155,11 @@ final class IdentityCodeService
         return self::allocateWithPrefix($conn, $prefix);
     }
 
+    // ADR-0027 M1: the learner table is `students`. Code uniqueness is probed
+    // against `students.student_code` (the renamed `member_code` column).
     private static function allocateWithPrefix(\mysqli $conn, string $prefix): string
     {
-        $statement = $conn->prepare('SELECT 1 FROM members WHERE member_code = ? LIMIT 1');
+        $statement = $conn->prepare('SELECT 1 FROM students WHERE student_code = ? LIMIT 1');
         if (!$statement) {
             throw new RuntimeException('Could not prepare code uniqueness probe.');
         }
@@ -280,17 +282,19 @@ final class IdentityCodeService
      * PNG exists at the canonical path so QR art never drifts from the
      * stored code.
      */
+    // ADR-0027 M1: the learner table is `students`. The QR payload carries
+    // `student_code` (formerly `member_code`).
     public static function regenerateQr(\mysqli $conn, int $memberId): bool
     {
         $statement = $conn->prepare(
-            'SELECT member_code FROM members WHERE id = ? LIMIT 1'
+            'SELECT student_code FROM students WHERE id = ? LIMIT 1'
         );
         if (!$statement) {
             return false;
         }
         $statement->bind_param('i', $memberId);
         $statement->execute();
-        $code = (string)($statement->get_result()->fetch_assoc()['member_code'] ?? '');
+        $code = (string)($statement->get_result()->fetch_assoc()['student_code'] ?? '');
         $statement->close();
         if ($code === '' || !class_exists('\\QRcode')) {
             return false;
