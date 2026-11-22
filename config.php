@@ -37,11 +37,11 @@ if (PHP_SAPI !== 'cli') {
 // Secrets file lives ABOVE public_html so it's never web-accessible.
 // NOTE: school_config.php isn't loaded yet, so we list candidate env filenames here.
 // Checks each name in each location — works for any school deployment.
-$_envFileNames = ['.fkss_env.php', '.wbws_env.php'];
+$_envFileNames = ['sms_env.php'];
 $_envBaseDirs = [
-    dirname(__DIR__),       // /home/user/ (production)
+    __DIR__,                // same dir as config.php — each installation gets its own env file
+    dirname(__DIR__),       // account home folder (fallback)
     dirname(__DIR__, 2),    // two levels up (some hosting layouts)
-    __DIR__,                // fallback: same dir (dev only — NOT recommended)
 ];
 $_envPaths = [];
 foreach ($_envBaseDirs as $_d) {
@@ -78,8 +78,8 @@ if (!$_envLoaded) {
         . '<h2 style="color:#b91c1c">Setup required: secrets file missing</h2>'
         . '<p>The system cannot start because its secret configuration file was not found. '
         . 'This file holds the database password and security keys and must live <strong>above</strong> the public web folder.</p>'
-        . '<p>Create a file named <code>.fkss_env.php</code> in your account home folder '
-        . '(one level above <code>public_html</code>) using the template <code>env.example.php</code> '
+        . '<p>Create a file named <code>sms_env.php</code> in the same folder as this config '
+        . 'using the template <code>env.example.php</code> '
         . 'included with this project, then reload this page.</p>'
         . '</div>'
     );
