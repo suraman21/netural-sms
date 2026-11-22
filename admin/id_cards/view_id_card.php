@@ -27,7 +27,9 @@ $backDashboard = match ((string)($_SESSION['admin_role'] ?? '')) {
     'school_admin' => '../dashboards/school_admin.php',
     default => '../dashboards/hr-dept.php',
 };
-$stmt = $conn->prepare("SELECT * FROM members WHERE id = ?");
+// ADR-0027 M1: the learner table is `students`. This page renders a student's
+// card — it is keyed by the student id the print queue passes in.
+$stmt = $conn->prepare("SELECT * FROM students WHERE id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
@@ -110,7 +112,10 @@ $isExpired = isExpired($member['id_card_generated_at']);
 
 // DATA PREP
 $full_name = ($member['student_name'] ?? '') . ' ' . ($member['father_name'] ?? '') . ' ' . ($member['grandfather_name'] ?? '');
-$christian_name = !empty($member['baptismal_name']) ? $member['baptismal_name'] : '-----------';
+// The Christian/baptismal name column left the learner model (ADR-0027 M1, S6):
+// a school does not hold church identity. The variable was assigned and never
+// printed, so nothing on the card changes.
+$christian_name = '-----------';
 
 // Age Calculation
 // Calculate current Ethiopian year dynamically
@@ -221,7 +226,7 @@ if (!empty($member['qr_code_path'])) {
             
             // Also update DB so it's saved for next time
             $db_path = '/admin/id_cards/assets/qr/qr_' . $member['member_code'] . '.png';
-            $update_stmt = $conn->prepare("UPDATE members SET qr_code_path = ? WHERE id = ?");
+            $update_stmt = $conn->prepare("UPDATE students SET qr_code_path = ? WHERE id = ?");
             $update_stmt->bind_param("si", $db_path, $member_id);
             $update_stmt->execute();
         }
