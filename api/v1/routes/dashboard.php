@@ -59,7 +59,7 @@ if ($action === 'stats' && $method === 'GET') {
                         COUNT(DISTINCT CASE WHEN m.gender = 'male' THEN m.id END) as male,
                         COUNT(DISTINCT CASE WHEN m.gender = 'female' THEN m.id END) as female
                     FROM class_enrollments ce
-                    JOIN members m ON ce.member_id = m.id
+                    JOIN students m ON ce.member_id = m.id
                     WHERE ce.class_id IN ({$placeholders})
                       AND ce.status = 'active'"
                     . ($year ? " AND ce.academic_year_id = {$yearId}" : "");
@@ -82,7 +82,7 @@ if ($action === 'stats' && $method === 'GET') {
                                       SUM(status='active') as active,
                                       SUM(gender='male') as male,
                                       SUM(gender='female') as female
-                               FROM members WHERE status != 'archived'");
+                               FROM students WHERE status != 'archived'");
             $data['members'] = $r ? $r->fetch_assoc() : ['total'=>0,'active'=>0,'male'=>0,'female'=>0];
         } catch (Exception $e) {
             $data['members'] = ['total' => 0, 'active' => 0, 'male' => 0, 'female' => 0];
@@ -178,7 +178,7 @@ if ($action === 'stats' && $method === 'GET') {
     // --------------------------------------------------
     if (!$isRestricted) {
         try {
-            $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM members WHERE created_at >= DATE_SUB(?, INTERVAL 7 DAY)");
+            $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM students WHERE created_at >= DATE_SUB(?, INTERVAL 7 DAY)");
             $stmt->bind_param('s', $today);
             $stmt->execute();
             $r = $stmt->get_result();

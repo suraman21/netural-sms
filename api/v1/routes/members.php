@@ -52,10 +52,10 @@ if ($method === 'GET' && $id === null) {
             $params = array_merge($params, [$s, $s, $s, $s, $s]);
             $types .= 'sssss';
         } else {
-            $where[] = "(student_name LIKE ? OR father_name LIKE ? OR member_code LIKE ? OR full_name_am LIKE ? OR baptismal_name LIKE ?)";
+            $where[] = "(student_name LIKE ? OR father_name LIKE ? OR student_code LIKE ? OR full_name_am LIKE ?)";
             $s = "%{$search}%";
-            $params = array_merge($params, [$s, $s, $s, $s, $s]);
-            $types .= 'sssss';
+            $params = array_merge($params, [$s, $s, $s, $s]);
+            $types .= 'ssss';
         }
     }
 
@@ -63,21 +63,21 @@ if ($method === 'GET' && $id === null) {
     $orderBy = match ($sort) {
         'newest' => 'created_at DESC',
         'oldest' => 'created_at ASC',
-        'code' => 'member_code ASC',
+        'code' => 'student_code ASC',
         default => 'student_name ASC'
     };
 
-    $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM members WHERE {$whereSql}");
+    $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM students WHERE {$whereSql}");
     if ($types) $countStmt->bind_param($types, ...$params);
     $countStmt->execute();
     $total = (int)$countStmt->get_result()->fetch_assoc()['total'];
     $countStmt->close();
 
-    $sql = "SELECT id, member_code, student_name, father_name, grandfather_name,
-                   full_name_am, gender, age_group, status, member_type,
-                   current_section, student_photo_path, created_at,
+    $sql = "SELECT id, student_code, student_name, father_name, grandfather_name,
+                   full_name_am, gender, status,
+                   current_class_id, student_photo_path, created_at,
                    phone_number, phone_primary
-            FROM members WHERE {$whereSql} ORDER BY {$orderBy} LIMIT {$limit} OFFSET {$offset}";
+            FROM students WHERE {$whereSql} ORDER BY {$orderBy} LIMIT {$limit} OFFSET {$offset}";
     $stmt = $conn->prepare($sql);
     if ($types) $stmt->bind_param($types, ...$params);
     $stmt->execute();
@@ -114,13 +114,12 @@ if ($method === 'GET' && is_int($id) && $sub === null) {
     }
 
     $stmt = $conn->prepare(
-        "SELECT id, member_code, student_name, father_name, grandfather_name, full_name_am,
-                gender, date_of_birth, age_group, status, member_type, current_section,
-                education_level, registration_type, baptismal_name, christian_name,
+        "SELECT id, student_code, student_name, father_name, grandfather_name, full_name_am,
+                gender, date_of_birth, age, status, education_level,
                 phone_number, phone_primary, alt_phone_number,
                 guardian_name, guardian_phone1, guardian_phone2,
                 address, city, sub_city, woreda, student_photo_path, created_at
-         FROM members WHERE id = ?"
+         FROM students WHERE id = ?"
     );
     $stmt->bind_param('i', $id);
     $stmt->execute();
@@ -210,7 +209,7 @@ if ($method === 'GET' && is_int($id) && $sub === 'attendance') {
 if ($method === 'PUT' && is_int($id)) {
     apiRequireRole($auth, apiRolesPii());
 
-    $stmt = $conn->prepare("SELECT id, status, guardian_name, guardian_phone1, guardian_phone2, student_name, father_name, grandfather_name FROM members WHERE id = ?");
+    $stmt = $conn->prepare("SELECT id, status, guardian_name, guardian_phone1, guardian_phone2, student_name, father_name, grandfather_name FROM students WHERE id = ?");
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $__memberBefore = $stmt->get_result()->fetch_assoc();
@@ -294,7 +293,7 @@ if ($method === 'PUT' && is_int($id)) {
     $params[] = $id;
     $types .= 'i';
 
-    $sql = "UPDATE members SET " . implode(', ', $sets) . " WHERE id = ?";
+    $sql = "UPDATE students SET " . implode(', ', $sets) . " WHERE id = ?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         reportInternalError('API member statement preparation failed', $conn->error);
@@ -380,7 +379,7 @@ if (is_int($id) && $sub === 'department-status' && ($method === 'GET' || $method
     if (!apiRoleIs($auth, $dsReadRoles)) {
         err('You cannot view department status.', 403);
     }
-    $__exists = $conn->prepare('SELECT id FROM members WHERE id = ? LIMIT 1');
+    $__exists = $conn->prepare('SELECT id FROM students WHERE id = ? LIMIT 1');
     $__exists->bind_param('i', $id);
     $__exists->execute();
     $__found = $__exists->get_result()->fetch_assoc();
@@ -458,7 +457,7 @@ if ($method === 'GET' && is_int($id) && $sub === 'attendance-risk') {
     if ($arDepartments === []) {
         err('You cannot view attendance risk.', 403);
     }
-    $__exists = $conn->prepare('SELECT id FROM members WHERE id = ? LIMIT 1');
+    $__exists = $conn->prepare('SELECT id FROM students WHERE id = ? LIMIT 1');
     $__exists->bind_param('i', $id);
     $__exists->execute();
     $__found = $__exists->get_result()->fetch_assoc();

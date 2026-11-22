@@ -19,7 +19,7 @@ $yearId = $year ? (int)$year['id'] : 0;
 
 if ($action === 'overview' && $method === 'GET') {
     $totalMembers = 0;
-    $r = $conn->query("SELECT COUNT(*) c FROM members WHERE status = 'active'");
+    $r = $conn->query("SELECT COUNT(*) c FROM students WHERE status = 'active'");
     if ($r) $totalMembers = (int)$r->fetch_assoc()['c'];
 
     $enrolled = 0;
@@ -35,7 +35,7 @@ if ($action === 'overview' && $method === 'GET') {
         $stmt->close();
 
         $stmt = $conn->prepare(
-            "SELECT COUNT(*) c FROM members m
+            "SELECT COUNT(*) c FROM students m
              WHERE m.status = 'active'
                AND m.id NOT IN (
                     SELECT ce.member_id FROM class_enrollments ce
@@ -80,29 +80,28 @@ if ($action === 'search' && $method === 'GET') {
     // Phase 3: opt-in offset (Load more) and with_total=1 (total matches).
     $offset = min(100000, max(0, (int)($_GET['offset'] ?? 0)));
     $st = '%' . $q . '%';
-    $sql = "SELECT m.id, m.member_code, m.student_name, m.father_name, m.gender, m.member_type,
+    $sql = "SELECT m.id, m.student_code, m.student_name, m.father_name, m.gender,
                    c.class_name, c.id AS class_id
-            FROM members m
+            FROM students m
             LEFT JOIN class_enrollments ce
                    ON ce.member_id = m.id AND ce.status = 'active' AND ce.academic_year_id = ?
             LEFT JOIN classes c ON c.id = ce.class_id
             WHERE m.status = 'active'
-              AND (m.student_name LIKE ? OR m.father_name LIKE ? OR m.member_code LIKE ? OR m.baptismal_name LIKE ?)
+              AND (m.student_name LIKE ? OR m.father_name LIKE ? OR m.student_code LIKE ?)
             ORDER BY m.student_name, m.id
             LIMIT ? OFFSET ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('issssii', $yearId, $st, $st, $st, $st, $limit, $offset);
+    $stmt->bind_param('isssii', $yearId, $st, $st, $st, $limit, $offset);
     $stmt->execute();
     $members = [];
     $r = $stmt->get_result();
     while ($row = $r->fetch_assoc()) {
         $members[] = [
             'id' => (int)$row['id'],
-            'member_code' => $row['member_code'] ?? '',
+            'student_code' => $row['student_code'] ?? '',
             'student_name' => $row['student_name'] ?? '',
             'father_name' => $row['father_name'] ?? '',
             'gender' => $row['gender'] ?? '',
-            'member_type' => $row['member_type'] ?? '',
             'class_id' => $row['class_id'] ? (int)$row['class_id'] : null,
             'class_name' => $row['class_name'] ?? null,
         ];
@@ -110,9 +109,9 @@ if ($action === 'search' && $method === 'GET') {
     $stmt->close();
     $out = ['members' => $members];
     if (($_GET['with_total'] ?? '') === '1') {
-        $cs = $conn->prepare("SELECT COUNT(*) AS c FROM members m WHERE m.status = 'active'
-              AND (m.student_name LIKE ? OR m.father_name LIKE ? OR m.member_code LIKE ? OR m.baptismal_name LIKE ?)");
-        $cs->bind_param('ssss', $st, $st, $st, $st);
+        $cs = $conn->prepare("SELECT COUNT(*) AS c FROM students m WHERE m.status = 'active'
+              AND (m.student_name LIKE ? OR m.father_name LIKE ? OR m.student_code LIKE ?)");
+        $cs->bind_param('sss', $st, $st, $st);
         $cs->execute();
         $out['total'] = (int)($cs->get_result()->fetch_assoc()['c'] ?? 0);
         $cs->close();

@@ -65,7 +65,7 @@ if (file_exists(ROOT_PATH . '/admin/backend/ethiopian_date.php')) {
 if (isset($_GET['stats']) && isset($conn) && !$conn->connect_error) {
     $stats = ['members' => 0, 'active' => 0, 'users' => 0];
     try {
-        $r = $conn->query("SELECT COUNT(*) as t, SUM(status='active') as a FROM members WHERE status!='archived'");
+        $r = $conn->query("SELECT COUNT(*) as t, SUM(status='active') as a FROM students WHERE status!='archived'");
         if ($r && $row = $r->fetch_assoc()) {
             $stats['members'] = (int)($row['t'] ?? 0);
             $stats['active']  = (int)($row['a'] ?? 0);

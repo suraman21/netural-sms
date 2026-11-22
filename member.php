@@ -96,7 +96,7 @@ if ($lookupCode !== '') {
 $code = $lookupCode;
 $member = null;
 if ($code !== '') {
-    $stmt = $conn->prepare("SELECT * FROM members WHERE member_code = ?");
+    $stmt = $conn->prepare("SELECT * FROM students WHERE student_code = ?");
     $stmt->bind_param("s", $code);
     $stmt->execute();
     $member = $stmt->get_result()->fetch_assoc();

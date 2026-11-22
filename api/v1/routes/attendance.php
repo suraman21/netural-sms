@@ -437,18 +437,18 @@ if ($method === 'GET' && ($action === '' || $action === null)) {
     if (!$roster && !class_exists('\\App\\Services\\EnrollmentService')) {
         if ($year) {
             $stmt = $conn->prepare(
-                "SELECT ce.member_id, m.student_name, m.father_name, m.member_code, m.gender
+                "SELECT ce.member_id, m.student_name, m.father_name, m.student_code, m.gender
                  FROM class_enrollments ce
-                 JOIN members m ON ce.member_id = m.id
+                 JOIN students m ON ce.member_id = m.id
                  WHERE ce.class_id = ? AND ce.academic_year_id = ? AND ce.status = 'active'
                  ORDER BY m.student_name"
             );
             $stmt->bind_param('ii', $classId, $year['id']);
         } else {
             $stmt = $conn->prepare(
-                "SELECT ce.member_id, m.student_name, m.father_name, m.member_code, m.gender
+                "SELECT ce.member_id, m.student_name, m.father_name, m.student_code, m.gender
                  FROM class_enrollments ce
-                 JOIN members m ON ce.member_id = m.id
+                 JOIN students m ON ce.member_id = m.id
                  WHERE ce.class_id = ? AND ce.status = 'active'
                  ORDER BY m.student_name"
             );
@@ -808,7 +808,7 @@ if ($action === 'summary' && $method === 'GET') {
                 SUM(a.status='present') as present,
                 SUM(a.status='absent') as absent,
                 SUM(a.status='late') as late
-         FROM attendance a JOIN members m ON a.member_id = m.id
+         FROM attendance a JOIN students m ON a.member_id = m.id
          WHERE a.class_id = ? AND a.attendance_date BETWEEN ? AND ?
          GROUP BY a.member_id ORDER BY m.student_name"
     );

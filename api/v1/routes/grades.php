@@ -925,9 +925,9 @@ if ($action === 'students' && $method === 'GET') {
             $roster = \App\Services\EnrollmentService::fetchRoster($conn, $aClassId, $scope['year_id'] ?? null);
         } else {
             $roster = [];
-            $stmt = $conn->prepare("SELECT ce.member_id, m.student_name, m.father_name, m.member_code, m.gender
+            $stmt = $conn->prepare("SELECT ce.member_id, m.student_name, m.father_name, m.student_code, m.gender
                                     FROM class_enrollments ce
-                                    JOIN members m ON ce.member_id = m.id
+                                    JOIN students m ON ce.member_id = m.id
                                     WHERE ce.class_id = ? AND ce.academic_year_id = ? AND ce.status = 'active'
                                     ORDER BY m.student_name");
             $stmt->bind_param('ii', $aClassId, $preferYear);
@@ -1316,11 +1316,11 @@ if ($action === 'summary' && $method === 'GET') {
                        a.weight_percentage, a.max_score, a.subject_id,
                        s.subject_name,
                        ar.member_id, ar.score, ar.remarks,
-                       m.student_name, m.father_name, m.member_code
+                       m.student_name, m.father_name, m.student_code
                 FROM assessments a
                 JOIN subjects s ON a.subject_id = s.id
                 LEFT JOIN academic_records ar ON ar.assessment_id = a.id
-                LEFT JOIN members m ON ar.member_id = m.id
+                LEFT JOIN students m ON ar.member_id = m.id
                 WHERE a.class_id = ? AND a.academic_year_id = ?";
         $params = [$classId, $yearId];
         $types = 'ii';

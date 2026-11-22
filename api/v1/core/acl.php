@@ -184,11 +184,11 @@ function apiParentChildren($conn, array $auth): array
         return [];
     }
     $stmt = $conn->prepare(
-        "SELECT m.id, m.member_code, m.student_name, m.father_name, m.grandfather_name,"
-        . " m.full_name_am, m.gender, m.age_group, m.status, m.member_type,"
-        . " m.current_section, m.student_photo_path, m.created_at,"
+        "SELECT m.id, m.student_code, m.student_name, m.father_name, m.grandfather_name,"
+        . " m.full_name_am, m.gender, m.status,"
+        . " m.current_class_id, m.student_photo_path, m.created_at,"
         . " mg.relation, mg.is_primary, mg.verified_at"
-        . " FROM member_guardians mg JOIN members m ON m.id = mg.member_id"
+        . " FROM member_guardians mg JOIN students m ON m.id = mg.member_id"
         . " WHERE mg.guardian_id = ? AND mg.verified_by IS NOT NULL"
         . " AND m.status != 'archived' ORDER BY m.student_name LIMIT 100"
     );

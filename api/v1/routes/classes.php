@@ -209,22 +209,22 @@ if ($method === 'GET' && $id !== null && $sub === 'students') {
             }
         } else {
             if ($year) {
-                $stmt = $conn->prepare("SELECT m.id, m.member_code, m.student_name, m.father_name, 
-                                               m.gender, m.age_group,
+                $stmt = $conn->prepare("SELECT m.id, m.student_code, m.student_name, m.father_name, 
+                                               m.gender,
                                                m.student_photo_path, m.status
                                         FROM class_enrollments ce 
-                                        JOIN members m ON ce.member_id = m.id 
+                                        JOIN students m ON ce.member_id = m.id 
                                         WHERE ce.class_id = ? 
                                           AND ce.academic_year_id = ? 
                                           AND ce.status = 'active'
                                         ORDER BY m.student_name");
                 $stmt->bind_param('ii', $id, $year['id']);
             } else {
-                $stmt = $conn->prepare("SELECT m.id, m.member_code, m.student_name, m.father_name, 
-                                               m.gender, m.age_group,
+                $stmt = $conn->prepare("SELECT m.id, m.student_code, m.student_name, m.father_name, 
+                                               m.gender,
                                                m.student_photo_path, m.status
                                         FROM class_enrollments ce 
-                                        JOIN members m ON ce.member_id = m.id 
+                                        JOIN students m ON ce.member_id = m.id 
                                         WHERE ce.class_id = ? AND ce.status = 'active'
                                         ORDER BY m.student_name");
                 $stmt->bind_param('i', $id);
