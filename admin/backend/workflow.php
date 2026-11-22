@@ -226,9 +226,9 @@ function getUnsyncedChanges($conn, $forDept = null, $limit = 50) {
         $forDept = $forDept ?? ($_SESSION['admin_role'] ?? '');
         
         $stmt = $conn->prepare("
-            SELECT mc.*, m.student_name, m.father_name, m.member_code
+            SELECT mc.*, m.student_name, m.father_name, m.student_code
             FROM member_changes mc
-            LEFT JOIN members m ON mc.member_id = m.id
+            LEFT JOIN students m ON mc.member_id = m.id
             WHERE mc.requires_sync = 1
             AND (mc.synced_to IS NULL OR FIND_IN_SET(?, mc.synced_to) = 0)
             AND mc.changed_by_dept != ?
@@ -354,10 +354,10 @@ function getPendingTasks($conn, $limit = 20) {
         $userId = $_SESSION['admin_id'] ?? 0;
         
         $stmt = $conn->prepare("
-            SELECT dt.*, m.student_name, m.father_name, m.member_code,
+            SELECT dt.*, m.student_name, m.father_name, m.student_code,
                    u.full_name as from_user_name
             FROM department_tasks dt
-            LEFT JOIN members m ON dt.related_member_id = m.id
+            LEFT JOIN students m ON dt.related_member_id = m.id
             LEFT JOIN users u ON dt.from_user_id = u.id
             WHERE dt.status IN ('pending', 'in_progress')
             AND (dt.to_dept = ? OR dt.to_user_id = ?)
@@ -426,17 +426,16 @@ function autoUpdateTeacherStatus($conn, $memberId, $isTeacher = true) {
     try {
         $flag = $isTeacher ? 1 : 0;
     
-    // Get current status
-    $stmt = $conn->prepare("SELECT is_teacher FROM members WHERE id = ?");
+    // Get current status (students table has no is_teacher column in SMS;
+    // teaching roles live on users.role — this is a compatibility shim)
+    $stmt = $conn->prepare("SELECT 0 AS is_teacher FROM students WHERE id = ?");
     $stmt->bind_param("i", $memberId);
     $stmt->execute();
     $current = $stmt->get_result()->fetch_assoc();
-    
+
     if ($current && (int)$current['is_teacher'] !== $flag) {
-        // Update the flag
-        $stmt = $conn->prepare("UPDATE members SET is_teacher = ? WHERE id = ?");
-        $stmt->bind_param("ii", $flag, $memberId);
-        $stmt->execute();
+        // is_teacher flag has no students column in SMS; persisted on users.role instead.
+        // Position sync is attempted below (best-effort).
 
         // Identity v2 convergence: mirror the flag onto the mapped
         // Teacher position and re-code (best-effort, never blocks the
@@ -458,7 +457,7 @@ function autoUpdateTeacherStatus($conn, $memberId, $isTeacher = true) {
         ]);
         
         // Notify Info Dept
-        $stmt = $conn->prepare("SELECT student_name, father_name FROM members WHERE id = ?");
+        $stmt = $conn->prepare("SELECT student_name, father_name FROM students WHERE id = ?");
         $stmt->bind_param("i", $memberId);
         $stmt->execute();
         $member = $stmt->get_result()->fetch_assoc();
@@ -493,13 +492,13 @@ function autoUpdateMemberClass($conn, $memberId, $classId, $academicYearId) {
     
     if (!$class) return false;
     
-    // Update member
+    // Update student
     $stmt = $conn->prepare("
-        UPDATE members 
-        SET current_class_id = ?, spiritual_education = ?, academic_status = 'active'
+        UPDATE students 
+        SET current_class_id = ?, academic_status = 'active'
         WHERE id = ?
     ");
-    $stmt->bind_param("isi", $classId, $class['class_code'], $memberId);
+    $stmt->bind_param("ii", $classId, $memberId);
     $stmt->execute();
     
     // Log the change
@@ -550,15 +549,15 @@ function updateAttendanceSummary($conn, $memberId, $academicYearId = null, $atte
  */
 function onMemberRegistered($conn, $memberId) {
     try {
-    $stmt = $conn->prepare("SELECT student_name, father_name, member_code, registration_type FROM members WHERE id = ?");
+    $stmt = $conn->prepare("SELECT student_name, father_name, student_code FROM students WHERE id = ?");
     $stmt->bind_param("i", $memberId);
     $stmt->execute();
     $member = $stmt->get_result()->fetch_assoc();
-    
+
     if (!$member) return false;
-    
+
     $memberName = $member['student_name'] . ' ' . $member['father_name'];
-    $regType = $member['registration_type'];
+    $regType = 'direct'; // SMS has no registration_type column; new students register directly
     
     // Log the change
     logMemberChange($conn, $memberId, 'registered', [
@@ -570,11 +569,11 @@ function onMemberRegistered($conn, $memberId) {
         "New Member Registered",
         "$memberName has been registered (Type: $regType)",
         [
-            'data' => [
-                'member_id' => $memberId,
-                'member_code' => $member['member_code'],
-                'registration_type' => $regType
-            ]
+                'data' => [
+                    'member_id' => $memberId,
+                    'student_code' => $member['student_code'],
+                    'registration_type' => $regType
+                ]
         ]
     );
     
@@ -599,7 +598,7 @@ function onMemberRegistered($conn, $memberId) {
  */
 function onMemberPromoted($conn, $memberId, $overrideReason = null) {
     try {
-    $stmt = $conn->prepare("SELECT student_name, father_name, member_code, membership_tier FROM members WHERE id = ?");
+    $stmt = $conn->prepare("SELECT student_name, father_name, student_code FROM students WHERE id = ?");
     $stmt->bind_param("i", $memberId);
     $stmt->execute();
     $member = $stmt->get_result()->fetch_assoc();
@@ -636,7 +635,7 @@ function onMemberPromoted($conn, $memberId, $overrideReason = null) {
  */
 function onMemberArchived($conn, $memberId, $reason = null) {
     try {
-    $stmt = $conn->prepare("SELECT student_name, father_name, member_code FROM members WHERE id = ?");
+    $stmt = $conn->prepare("SELECT student_name, father_name, student_code FROM students WHERE id = ?");
     $stmt->bind_param("i", $memberId);
     $stmt->execute();
     $member = $stmt->get_result()->fetch_assoc();
