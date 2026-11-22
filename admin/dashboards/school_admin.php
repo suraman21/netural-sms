@@ -22,11 +22,11 @@ $isImpersonating = !empty($_SESSION['original_admin_role']);
 // ── Stats ──
 $stats = ['total'=>0,'active'=>0,'warning'=>0,'inactive'=>0,'pending'=>0,'transfer'=>0,'direct'=>0,'male'=>0,'female'=>0,'sections'=>0,'teachers'=>0,'users'=>0];
 if(isset($conn)){
-    $r=$conn->query("SELECT COUNT(*) t,SUM(status='active') a,SUM(status='warning') w,SUM(status='inactive') i,SUM(registration_type='waiting') p,SUM(registration_type='transfer') tr,SUM(registration_type='direct') d,SUM(gender='male') m,SUM(gender='female') f FROM members WHERE status!='archived'");
-    if($r&&$row=$r->fetch_assoc()){$stats['total']=(int)($row['t']??0);$stats['active']=(int)($row['a']??0);$stats['warning']=(int)($row['w']??0);$stats['inactive']=(int)($row['i']??0);$stats['pending']=(int)($row['p']??0);$stats['transfer']=(int)($row['tr']??0);$stats['direct']=(int)($row['d']??0);$stats['male']=(int)($row['m']??0);$stats['female']=(int)($row['f']??0);}
-    $r=$conn->query("SELECT COUNT(DISTINCT current_section) c FROM members WHERE status!='archived' AND current_section IS NOT NULL AND current_section!=''");
+    $r=$conn->query("SELECT COUNT(*) t,SUM(status='active') a,SUM(status='warning') w,SUM(status='inactive') i,SUM(gender='male') m,SUM(gender='female') f FROM students WHERE status!='archived'");
+    if($r&&$row=$r->fetch_assoc()){$stats['total']=(int)($row['t']??0);$stats['active']=(int)($row['a']??0);$stats['warning']=(int)($row['w']??0);$stats['inactive']=(int)($row['i']??0);$stats['male']=(int)($row['m']??0);$stats['female']=(int)($row['f']??0);}
+    $r=$conn->query("SELECT COUNT(DISTINCT current_section) c FROM students WHERE status!='archived' AND current_section IS NOT NULL AND current_section!=''");
     if($r&&$row=$r->fetch_assoc())$stats['sections']=(int)($row['c']??0);
-    $r=$conn->query("SELECT SUM(is_teacher=1) t FROM members WHERE status!='archived'");
+    $r=$conn->query("SELECT COUNT(*) t FROM users WHERE role != 'super_admin'");
     if($r&&$row=$r->fetch_assoc())$stats['teachers']=(int)($row['t']??0);
     $r=$conn->query("SELECT COUNT(*) c FROM users WHERE is_active=1");
     if($r&&$row=$r->fetch_assoc())$stats['users']=(int)($row['c']??0);
@@ -42,7 +42,7 @@ $weeklyAtt=[];
 if(isset($conn)){try{for($i=6;$i>=0;$i--){$d=date('Y-m-d',strtotime("-$i days"));$r=$conn->query("SELECT SUM(status='present') p,SUM(status='absent') a,SUM(status='late') l,COUNT(*) t FROM attendance WHERE attendance_date='$d'");$row=$r?$r->fetch_assoc():null;$weeklyAtt[]=['date'=>$d,'day'=>date('D',strtotime($d)),'present'=>(int)($row['p']??0),'absent'=>(int)($row['a']??0),'late'=>(int)($row['l']??0),'total'=>(int)($row['t']??0)];}}catch(Exception $e){}}
 
 // ── Section distribution ──
-$sectionDist=[];if(isset($conn)){$r=$conn->query("SELECT COALESCE(current_section,'Unassigned') s,COUNT(*) c FROM members WHERE status!='archived' GROUP BY current_section ORDER BY c DESC");if($r)while($row=$r->fetch_assoc())$sectionDist[]=$row;}
+$sectionDist=[];if(isset($conn)){$r=$conn->query("SELECT COALESCE(current_class_id,0) s,COUNT(*) c FROM students WHERE status!='archived' GROUP BY current_class_id ORDER BY c DESC");if($r)while($row=$r->fetch_assoc())$sectionDist[]=$row;}
 
 // ── Users list ──
 $usersList=[];if(isset($conn)){$r=$conn->query("SELECT id,username,full_name,role,is_active,created_at,last_login FROM users ORDER BY id DESC");if($r)while($row=$r->fetch_assoc()){$row['status']=$row['is_active']?'active':'inactive';$usersList[]=$row;}}
@@ -50,8 +50,8 @@ $usersList=[];if(isset($conn)){$r=$conn->query("SELECT id,username,full_name,rol
 // ── Recent registrations ──
 $recentRegs=0;$recentMembers=[];
 if(isset($conn)){
-    try{$r=$conn->query("SELECT COUNT(*) c FROM members WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND status!='archived'");if($r&&$row=$r->fetch_assoc())$recentRegs=(int)$row['c'];}catch(Exception $e){}
-    try{$r=$conn->query("SELECT id,member_code,student_name,father_name,gender,status,current_section,registration_type,created_at FROM members WHERE status!='archived' ORDER BY created_at DESC LIMIT 10");if($r)while($row=$r->fetch_assoc())$recentMembers[]=$row;}catch(Exception $e){}
+    try{$r=$conn->query("SELECT COUNT(*) c FROM students WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND status!='archived'");if($r&&$row=$r->fetch_assoc())$recentRegs=(int)$row['c'];}catch(Exception $e){}
+    try{$r=$conn->query("SELECT id,student_code,student_name,father_name,gender,status,current_section,created_at FROM students WHERE status!='archived' ORDER BY created_at DESC LIMIT 10");if($r)while($row=$r->fetch_assoc())$recentMembers[]=$row;}catch(Exception $e){}
 }
 
 // ── Department stats ──
