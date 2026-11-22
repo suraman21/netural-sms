@@ -40,8 +40,8 @@ final class HrAttendanceService
     {
         $out = [];
         $res = $conn->query(
-            "SELECT COALESCE(NULLIF(TRIM(current_section), ''), '—') AS section, COUNT(*) AS members
-             FROM members WHERE status = 'active'
+            "SELECT COALESCE(NULLIF(TRIM(current_class_id), ''), '—') AS section, COUNT(*) AS members
+             FROM students WHERE status = 'active'
              GROUP BY section ORDER BY section LIMIT 200"
         );
         if ($res) {
@@ -57,9 +57,9 @@ final class HrAttendanceService
     {
         $stmt = $conn->prepare(
             "SELECT id, member_code, student_name, father_name
-             FROM members
+             FROM students
              WHERE status = 'active'
-               AND COALESCE(NULLIF(TRIM(current_section), ''), '—') = ?
+               AND COALESCE(NULLIF(TRIM(current_class_id), ''), '—') = ?
              ORDER BY student_name, father_name
              LIMIT 2000"
         );
