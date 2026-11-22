@@ -201,8 +201,8 @@ class PdfReportService
     {
         $stmt = $conn->prepare(
             "SELECT id, member_code, student_name, father_name, grandfather_name,
-                    status, current_section
-             FROM members WHERE id = ? LIMIT 1"
+                    status, current_class_id
+             FROM students WHERE id = ? LIMIT 1"
         );
         $stmt->bind_param('i', $memberId);
         $stmt->execute();
@@ -219,7 +219,7 @@ class PdfReportService
         $pdf->SetFont(self::FONT, '', 9.5);
         $pdf->Cell(0, 6, 'Code: ' . ($member['member_code'] ?: '—')
             . '    Status: ' . ($member['status'] ?: '—')
-            . '    Section: ' . ($member['current_section'] ?: '—'), 0, 1);
+            . '    Section: ' . ($member['current_class_id'] ?: '—'), 0, 1);
         $pdf->Ln(2);
 
         [$fromD, $toD] = self::window($from, $to);
@@ -247,9 +247,9 @@ class PdfReportService
             self::fetchHistory(
                 $conn,
                 "SELECT m.attendance_date, m.status,
-                        COALESCE(NULLIF(TRIM(mb.current_section), ''), '—') AS grp, m.notes
+                        COALESCE(NULLIF(TRIM(mb.current_class_id), ''), '—') AS grp, m.notes
                  FROM mezmur_attendance m
-                 LEFT JOIN members mb ON mb.id = m.member_id
+                 LEFT JOIN students mb ON mb.id = m.member_id
                  WHERE m.member_id = ? AND m.attendance_date BETWEEN ? AND ?
                  ORDER BY m.attendance_date DESC LIMIT " . self::MAX_MEMBER_ROWS,
                 [$memberId, $fromD, $toD]
