@@ -140,6 +140,14 @@ echo "== 7. seed test world =="
 # renders a friendly crash page for unmasked errors, killing the seed.
 php -d error_reporting=24575 tests/e2e/seed.php
 
+echo "== 8. parity copy: populate students from the seeded members =="
+# 105's copy guard is @do_copy := (@has_members > 0 AND @students_empty = 0).
+# At migration time (step 4) members was empty so it copied nothing; now that
+# seed.php has filled members, re-applying 105 copies the 18 seeded learners
+# into students. Every statement in 105 is idempotent / guarded, so re-running
+# is safe and changes nothing on a second provision.
+sudo -n mariadb "$DB_NAME" < sql/105_students_table.sql
+
 echo "== done =="
 echo "start the app with:"
 echo "  PHP_CLI_SERVER_WORKERS=8 php -d error_reporting=24575 -S 0.0.0.0:8080 -t ."
