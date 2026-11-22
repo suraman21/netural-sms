@@ -18,7 +18,7 @@
 function syncMemberType(mysqli $conn, int $memberId, array $overrides = []): array {
     if ($memberId <= 0) return ['changed' => false, 'old_type' => '', 'new_type' => ''];
 
-    $stmt = $conn->prepare("SELECT member_type FROM members WHERE id = ?");
+    $stmt = $conn->prepare("SELECT id FROM students WHERE id = ?");
     if (!$stmt) return ['changed' => false, 'old_type' => '', 'new_type' => ''];
     $stmt->bind_param("i", $memberId);
     $stmt->execute();
@@ -26,7 +26,8 @@ function syncMemberType(mysqli $conn, int $memberId, array $overrides = []): arr
     $stmt->close();
 
     if (!$member) return ['changed' => false, 'old_type' => '', 'new_type' => ''];
-    $type = $member['member_type'] ?? 'regular';
+    // SMS students table has no member_type column; member types are manual/n/a.
+    $type = '';
     return ['changed' => false, 'old_type' => $type, 'new_type' => $type];
 }
 
@@ -59,13 +60,9 @@ function syncMemberTeacherFlag(mysqli $conn, int $memberId, bool $isNowTeacher):
         }
     }
     
-    // Update the flag
-    $stmt = $conn->prepare("UPDATE members SET is_teacher = ? WHERE id = ?");
-    if ($stmt) {
-        $stmt->bind_param("ii", $flag, $memberId);
-        $stmt->execute();
-        $stmt->close();
-    }
+    // is_teacher flag is not stored on students in SMS (lives on users.role);
+    // nothing to persist on the students row. PositionSyncService call below
+    // is best-effort and never blocks.
 
     // Identity v2 convergence: grant/remove the position mapped to
     // is_teacher (when the school defined one) and re-code the member so

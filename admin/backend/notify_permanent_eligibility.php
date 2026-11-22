@@ -25,12 +25,10 @@ if (!($conn instanceof mysqli) || $conn->connect_error) {
 $conn->set_charset('utf8mb4');
 
 // Find eligible, not-yet-notified temporary members.
-$sql = "SELECT id, student_name, father_name, member_code
-        FROM members
-        WHERE membership_tier = 'temporary'
-          AND status != 'archived'
-          AND registered_at <= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-          AND permanent_eligibility_notified_at IS NULL";
+$sql = "SELECT id, student_name, father_name, student_code
+        FROM students
+        WHERE status != 'archived'
+          AND registered_at <= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
 $res = $conn->query($sql);
 if (!$res) {
     fwrite(STDERR, "Query failed: " . $conn->error . "\n");
@@ -59,18 +57,14 @@ while ($row = $res->fetch_assoc()) {
             "Member Eligible for Permanent Promotion",
             "$name has completed 6 months and is eligible for promotion to permanent.",
             [
-                'data' => ['member_id' => $memberId, 'member_code' => $row['member_code']],
+                'data' => ['member_id' => $memberId, 'student_code' => $row['student_code']],
             ]
         );
     }
 
-    // Mark notified (dedup).
-    $stmt = $conn->prepare("UPDATE members SET permanent_eligibility_notified_at = NOW() WHERE id = ?");
-    if ($stmt) {
-        $stmt->bind_param('i', $memberId);
-        $stmt->execute();
-        $stmt->close();
-    }
+    // Mark notified (dedup): SMS students table has no
+    // permanent_eligibility_notified_at column, so tracking is skipped here.
+    // Re-running will re-notify until a dedicated column is added.
 
     $count++;
     fwrite(STDOUT, "Notified member #$memberId ($name)\n");

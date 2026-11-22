@@ -94,11 +94,9 @@ if (isset($conn)) {
             student_name,
             father_name,
             grandfather_name,
-            member_type,
             status,
-            current_section,
             created_at
-         FROM members
+         FROM students
          WHERE status != 'archived'
          ORDER BY id DESC
          LIMIT 10"
@@ -119,10 +117,7 @@ if (isset($conn)) {
             SUM(status='warning')           AS warning_cnt,
             SUM(status='inactive')          AS inactive_cnt,
             SUM(status='archived')          AS archived_cnt,
-            SUM(age_group='7_13' AND status != 'archived')           AS ag_7_13_cnt,
-            SUM(age_group='14_17' AND status != 'archived')          AS ag_14_17_cnt,
-            SUM(age_group='18_plus' AND status != 'archived')        AS ag_18_plus_cnt
-         FROM members"
+         FROM students"
     );
 
     if (!empty($aggCounts)) {
@@ -195,7 +190,7 @@ $recentMembers = array_map(function ($row) {
 // ------------------------------------------------------------
 function generate_next_member_code(mysqli $conn): string
 {
-    $res = db_fetch_all_assoc($conn, "SELECT member_code FROM members WHERE member_code IS NOT NULL AND member_code <> '' ORDER BY id DESC LIMIT 1");
+    $res = db_fetch_all_assoc($conn, "SELECT student_code FROM students WHERE student_code IS NOT NULL AND student_code <> '' ORDER BY id DESC LIMIT 1");
     $last = $res[0]['member_code'] ?? null;
     if (!$last) return '0001';
     $num = preg_replace('/\D/', '', $last);

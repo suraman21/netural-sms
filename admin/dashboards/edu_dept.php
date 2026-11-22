@@ -76,7 +76,7 @@ if ($tablesExist) {
     } catch (Exception $e) {}
 }
 
-$totalStudents = 0; $r = $conn->query("SELECT COUNT(*) c FROM members WHERE status='active'");
+$totalStudents = 0; $r = $conn->query("SELECT COUNT(*) c FROM students WHERE status='active'");
 if ($r) $totalStudents = (int)$r->fetch_assoc()['c'];
 $totalTeachers = 0; try { $r = $conn->query("SELECT COUNT(*) c FROM users WHERE role='teacher'");
 if ($r) $totalTeachers = (int)$r->fetch_assoc()['c']; } catch(Exception $e) {}
