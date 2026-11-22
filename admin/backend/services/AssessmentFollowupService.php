@@ -593,7 +593,8 @@ final class AssessmentFollowupService
 
     private static function joins(): string
     {
-        return ' JOIN members mb ON mb.id = f.member_id
+        // ADR-0027 M1: the learner table is `students`.
+        return ' JOIN students mb ON mb.id = f.member_id
                  JOIN assessments a ON a.id = f.assessment_id
                  LEFT JOIN classes c ON c.id = f.class_id
                  LEFT JOIN subjects s ON s.id = f.subject_id
@@ -605,7 +606,7 @@ final class AssessmentFollowupService
     {
         return 'f.id, f.member_id, f.period_id, f.assessment_id, f.class_id, f.subject_id, f.teacher_id, f.decision,
                 f.decided_by, f.decided_at, f.note, f.created_at,
-                mb.student_name, mb.father_name, mb.member_code,
+                mb.student_name, mb.father_name, mb.student_code,
                 a.assessment_name, a.assessment_type, a.max_score AS assessment_max_score, a.due_date, a.academic_year_id, a.term_id,
                 c.class_name, s.subject_name, s.subject_name_en,
                 p.started_at AS period_started_at, p.ended_at AS period_ended_at,
@@ -761,7 +762,10 @@ final class AssessmentFollowupService
 
     private static function memberName(\mysqli $conn, int $memberId): string
     {
-        $stmt = $conn->prepare('SELECT student_name, father_name, member_code FROM members WHERE id = ? LIMIT 1');
+        // ADR-0027 M1: the learner table is `students`. `member_code` is a
+        // frozen wire key (ADR-0028 A3) — rebuilt from `student_code` at the
+        // row, one translation point instead of scattered renames.
+        $stmt = $conn->prepare('SELECT student_name, father_name, student_code FROM students WHERE id = ? LIMIT 1');
         if (!$stmt) {
             return '#' . $memberId;
         }
@@ -772,6 +776,7 @@ final class AssessmentFollowupService
         if (!$row) {
             return '#' . $memberId;
         }
+        $row['member_code'] = $row['student_code'] ?? '';
         $name = trim((string)$row['student_name'] . ' ' . (string)$row['father_name']);
         return $name . ($row['member_code'] ? ' (' . $row['member_code'] . ')' : '');
     }
