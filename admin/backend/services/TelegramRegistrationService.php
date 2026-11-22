@@ -586,7 +586,7 @@ final class TelegramRegistrationService
         $rows = [];
         $q = '%' . $this->conn->real_escape_string($query) . '%';
         // Search by member code or name
-        $s = $this->conn->prepare("SELECT id,member_code,student_name,father_name,grandfather_name,baptismal_name,gender,dob_ec_day,dob_ec_month,dob_ec_year,current_section,status,phone_number,mother_name FROM members WHERE (member_code LIKE ? OR student_name LIKE ? OR father_name LIKE ? OR full_name_am LIKE ?) AND status IN ('active','warning') ORDER BY id DESC LIMIT 15");
+        $s = $this->conn->prepare("SELECT id,member_code,student_name,father_name,grandfather_name,gender,dob_ec_day,dob_ec_month,dob_ec_year,current_class_id,status,phone_number,mother_name FROM students WHERE (member_code LIKE ? OR student_name LIKE ? OR father_name LIKE ? OR full_name_am LIKE ?) AND status IN ('active','warning') ORDER BY id DESC LIMIT 15");
         $s->bind_param('ssss',$q,$q,$q,$q);
         $s->execute(); $res = $s->get_result();
         while ($row = $res->fetch_assoc()) $rows[] = $row;
@@ -1087,7 +1087,7 @@ final class TelegramRegistrationService
         $sel = (int)($session['selected_candidate_id']??0);
         if ($sel > 0 && (string)($session['identity_verification_decision']??'') === 'same_person') {
             // Show existing member confirmation
-            $q=$this->conn->prepare('SELECT member_code FROM members WHERE id=? LIMIT 1');
+            $q=$this->conn->prepare('SELECT member_code FROM students WHERE id=? LIMIT 1');
             $q->bind_param('i',$sel); $q->execute(); $m = $q->get_result()->fetch_assoc(); $q->close();
             $code = $m ? (string)$m['member_code'] : 'M'.str_pad((string)$sel,5,'0',STR_PAD_LEFT);
             return $this->editOrSend($chatId,$editId,TelegramMessageService::get($this->conn,'same_person_confirmed',['member_code'=>$code]), TelegramKeyboard::inline([
