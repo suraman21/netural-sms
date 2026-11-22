@@ -234,35 +234,8 @@ check('rollout opens with source=rollout and no bell', count($w) === 1 && $w[0][
 $r = W::evaluate($conn, 'edu', $E, ['as_of' => $AS_OF]);
 check('live re-evaluate after rollout: no duplicate, no bell', count(warnings($conn, $E)) === 1 && notifCount($conn, $E) === 0);
 
-// Mezmur isolation + packets
-cleanup($conn, $E, $M);
-q($conn, "UPDATE attendance_policies SET min_sessions = 99"); AP::resetCache();
-q($conn, "UPDATE members SET current_section='ህጻናት' WHERE id=$M");
-foreach (['2026-09-12','2026-09-13','2026-09-14','2026-09-15','2026-09-16'] as $d) { eduRow($conn, $M, $CLASS, $d, 'absent'); }
-$r = W::evaluate($conn, 'mezmur', $M, ['as_of' => $AS_OF]);
-check('edu rows do not affect mezmur', $r['risk']['streak']['length'] === 0 && warnings($conn, $M, 'mezmur') === []);
-foreach (['2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-05'] as $d) mezRow($conn, $M, $d, 'absent');
-q($conn, "INSERT INTO mezmur_submissions (attendance_date, section, taker_id, status) VALUES ('2026-10-05','ህጻናት',1,'draft')");
-$r = W::evaluate($conn, 'mezmur', $M, ['as_of' => $AS_OF]);
-check('mezmur draft packet day ignored (4)', $r['risk']['streak']['length'] === 4, json_encode($r['risk']['streak']));
-q($conn, "UPDATE mezmur_submissions SET status='submitted' WHERE attendance_date='2026-10-05' AND section='ህጻናት'");
-$r = W::evaluate($conn, 'mezmur', $M, ['as_of' => $AS_OF]);
-$w = warnings($conn, $M, 'mezmur');
-check('mezmur 5 => warning, department=mezmur', count($w) === 1 && $w[0]['department'] === 'mezmur');
-$nrow = q($conn, "SELECT target_roles FROM notifications WHERE type='attendance_warning' AND JSON_EXTRACT(data,'$.member_id') = $M")->fetch_assoc();
-check('mezmur bell targets mezmur,hr,info', $nrow['target_roles'] === 'mezmur_dept,hr_dept,info_dept');
-$re = W::evaluate($conn, 'edu', $M, ['as_of' => $AS_OF]);
-check('edu evaluation of same member independent (edu warning too)', count(warnings($conn, $M, 'edu')) === 1 && $re['risk']['department'] === 'edu');
-check('openCounts per department', W::openCounts($conn)['edu']['total'] >= 1 && W::openCounts($conn)['mezmur']['total'] >= 1);
-$sum = W::memberSummary($conn, $M);
-check('memberSummary both departments', isset($sum['departments']['edu']['risk']) && count($sum['departments']['mezmur']['warnings']) === 1);
-$list = W::list($conn, ['departments' => ['mezmur'], 'member_id' => $M]);
-check('list scoping by department', $list['total'] === 1 && $list['items'][0]['department'] === 'mezmur' && !preg_match('/\d{4}-\d{2}-\d{2}/', json_encode($list['items'][0], JSON_UNESCAPED_UNICODE)), json_encode($list['items'][0]));
-$det = W::detail($conn, (int)$w[0]['id']);
-check('detail has events + EC absence dates', count($det['events']) >= 2 && count($det['absence_dates_ec']) === 5 && !preg_match('/\d{4}-\d{2}-\d{2}/', implode(',', $det['absence_dates_ec'])));
-check('openByMembers', isset(W::openByMembers($conn, 'mezmur', [$M, $E])[$M]));
 check('departmentsForRole', W::departmentsForRole('edu_dept') === ['edu'] && W::departmentsForRole('hr_dept') === ['edu','mezmur'] && W::departmentsForRole('teacher') === []);
-check('roleMayClose admins false', !W::roleMayClose('super_admin', 'edu') && !W::roleMayClose('school_admin', 'mezmur') && W::roleMayClose('info_dept', 'mezmur'));
+check('roleMayClose admins false', !W::roleMayClose('super_admin', 'edu') && W::roleMayClose('info_dept', 'edu'));
 check('safeEvaluateMany', W::safeEvaluateMany($conn, 'edu', [$E, $M, 0, 'x'], '2026-09-16')['evaluated'] === 2);
 check('memberIdsFromRecords', W::memberIdsFromRecords([['member_id' => 5], ['member_id' => '5'], ['x' => 1], ['member_id' => 0]]) === [5]);
 

@@ -89,7 +89,7 @@ if ($department === '') {
     $department = $myDepartments[0] ?? '';
 }
 if (!in_array($department, AttendanceRiskService::DEPARTMENTS, true)) {
-    $fail(400, 'department must be edu or mezmur.');
+    $fail(400, 'department must be edu.');
 }
 if (!in_array($department, $myDepartments, true)) {
     $fail(403, 'You cannot view ' . AttendanceRiskService::LABELS[$department] . ' attendance.');

@@ -54,7 +54,7 @@ if ($method === 'GET' && ($awSub === null || $awSub === '')) {
     $req = trim((string)($_GET['department'] ?? ''));
     $depts = $awDepartments;
     if ($req !== '' && $req !== 'all') {
-        if (!in_array($req, \App\Services\AttendanceRiskService::DEPARTMENTS, true)) err('department must be edu or mezmur.');
+        if (!in_array($req, \App\Services\AttendanceRiskService::DEPARTMENTS, true)) err('department must be edu.');
         if (!in_array($req, $awDepartments, true)) err('You cannot view those warnings.', 403);
         $depts = [$req];
     }

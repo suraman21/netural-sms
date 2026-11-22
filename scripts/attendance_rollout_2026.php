@@ -30,7 +30,7 @@ if (PHP_SAPI !== 'cli') {
  *   php scripts/attendance_rollout_2026.php --apply --limit=50 --after-id=<printed cursor>   # next batch …
  *
  * Options:
- *   --department=edu|mezmur   one department only (default both)
+ *   --department=edu          one department only (default edu)
  *   --as-of=YYYY-MM-DD        evaluation date (default today)
  *   --limit=N                 members per batch, ordered by member id (0 = all)
  *   --after-id=N              resume cursor: only members with id > N (printed at the end of each batch)
@@ -70,7 +70,7 @@ $departments = AttendanceRiskService::DEPARTMENTS;
 if (isset($opts['department'])) {
     $d = (string)$opts['department'];
     if (!in_array($d, $departments, true)) {
-        fwrite(STDERR, "--department must be edu or mezmur\n");
+        fwrite(STDERR, "--department must be edu\n");
         exit(2);
     }
     $departments = [$d];
