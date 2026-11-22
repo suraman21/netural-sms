@@ -118,6 +118,34 @@ and raised to the owner rather than fixed in a phase-3d commit.
 Two migrations (`014`, `068`) are consequently **dead on a fresh clone** — a
 fact `docs/DATABASE.md` should state, and does not yet.
 
+## A converted file's silent column mismatch — and the guard that caught it
+
+`admin/id_cards/view_id_card.php` was already converted to read `students` in
+commit e3ece55. The query moved from `members` to `students`, but eight reads of
+`$member['member_code']` survived — and `students` has `student_code`, not
+`member_code`. Every card silently rendered `ID_` and an empty QR payload
+(`<site>/member.php?code=`), because `fetch_assoc()` returns no key rather than
+throwing. `php -l` was the only coverage the file had, so nothing caught it.
+
+The defect was fixed on branch `fix/id-card-student-code` with a single alias:
+
+```php
+$member['member_code'] = $member['student_code'] ?? '';
+```
+
+That alias is deliberate, not an oversight: ADR-0028 A3 freezes the wire
+vocabulary (`'member_code'`), so the translation from `student_code` happens at
+the row in one auditable place instead of eight scattered renames.
+
+**The guard:** `tests/security/test_converted_files_read_real_columns.py`
+iterates every PHP file that reads `students` and asserts each key it reads is
+either a real `students` column or an explicit alias built from one. It fails
+without the alias and passes with it. This closes the blind spot that the
+existing `test_wire_contract_frozen` (table-level only) left open: a table
+rename that silently outruns its columns.
+
+## Owner decisions 2026-11-16, and what the live database revealed
+
 ---
 
 # Owner decisions 2026-11-16, and what the live database revealed

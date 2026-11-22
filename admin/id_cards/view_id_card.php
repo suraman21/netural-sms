@@ -36,6 +36,18 @@ $member = $stmt->get_result()->fetch_assoc();
 
 if (!$member) die("Member not found");
 
+// ADR-0027 M1 renamed the column `member_code` → `student_code`. This file was
+// converted to read `students` when the table was introduced, but its eight
+// reads of $member['member_code'] were left behind — a column that does not
+// exist on `students`, so every card rendered a filename of "ID_" and a QR
+// payload of "<site>/member.php?code=" with the code silently empty.
+//
+// The alias is deliberate: the rest of this file (and the templates it
+// includes) speaks the frozen wire vocabulary, and ADR-0028 A3 forbids
+// renaming response keys. One translation point on the row is auditable;
+// eight scattered renames are not.
+$member['member_code'] = $member['student_code'] ?? '';
+
 // ASSETS — Load from system_branding table (managed via Super Admin > Branding)
 $CONFIG = [
     'logo'      => '/admin/id_cards/assets/logos/school_logo.png',
