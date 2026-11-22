@@ -21,49 +21,56 @@ final class MemberDirectoryService
     private const PRIVILEGED_ROLES = ['super_admin', 'school_admin', 'info_dept', 'hr_dept'];
     private const ID_CARD_ROLES = ['super_admin', 'school_admin', 'hr_dept'];
 
+    // Projections use only columns that exist on the SMS `students` table.
+    // SSMS-only columns (member_code→student_code handled, registration_type,
+    // member_type, age_group, membership_tier, current_section, baptismal_name,
+    // work_profession) are dropped.
     private const FULL_COLUMNS = [
-        'id', 'member_code', 'registration_type', 'member_type', 'status',
-        'age_group', 'current_section', 'student_name', 'father_name',
-        'grandfather_name', 'baptismal_name', 'gender', 'phone_number',
-        'alt_phone_number', 'guardian_name', 'guardian_phone1',
-        'guardian_phone2', 'city', 'sub_city', 'woreda', 'mender',
-        'block_number', 'house_number', 'work_profession', 'education_level',
-        'student_photo_path', 'membership_tier', 'created_at',
+        'id', 'student_code', 'full_name_am', 'student_name', 'father_name',
+        'mother_name', 'grandfather_name', 'gender', 'date_of_birth', 'age',
+        'education_level', 'current_class_id', 'academic_status', 'status',
+        'registered_at', 'phone_primary', 'phone_number', 'alt_phone_number',
+        'guardian_name', 'guardian_phone1', 'guardian_phone2', 'city',
+        'sub_city', 'woreda', 'block_number', 'house_number', 'address',
+        'emergency_name', 'emergency_phone', 'student_photo_path',
+        'id_card_status', 'id_card_generated_at', 'qr_code_path',
+        'archive_type', 'archive_reason', 'archived_at', 'created_at',
     ];
 
     private const NEW_MEMBERS_COLUMNS = [
-        'id', 'member_code', 'registration_type', 'member_type', 'status',
-        'age_group', 'current_section', 'student_name', 'father_name',
-        'grandfather_name', 'baptismal_name', 'gender', 'phone_number',
-        'alt_phone_number', 'guardian_name', 'guardian_phone1',
-        'guardian_phone2', 'city', 'sub_city', 'woreda', 'mender',
-        'block_number', 'house_number', 'work_profession', 'education_level',
-        'student_photo_path', 'membership_tier', 'registered_at', 'created_at',
+        'id', 'student_code', 'full_name_am', 'student_name', 'father_name',
+        'mother_name', 'grandfather_name', 'gender', 'date_of_birth', 'age',
+        'education_level', 'current_class_id', 'academic_status', 'status',
+        'registered_at', 'phone_primary', 'phone_number', 'alt_phone_number',
+        'guardian_name', 'guardian_phone1', 'guardian_phone2', 'city',
+        'sub_city', 'woreda', 'block_number', 'house_number', 'address',
+        'emergency_name', 'emergency_phone', 'student_photo_path',
+        'id_card_status', 'id_card_generated_at', 'qr_code_path',
+        'archive_type', 'archive_reason', 'archived_at', 'registered_at', 'created_at',
     ];
 
     private const MANAGER_COLUMNS = [
-        'id', 'member_code', 'registration_type', 'member_type', 'status',
-        'student_name', 'father_name',
+        'id', 'student_code', 'student_name', 'father_name', 'status',
+        'current_class_id',
     ];
 
     private const PICKER_COLUMNS = [
-        'id', 'member_code', 'student_name', 'father_name',
+        'id', 'student_code', 'student_name', 'father_name',
     ];
 
     private const EDUCATION_COLUMNS = [
-        'id', 'member_code', 'student_name', 'father_name', 'status',
-        'age_group', 'current_section',
+        'id', 'student_code', 'student_name', 'father_name', 'status',
+        'current_class_id',
     ];
 
     private const ID_CARD_COLUMNS = [
-        'id', 'member_code', 'student_name', 'father_name',
-        'registration_type', 'member_type', 'id_card_status',
-        'id_card_generated_at',
+        'id', 'student_code', 'student_name', 'father_name',
+        'id_card_status', 'id_card_generated_at',
     ];
 
     private const ARCHIVE_COLUMNS = [
-        'id', 'member_code', 'student_name', 'father_name',
-        'current_section', 'age_group', 'archive_type', 'archive_reason', 'archived_at',
+        'id', 'student_code', 'student_name', 'father_name',
+        'current_class_id', 'archive_type', 'archive_reason', 'archived_at',
     ];
 
     private PDO $connection;
@@ -125,7 +132,7 @@ final class MemberDirectoryService
             $sortSql .= ', `id` DESC';
         }
         $sql = "SELECT {$columnSql}
-                FROM `members`
+                FROM `students`
                 WHERE {$fetchWhereSql}
                 ORDER BY {$sortSql}
                 LIMIT ? OFFSET ?";
@@ -171,16 +178,15 @@ final class MemberDirectoryService
     {
         $sections = [];
         $statement = $this->connection->query(
-            "SELECT DISTINCT `current_section`
-             FROM `members`
+            "SELECT DISTINCT `current_class_id`
+             FROM `students`
              WHERE `status` IN ('active', 'warning', 'inactive')
-               AND `current_section` IS NOT NULL
-               AND `current_section` <> ''
-             ORDER BY `current_section`
+               AND `current_class_id` IS NOT NULL
+             ORDER BY `current_class_id`
              LIMIT 200"
         );
         while ($row = $statement->fetch(PDO::FETCH_ASSOC)) {
-            $sections[] = (string)$row['current_section'];
+            $sections[] = (string)$row['current_class_id'];
         }
         $statement->closeCursor();
         return $sections;
@@ -222,9 +228,9 @@ final class MemberDirectoryService
             'limit' => min(self::MAX_PAGE_SIZE, max(1, (int)($input['limit'] ?? self::DEFAULT_PAGE_SIZE))),
             'cursor' => max(0, (int)($input['cursor'] ?? 0)),
             'sort' => $enum($input['sort'] ?? 'id', [
-                'id', 'member_code', 'student_name', 'father_name', 'gender',
-                'age_group', 'current_section', 'status', 'registration_type',
-                'phone_number', 'city', 'created_at',
+                'id', 'student_code', 'student_name', 'father_name', 'gender',
+                'status', 'current_class_id', 'phone_number', 'city',
+                'created_at',
             ]) ?: 'id',
             'direction' => $enum(strtolower((string)($input['direction'] ?? 'desc')), ['asc', 'desc']) ?: 'desc',
             'include_total' => (string)($input['include_total'] ?? '1') !== '0',
@@ -248,26 +254,11 @@ final class MemberDirectoryService
             $where[] = "`status` IN ('active', 'warning', 'inactive')";
         }
 
-        if ($criteria['eligible_for_id_card']) {
-            $where[] = "(`registration_type` IN ('direct', 'transfer') OR `member_type` = 'honorary')";
-        }
-
-        if ($criteria['membership_tier'] !== '') {
-            $where[] = '`membership_tier` = ?';
-            $params[] = $criteria['membership_tier'];
-        }
-
-        if (!empty($criteria['eligible_for_promotion'])) {
-            $where[] = '`membership_tier` = ? AND `registered_at` <= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)';
-            $params[] = 'temporary';
-        }
+        // SMS students table has no registration_type / member_type /
+        // membership_tier / age_group columns; those criteria are ignored.
 
         $filters = [
-            'registration_type' => 'registration_type',
-            'member_type' => 'member_type',
             'gender' => 'gender',
-            'age_group' => 'age_group',
-            'current_section' => 'current_section',
             'city' => 'city',
             'education_level' => 'education_level',
             'archive_type' => 'archive_type',
@@ -281,8 +272,8 @@ final class MemberDirectoryService
 
         if ($criteria['q'] !== '') {
             $searchColumns = [
-                'student_name', 'father_name', 'grandfather_name', 'member_code',
-                'baptismal_name', 'phone_number', 'work_profession', 'city',
+                'student_name', 'father_name', 'grandfather_name', 'student_code',
+                'phone_number', 'city',
             ];
             if ($supportsFullText && self::textLength($criteria['q']) >= 3) {
                 $columnSql = implode(', ', array_map(static function (string $column): string {
@@ -293,7 +284,7 @@ final class MemberDirectoryService
             } else {
                 // Short terms use indexable prefixes. SQLite uses this branch in
                 // integration tests because it has no MariaDB FULLTEXT syntax.
-                $prefixColumns = ['student_name', 'father_name', 'member_code', 'phone_number'];
+                $prefixColumns = ['student_name', 'father_name', 'student_code', 'phone_number'];
                 $searchTerms = array_map(static function (string $column): string {
                     return '`' . $column . "` LIKE ? ESCAPE '='";
                 }, $prefixColumns);
@@ -310,7 +301,7 @@ final class MemberDirectoryService
 
     private function count(string $whereSql, array $params): int
     {
-        $statement = $this->connection->prepare("SELECT COUNT(*) AS `total` FROM `members` WHERE {$whereSql}");
+        $statement = $this->connection->prepare("SELECT COUNT(*) AS `total` FROM `students` WHERE {$whereSql}");
         self::execute($statement, $params);
         $total = (int)$statement->fetchColumn();
         $statement->closeCursor();
