@@ -122,12 +122,12 @@ if ($dept === 'edu') {
     $total = (int)$countStmt->get_result()->fetch_assoc()['c'];
 
     $stmt = $conn->prepare(
-        "SELECT m.id, m.student_name, m.member_code
+        "SELECT m.id, m.student_name, m.student_code
          FROM class_enrollments ce
          JOIN academic_years y ON y.id = ce.academic_year_id AND y.is_current = 1
-         JOIN members m ON m.id = ce.member_id
+         JOIN students m ON m.id = ce.member_id
          WHERE ce.class_id = ? AND ce.status = 'active'
-         ORDER BY m.member_code, m.id
+         ORDER BY m.student_code, m.id
          LIMIT ? OFFSET ?"
     );
     $limit = QR_ROSTER_PAGE_SIZE;
@@ -141,7 +141,7 @@ if ($dept === 'edu') {
     $groupLabel = (string)($labelStmt->get_result()->fetch_assoc()['class_name'] ?? ('Class #' . $classId));
 } else {
     $countStmt = $conn->prepare(
-        "SELECT COUNT(*) AS c FROM members
+        "SELECT COUNT(*) AS c FROM students
          WHERE current_section = ? AND status = 'active'"
     );
     $countStmt->bind_param('s', $section);
@@ -149,10 +149,10 @@ if ($dept === 'edu') {
     $total = (int)$countStmt->get_result()->fetch_assoc()['c'];
 
     $stmt = $conn->prepare(
-        "SELECT id, student_name, member_code
-         FROM members
+        "SELECT id, student_name, student_code
+         FROM students
          WHERE current_section = ? AND status = 'active'
-         ORDER BY member_code, id
+         ORDER BY student_code, id
          LIMIT ? OFFSET ?"
     );
     $limit = QR_ROSTER_PAGE_SIZE;

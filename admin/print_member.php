@@ -23,7 +23,7 @@ if ($memberId <= 0) {
 }
 
 // Fetch member
-$stmt = $conn->prepare('SELECT * FROM members WHERE id = ?');
+$stmt = $conn->prepare('SELECT * FROM students WHERE id = ?');
 $stmt->bind_param('i', $memberId);
 $stmt->execute();
 $m = $stmt->get_result()->fetch_assoc();
