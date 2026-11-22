@@ -200,7 +200,7 @@ class PdfReportService
     private static function renderMember(\TCPDF $pdf, \mysqli $conn, int $memberId, ?string $from, ?string $to): void
     {
         $stmt = $conn->prepare(
-            "SELECT id, member_code, student_name, father_name, grandfather_name,
+            "SELECT id, student_code AS member_code, student_name, father_name, grandfather_name,
                     status, current_class_id
              FROM students WHERE id = ? LIMIT 1"
         );

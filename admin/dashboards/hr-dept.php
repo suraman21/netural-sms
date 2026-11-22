@@ -123,8 +123,6 @@ if (isset($conn)) {
             student_name,
             father_name,
             grandfather_name,
-            member_type,
-            membership_tier,
             status,
             created_at
          FROM students
@@ -161,10 +159,10 @@ if (isset($conn)) {
         $conn,
         "SELECT 
             SUM(status != 'archived')           AS total_members,
-            SUM(member_type='regular' AND status != 'archived')      AS regular_cnt,
-            SUM(member_type='special_regular' AND status != 'archived') AS special_cnt,
-            SUM(member_type='honorary' AND status != 'archived')     AS honor_cnt,
-            SUM(registration_type='waiting' AND status != 'archived') AS waiting_cnt,
+            SUM(0) AS regular_cnt,
+            SUM(0) AS special_cnt,
+            SUM(0) AS honor_cnt,
+            SUM(0) AS waiting_cnt,
             SUM(gender='male' AND status != 'archived')              AS male_cnt,
             SUM(gender='female' AND status != 'archived')            AS female_cnt,
             SUM(status='active')            AS active_cnt,

@@ -38,7 +38,7 @@ final class IdentityMigrationService
 
         while (true) {
             $stmt = $conn->prepare(
-                "SELECT id, member_code, student_name, father_name
+                "SELECT id, student_code AS member_code, student_name, father_name
                  FROM students
                  WHERE status != 'archived' AND id > ?
                  ORDER BY id ASC LIMIT " . self::PAGE

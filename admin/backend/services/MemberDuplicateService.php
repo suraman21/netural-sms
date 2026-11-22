@@ -83,7 +83,7 @@ final class MemberDuplicateService
             return null;
         }
         $where[] = '(' . implode(' OR ', $signals) . ')';
-        $sql = "SELECT id, member_code, status, student_name, father_name, grandfather_name
+        $sql = "SELECT id, student_code AS member_code, status, student_name, father_name, grandfather_name
                 FROM students WHERE " . implode(' AND ', $where)
             . " ORDER BY (status = 'archived') ASC, id DESC LIMIT 1"
             . ($lock ? ' FOR UPDATE' : '');
@@ -199,8 +199,8 @@ final class MemberDuplicateService
             return [];
         }
         $limit = max(1, min(20, $limit));
-        $sql = "SELECT id, member_code, student_name, father_name, grandfather_name,
-                       baptismal_name, gender, age, current_section, phone_number,
+        $sql = "SELECT id, student_code AS member_code, student_name, father_name, grandfather_name,
+                       baptismal_name, gender, age, current_class_id, phone_number,
                        phone_primary, alt_phone_number, phone_guardian,
                        guardian_phone1, guardian_phone2, guardian_name, status,
                        student_photo_path, registered_at, created_at

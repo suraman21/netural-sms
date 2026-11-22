@@ -63,12 +63,11 @@ $archivedBy = (string)$_SESSION['admin_username'];
 
 // Archive the member and preserve a reviewable reason trail.
 $sql = "UPDATE students
-        SET status='archived', archived_at=NOW(), archived_by=?, archive_reason=?,
-            archive_notes=?, archive_type=?
+        SET status='archived', archived_at=NOW(), archived_by=?
         WHERE id=?";
 $stmt = $conn->prepare($sql);
 if ($stmt) {
-    $stmt->bind_param('ssssi', $archivedBy, $reason, $notes, $archiveType, $id);
+    $stmt->bind_param('si', $archivedBy, $id);
     if ($stmt->execute()) {
         $memberName = $member['student_name'] . ' ' . $member['father_name'];
         

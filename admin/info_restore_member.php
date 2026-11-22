@@ -55,7 +55,7 @@ $restoredBy = (string)$_SESSION['admin_username'];
 $stmt = $conn->prepare(
     "UPDATE students
      SET status='active', archived_at=NULL, archived_by=NULL, archive_reason=NULL,
-         archive_notes=NULL, archive_type=NULL, restored_at=NOW(), restored_by=?
+         archive_notes=NULL, restored_at=NOW(), restored_by=?
      WHERE id=?"
 );
 if ($stmt) {

@@ -164,8 +164,8 @@ final class MemberReportService
             'all' => null,
             'active' => ["`status` = ?", ['active'], 'Active Members Report'],
             'waiting' => [
-                "`registration_type` = ? AND `status` <> ?",
-                ['waiting', 'archived'],
+                "`status` = ?",
+                ['active'],
                 'Waiting Members Report',
             ],
             'no_id' => [
@@ -189,14 +189,7 @@ final class MemberReportService
         $params = ['archived'];
 
         $this->enumFilter($input, 'gender', ['male', 'female'], '`gender`', $where, $params);
-        $this->enumFilter(
-            $input,
-            'age_group',
-            ['7_13', '14_17', '18_plus'],
-            '`age_group`',
-            $where,
-            $params
-        );
+
 
         $status = self::scalar($input, 'f_status', 30);
         if ($status !== '') {
@@ -213,22 +206,8 @@ final class MemberReportService
             $params[] = $status;
         }
 
-        $this->enumFilter(
-            $input,
-            'member_type',
-            ['regular', 'honorary'],
-            '`member_type`',
-            $where,
-            $params
-        );
-        $this->enumFilter(
-            $input,
-            'registration_type',
-            ['direct', 'transfer', 'waiting'],
-            '`registration_type`',
-            $where,
-            $params
-        );
+
+
 
         foreach ([
             'city' => '`city`',
@@ -261,14 +240,14 @@ final class MemberReportService
         if ($search !== '') {
             if ($this->driver() === 'mysql' && self::textLength($search) >= 3) {
                 $where[] = 'MATCH (`student_name`, `father_name`, `grandfather_name`, '
-                    . '`member_code`, `baptismal_name`, `phone_number`, `work_profession`, `city`) '
+                    . '`student_code`, `phone_number`, `city`) '
                     . 'AGAINST (? IN BOOLEAN MODE)';
                 $params[] = self::booleanSearch($search);
             } else {
                 $prefix = self::escapeLike($search) . '%';
                 $where[] = '(`student_name` LIKE ? ESCAPE \'=\' '
                     . 'OR `father_name` LIKE ? ESCAPE \'=\' '
-                    . 'OR `member_code` LIKE ? ESCAPE \'=\' '
+                    . 'OR `student_code` LIKE ? ESCAPE \'=\' '
                     . 'OR `phone_number` LIKE ? ESCAPE \'=\')';
                 array_push($params, $prefix, $prefix, $prefix, $prefix);
             }

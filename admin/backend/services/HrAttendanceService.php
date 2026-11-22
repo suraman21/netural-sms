@@ -56,7 +56,7 @@ final class HrAttendanceService
     public static function sectionRoster(\mysqli $conn, string $section): array
     {
         $stmt = $conn->prepare(
-            "SELECT id, member_code, student_name, father_name
+            "SELECT id, student_code AS member_code, student_name, father_name
              FROM students
              WHERE status = 'active'
                AND COALESCE(NULLIF(TRIM(current_class_id), ''), '—') = ?
