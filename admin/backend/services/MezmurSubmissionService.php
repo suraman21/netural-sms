@@ -198,9 +198,9 @@ final class MezmurSubmissionService
             $stmt = $conn->prepare(
                 "SELECT 1
                  FROM mezmur_attendance a
-                 JOIN members m ON m.id = a.member_id
+                 JOIN students m ON m.id = a.member_id
                  WHERE a.attendance_date = ?
-                   AND ($secExpr = ? OR m.current_section = ?)
+                   AND ($secExpr = ? OR m.current_class_id = ?)
                  LIMIT 1"
             );
             if (!$stmt) {
@@ -887,9 +887,9 @@ final class MezmurSubmissionService
             $stmt = $conn->prepare(
                 "SELECT a.member_id, a.status, a.notes, m.student_name, m.father_name, m.member_code
                  FROM mezmur_attendance a
-                 JOIN members m ON m.id = a.member_id
+                 JOIN students m ON m.id = a.member_id
                  WHERE a.attendance_date = ?
-                   AND ($secExpr = ? OR m.current_section = ?)
+                   AND ($secExpr = ? OR m.current_class_id = ?)
                  ORDER BY m.student_name, m.father_name
                  LIMIT 100000"
             );
