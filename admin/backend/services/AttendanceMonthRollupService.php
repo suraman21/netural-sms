@@ -278,7 +278,7 @@ final class AttendanceMonthRollupService
                        SUM(a.status = 'present') AS present, SUM(a.status = 'absent') AS absent,
                        SUM(a.status = 'late') AS late, SUM(a.status = 'excused') AS excused
                 FROM attendance a
-                JOIN members m ON m.id = a.member_id
+                JOIN students m ON m.id = a.member_id
                 LEFT JOIN grade_submissions gs ON gs.id = (
                     SELECT g2.id FROM grade_submissions g2
                     WHERE g2.class_id = a.class_id AND g2.attendance_date = a.attendance_date
@@ -302,7 +302,7 @@ final class AttendanceMonthRollupService
                        SUM(x.status = 'present') AS present, SUM(x.status = 'absent') AS absent,
                        SUM(x.status = 'late') AS late, SUM(x.status = 'excused') AS excused
                 FROM mezmur_attendance x
-                JOIN members m ON m.id = x.member_id
+                JOIN students m ON m.id = x.member_id
                 LEFT JOIN mezmur_sessions s ON s.id = x.session_id
                 LEFT JOIN mezmur_submissions ms
                        ON ms.attendance_date = {$d} AND ms.section = {$sectionExpr}
@@ -399,7 +399,7 @@ final class AttendanceMonthRollupService
             $types .= $dept === 'edu' ? 'i' : 's';
             $params[] = $dept === 'edu' ? (int)$group : $group;
         }
-        $joins = "JOIN members m ON m.id = r.member_id
+        $joins = "JOIN students m ON m.id = r.member_id
                   LEFT JOIN class_enrollments ce ON ce.id = (
                       SELECT MAX(e.id) FROM class_enrollments e WHERE e.member_id = m.id AND e.status = 'active')
                   LEFT JOIN classes cl ON cl.id = ce.class_id";
@@ -550,7 +550,7 @@ final class AttendanceMonthRollupService
                JOIN classes cl ON cl.id = ce.class_id
                WHERE r.department = ? AND r.ec_year = ? AND r.ec_month = ? ORDER BY cl.class_name"
             : "SELECT DISTINCT {$sectionExpr} AS id, {$sectionExpr} AS label FROM " . self::TABLE . " r
-               JOIN members m ON m.id = r.member_id
+               JOIN students m ON m.id = r.member_id
                WHERE r.department = ? AND r.ec_year = ? AND r.ec_month = ? ORDER BY label";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
