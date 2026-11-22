@@ -125,7 +125,7 @@ class InfoAnalyticsService
                                COALESCE(SUM(m.status = 'excused'), 0),
                                0
                         FROM `mezmur_attendance` m
-                        LEFT JOIN members mb ON mb.id = m.member_id
+                        LEFT JOIN students mb ON mb.id = m.member_id
                         GROUP BY m.attendance_date, $mezmurSecExpr"]] as [$source, $attTable, $subTable, $selectSql]) {
                 $stmt = $conn->prepare(
                     "INSERT INTO attendance_rollup
