@@ -185,9 +185,9 @@ if ($verify) {
         $flag($n, "$n rows dated after the as-of date (future dates)");
         $n = (int)($q1("SELECT COUNT(*) n FROM attendance a LEFT JOIN classes c ON c.id = a.class_id WHERE a.attendance_date BETWEEN ? AND ? AND c.id IS NULL", 'ss', [$from, $to])['n'] ?? 0);
         $flag($n, "$n rows whose class no longer exists");
-        $n = (int)($q1("SELECT COUNT(*) n FROM attendance a LEFT JOIN members m ON m.id = a.member_id WHERE a.attendance_date BETWEEN ? AND ? AND m.id IS NULL", 'ss', [$from, $to])['n'] ?? 0);
+        $n = (int)($q1("SELECT COUNT(*) n FROM attendance a LEFT JOIN students m ON m.id = a.member_id WHERE a.attendance_date BETWEEN ? AND ? AND m.id IS NULL", 'ss', [$from, $to])['n'] ?? 0);
         $flag($n, "$n rows whose member no longer exists");
-        $n = (int)($q1("SELECT COUNT(*) n FROM attendance a JOIN members m ON m.id = a.member_id WHERE a.attendance_date BETWEEN ? AND ? AND m.status = 'archived'", 'ss', [$from, $to])['n'] ?? 0);
+        $n = (int)($q1("SELECT COUNT(*) n FROM attendance a JOIN students m ON m.id = a.member_id WHERE a.attendance_date BETWEEN ? AND ? AND m.status = 'archived'", 'ss', [$from, $to])['n'] ?? 0);
         $say("  · $n rows belong to archived members (skipped by the rollout, nothing to fix)");
         $n = (int)($q1("SELECT COUNT(*) n FROM attendance a WHERE a.attendance_date BETWEEN ? AND ?
                           AND NOT EXISTS (SELECT 1 FROM class_enrollments ce WHERE ce.member_id = a.member_id AND ce.class_id = a.class_id)", 'ss', [$from, $to])['n'] ?? 0);
@@ -216,7 +216,7 @@ if ($verify) {
         $say('MEZMUR — mezmur_attendance rows in the window');
         $sectionExpr = MemberCategory::sqlSectionExpr('m');
         $base = "FROM mezmur_attendance x
-                 LEFT JOIN members m ON m.id = x.member_id
+                 LEFT JOIN students m ON m.id = x.member_id
                  LEFT JOIN mezmur_sessions s ON s.id = x.session_id
                  LEFT JOIN mezmur_submissions ms ON ms.attendance_date = COALESCE(x.attendance_date, s.session_date) AND ms.section = $sectionExpr
                  WHERE COALESCE(x.attendance_date, s.session_date) BETWEEN ? AND ?";
@@ -249,7 +249,7 @@ if ($verify) {
         $n = (int)($q1("SELECT COUNT(*) n $base AND $sectionExpr = '—'", 'ss', [$from, $to])['n'] ?? 0);
         $flag($n, "$n rows for members with no Mezmur section (never matched to a packet)");
         $blank = $qAll("SELECT $sectionExpr sec, COALESCE(x.attendance_date, s.session_date) d, COUNT(*) n
-                        FROM mezmur_attendance x JOIN members m ON m.id = x.member_id LEFT JOIN mezmur_sessions s ON s.id = x.session_id
+                        FROM mezmur_attendance x JOIN students m ON m.id = x.member_id LEFT JOIN mezmur_sessions s ON s.id = x.session_id
                         WHERE COALESCE(x.attendance_date, s.session_date) BETWEEN ? AND ? AND x.status IN ('present','absent','late','excused')
                         GROUP BY sec, d
                         HAVING SUM(CASE WHEN x.status = 'absent' THEN 1 ELSE 0 END) = COUNT(*) AND COUNT(*) >= 3
@@ -269,7 +269,7 @@ if ($verify) {
     $say('Legacy dependence of the warnings a dry run would open (all non-archived members):');
     $ecNow = AttendanceRiskService::ecOf($asOf);
     $month = ['year' => $ecNow['year'], 'month' => $ecNow['month']];
-    $members = $conn->query("SELECT id FROM members WHERE status <> 'archived' ORDER BY id")->fetch_all(MYSQLI_ASSOC);
+    $members = $conn->query("SELECT id FROM students WHERE status <> 'archived' ORDER BY id")->fetch_all(MYSQLI_ASSOC);
     foreach ($departments as $d) {
         $policy = AttendancePolicyService::for($conn, $d);
         $withLegacy = 0; $packetOnly = 0; $legacyOnly = []; $errors = 0;
@@ -324,7 +324,7 @@ if ($verify) {
 // ═════════════════════════════════════════════════════════════════════════════
 // dry run / apply
 // ═════════════════════════════════════════════════════════════════════════════
-$sql = "SELECT id, member_code, student_name, father_name FROM members WHERE status <> 'archived' AND id > ? ORDER BY id";
+$sql = "SELECT id, student_code, student_name, father_name FROM students WHERE status <> 'archived' AND id > ? ORDER BY id";
 if ($limit > 0) {
     $sql .= ' LIMIT ' . $limit;
 }
@@ -333,7 +333,7 @@ $stmt->bind_param('i', $afterId);
 $stmt->execute();
 $members = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
-$remaining = (int)($q1("SELECT COUNT(*) n FROM members WHERE status <> 'archived' AND id > ?", 'i', [$afterId])['n'] ?? 0);
+$remaining = (int)($q1("SELECT COUNT(*) n FROM students WHERE status <> 'archived' AND id > ?", 'i', [$afterId])['n'] ?? 0);
 $say(sprintf('Batch: %d member(s)%s%s · %d non-archived member(s) remain after cursor %d',
     count($members), $limit > 0 ? " (limit $limit)" : '', $afterId > 0 ? " after id $afterId" : '', $remaining, $afterId));
 if ($members === []) {
