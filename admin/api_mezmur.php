@@ -302,7 +302,7 @@ try {
                 'total' => (int)$row['total'],
                 'active' => (int)$row['active'],
                 'categories' => (int)$row['categories'],
-                'members' => (int)($conn->query("SELECT COUNT(*) c FROM members WHERE status = 'active'")->fetch_assoc()['c'] ?? 0),
+                'members' => (int)($conn->query("SELECT COUNT(*) c FROM students WHERE status = 'active'")->fetch_assoc()['c'] ?? 0),
                 'category_list' => $cats,
                 'section_list' => MezmurAttendanceService::sectionList($conn),
                 'program_types' => MezmurAttendanceService::PROGRAM_TYPES,
@@ -1101,7 +1101,7 @@ try {
                 $stats = $conn->query("SELECT COUNT(*) total, COALESCE(SUM(status='active'),0) active FROM mezmur_hymns")->fetch_assoc() ?: [];
             } catch (\Throwable $e) { $stats = ['total' => 0, 'active' => 0]; }
             try {
-                $members = $conn->query("SELECT COUNT(*) c FROM members WHERE status = 'active'")->fetch_assoc()['c'] ?? 0;
+                $members = $conn->query("SELECT COUNT(*) c FROM students WHERE status = 'active'")->fetch_assoc()['c'] ?? 0;
             } catch (\Throwable $e) { $members = 0; }
             try {
                 $takers = MezmurAttendanceService::takersList($conn);

@@ -149,9 +149,9 @@ switch ($action) {
         $like = '%' . $q . '%';
         try {
             $stmt = $conn->prepare(
-                'SELECT id, student_name, father_name, member_code, current_section
-                 FROM members
-                 WHERE (student_name LIKE ? OR member_code LIKE ?)
+                'SELECT id, student_name, father_name, student_code, current_class_id
+                 FROM students
+                 WHERE (student_name LIKE ? OR student_code LIKE ?)
                  ORDER BY student_name
                  LIMIT 20'
             );
@@ -180,8 +180,8 @@ switch ($action) {
 
         try {
             $stmt = $conn->prepare(
-                'SELECT id, student_name, father_name, member_code, current_section
-                 FROM members WHERE id = ? LIMIT 1'
+                'SELECT id, student_name, father_name, student_code, current_class_id
+                 FROM students WHERE id = ? LIMIT 1'
             );
             $stmt->bind_param('i', $memberId);
             $stmt->execute();

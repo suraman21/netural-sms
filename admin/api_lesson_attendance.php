@@ -196,7 +196,7 @@ switch ($action) {
                 $fail(403, 'This member is not in one of your classes.');
             }
         }
-        $ms = $conn->prepare('SELECT id, student_name, father_name, member_code FROM members WHERE id = ? LIMIT 1');
+        $ms = $conn->prepare('SELECT id, student_name, father_name, student_code FROM students WHERE id = ? LIMIT 1');
         $ms->bind_param('i', $memberId);
         $ms->execute();
         $member = $ms->get_result()->fetch_assoc();

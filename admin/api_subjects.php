@@ -2065,7 +2065,7 @@ switch ($action) {
                 m.student_name, m.father_name
             FROM assessments a
             LEFT JOIN academic_records ar ON ar.assessment_id = a.id
-            LEFT JOIN members m ON ar.member_id = m.id
+            LEFT JOIN students m ON ar.member_id = m.id
             WHERE a.class_id = ? AND a.academic_year_id = ?
         ";
         $params = [$classId, $currentYear['id']];

@@ -168,9 +168,9 @@ switch ($action) {
         
         $memberIdCol = $hasMemberId ? "u.member_id," : "";
         $lastLoginCol = $hasLastLogin ? "u.last_login," : "";
-        $memberJoin = $hasMemberId ? "LEFT JOIN members m ON u.member_id = m.id" : "";
+        $memberJoin = $hasMemberId ? "LEFT JOIN students m ON u.member_id = m.id" : "";
         $memberCols = $hasMemberId ? "m.student_name as member_name, m.father_name as member_father,
-                    m.phone_number as member_phone, m.member_code," : "";
+                    m.phone_number as member_phone, m.student_code," : "";
         
         if ($hasTaTable) {
             $assignedClasses = "(SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta 
@@ -206,7 +206,7 @@ switch ($action) {
             $bind = [$st, $st, $st];
             $types = 'sss';
             if ($hasMemberId) {
-                $sql .= " OR m.member_code LIKE ? OR m.student_name LIKE ?";
+                $sql .= " OR m.student_code LIKE ? OR m.student_name LIKE ?";
                 $bind[] = $st;
                 $bind[] = $st;
                 $types .= 'ss';
@@ -280,10 +280,10 @@ switch ($action) {
         // Get teacher info (use safe column references)
         $hasMemberId = _teacherSafeColExists($conn, 'users', 'member_id');
         $memberIdRef = $hasMemberId ? "u.member_id," : "";
-        $memberJoinRef = $hasMemberId ? "LEFT JOIN members m ON u.member_id = m.id" : "";
+        $memberJoinRef = $hasMemberId ? "LEFT JOIN students m ON u.member_id = m.id" : "";
         $memberColsRef = $hasMemberId ? "m.student_name as member_name, m.father_name as member_father,
-                   m.phone_number, m.member_code" : "NULL as member_name, NULL as member_father,
-                   NULL as phone_number, NULL as member_code";
+                   m.phone_number, m.student_code" : "NULL as member_name, NULL as member_father,
+                   NULL as phone_number, NULL as student_code";
         
         $stmt = $conn->prepare("
             SELECT u.id, u.username, u.email, u.full_name, u.is_active, $memberIdRef u.created_at,
@@ -922,10 +922,9 @@ switch ($action) {
         
         // Get adult members who could be teachers
         $result = $conn->query("
-            SELECT id, member_code, student_name, father_name, grandfather_name, phone_number
-            FROM members 
+            SELECT id, student_code, student_name, father_name, grandfather_name, phone_number
+            FROM students 
             WHERE status = 'active' 
-            AND (age_group = '18+' OR age_group IS NULL OR TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) >= 18)
             ORDER BY student_name
             LIMIT 500
         ");
@@ -954,10 +953,10 @@ switch ($action) {
         $st = '%' . $q . '%';
         $limit = 15;
         $stmt = $conn->prepare(
-            "SELECT id, member_code, student_name, father_name
-             FROM members
+            "SELECT id, student_code, student_name, father_name
+             FROM students
              WHERE status = 'active'
-               AND (student_name LIKE ? OR father_name LIKE ? OR member_code LIKE ? OR baptismal_name LIKE ?)
+               AND (student_name LIKE ? OR father_name LIKE ? OR student_code LIKE ?)
              ORDER BY student_name
              LIMIT ?"
         );
@@ -965,14 +964,14 @@ switch ($action) {
             echo json_encode(['status' => 'success', 'members' => []]);
             break;
         }
-        $stmt->bind_param('ssssi', $st, $st, $st, $st, $limit);
+        $stmt->bind_param('sssi', $st, $st, $st, $limit);
         $stmt->execute();
         $members = [];
         $r = $stmt->get_result();
         while ($row = $r->fetch_assoc()) {
             $members[] = [
                 'id' => (int)$row['id'],
-                'member_code' => $row['member_code'] ?? '',
+                'student_code' => $row['student_code'] ?? '',
                 'student_name' => $row['student_name'] ?? '',
                 'father_name' => $row['father_name'] ?? '',
             ];
@@ -1041,7 +1040,7 @@ switch ($action) {
         }
 
         if ($memberId) {
-            $mchk = $conn->prepare("SELECT id, student_name, status FROM members WHERE id = ? LIMIT 1");
+            $mchk = $conn->prepare("SELECT id, student_name, status FROM students WHERE id = ? LIMIT 1");
             if ($mchk) {
                 $mchk->bind_param('i', $memberId);
                 $mchk->execute();
