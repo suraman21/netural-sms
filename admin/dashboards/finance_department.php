@@ -32,7 +32,7 @@ if (isset($conn)) {
     } catch(Exception $e) { $finReady = false; }
 }
 $activeMembers = 0;
-if(isset($conn)){$r=$conn->query("SELECT COUNT(*) c FROM members WHERE status='active'");if($r&&$row=$r->fetch_assoc())$activeMembers=(int)$row['c'];}
+if(isset($conn)){$r=$conn->query("SELECT COUNT(*) c FROM students WHERE status='active'");if($r&&$row=$r->fetch_assoc())$activeMembers=(int)$row['c'];}
 ?>
 <!DOCTYPE html>
 <html lang="en">

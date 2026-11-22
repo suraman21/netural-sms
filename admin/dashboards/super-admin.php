@@ -80,7 +80,7 @@ if (isset($conn)) {
     $r = $conn->query("SELECT COUNT(*) as cnt FROM users");
     if ($r) $totalUsers = (int)$r->fetch_assoc()['cnt'];
     
-    $r = $conn->query("SELECT COUNT(*) as total, SUM(status='active') as active, SUM(registration_type='waiting') as pending FROM members WHERE status != 'archived'");
+    $r = $conn->query("SELECT COUNT(*) as total, SUM(status='active') as active FROM students WHERE status != 'archived'");
     if ($r) {
         $row = $r->fetch_assoc();
         $totalMembers = (int)($row['total'] ?? 0);
@@ -277,7 +277,7 @@ if ($saNeedHealth && isset($conn) && !$conn->connect_error) {
 
     // Member growth (last 6 months)
     try {
-        $r = $conn->query("SELECT DATE_FORMAT(created_at,'%Y-%m') as month, COUNT(*) as cnt FROM members WHERE created_at >= DATE_SUB(NOW(),INTERVAL 6 MONTH) GROUP BY DATE_FORMAT(created_at,'%Y-%m') ORDER BY month ASC");
+        $r = $conn->query("SELECT DATE_FORMAT(created_at,'%Y-%m') as month, COUNT(*) as cnt FROM students WHERE created_at >= DATE_SUB(NOW(),INTERVAL 6 MONTH) GROUP BY DATE_FORMAT(created_at,'%Y-%m') ORDER BY month ASC");
         if ($r) while ($row = $r->fetch_assoc()) $memberGrowth[] = $row;
     } catch (Exception $e) {}
 
@@ -426,7 +426,7 @@ $orphanedRecords = [];
 if (isset($conn) && !$conn->connect_error) {
     // Check key table relationships
     $integrityChecks = [
-        ['name' => 'Members with valid status', 'sql' => "SELECT COUNT(*) as c FROM members WHERE status IN ('active','inactive','archived','waiting')"],
+        ['name' => 'Members with valid status', 'sql' => "SELECT COUNT(*) as c FROM students WHERE status IN ('active','inactive','archived')"],
         ['name' => 'Users with valid roles', 'sql' => "SELECT COUNT(*) as c FROM users WHERE role IN ('super_admin','school_admin','hr_dept','info_dept','edu_dept','finance_dept','material_dept','mezmur_dept','teacher','attendance_taker')"],
     ];
     foreach ($integrityChecks as $ic) {
@@ -472,11 +472,11 @@ if (isset($conn) && !$conn->connect_error) {
             SUM(student_photo_path IS NOT NULL AND student_photo_path!='') as wph, 
             SUM(gender='male' OR gender='M') as m, 
             SUM(gender='female' OR gender='F') as f 
-        FROM members WHERE status!='archived'");
+        FROM students WHERE status!='archived'");
         if ($r) { $mq = $r->fetch_assoc(); $memberQuality['total'] = (int)($mq['t']??0); $memberQuality['with_phone'] = (int)($mq['wp']??0); $memberQuality['with_photo'] = (int)($mq['wph']??0); $memberQuality['male'] = (int)($mq['m']??0); $memberQuality['female'] = (int)($mq['f']??0); }
     } catch (Exception $e) {}
     try {
-        $r = $conn->query("SELECT student_name, father_name, COUNT(*) as c FROM members WHERE status!='archived' GROUP BY student_name, father_name HAVING c > 1 LIMIT 10");
+        $r = $conn->query("SELECT student_name, father_name, COUNT(*) as c FROM students WHERE status!='archived' GROUP BY student_name, father_name HAVING c > 1 LIMIT 10");
         if ($r) $memberQuality['duplicates'] = $r->num_rows;
     } catch (Exception $e) {}
 }
@@ -486,7 +486,7 @@ $perfStart = microtime(true);
 $benchmarks = [];
 if (isset($conn) && !$conn->connect_error) {
     // DB read speed
-    $t1 = microtime(true); try { $conn->query("SELECT COUNT(*) FROM members"); } catch(Exception $e){} $benchmarks['db_read'] = round((microtime(true) - $t1) * 1000, 2);
+    $t1 = microtime(true); try { $conn->query("SELECT COUNT(*) FROM students"); } catch(Exception $e){} $benchmarks['db_read'] = round((microtime(true) - $t1) * 1000, 2);
     // DB write speed (safe test)  
     $t1 = microtime(true); try { $conn->query("SELECT 1+1"); } catch(Exception $e){} $benchmarks['db_ping'] = round((microtime(true) - $t1) * 1000, 2);
 }
