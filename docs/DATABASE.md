@@ -84,6 +84,12 @@ Every gap above is now explained, which means none of them is unaccounted data l
 - `003` still fails on `Duplicate key name 'idx_members_status'` — an idempotency wart, not a missing object; the deployment guide re-runs it
 - `055` still aborts **by design**
 
+**How to build a database from this repository:** `bash sql/apply_all.sh <db>`.
+It runs the legacy baseline, 012, 013, every numbered migration, then re-runs the
+migrations that depend on objects a later number creates. Verified end to end:
+**92 of 96 production tables**, 156 objects in total, with two files skipping for
+stated reasons (`003` duplicate-index idempotency, `055` taxonomy abort).
+
 ## 3. Migration rules in force
 
 - **Shared hosting:** use plain SQL that is safe for MariaDB. Migrations must be additive and idempotent where possible (`IF NOT EXISTS`, information_schema guards). There is no server-side tooling.
