@@ -261,7 +261,7 @@ case 'member_fees':
         $limit = $perPage; $offset = ($page - 1) * $perPage;
         $pageInfo = ['total' => $total, 'page' => $page, 'total_pages' => $totalPages, 'per_page' => $perPage];
     }
-    $sql = "SELECT f.*, m.student_name, m.student_code FROM finance_member_fees f LEFT JOIN students m ON f.member_id=m.id WHERE ".implode(' AND ',$where)." ORDER BY f.ec_year DESC, f.ec_month DESC, f.id DESC LIMIT ".(int)$limit." OFFSET ".(int)$offset;
+        $sql = "SELECT f.*, m.student_name, m.student_code AS member_code FROM finance_member_fees f LEFT JOIN students m ON f.member_id=m.id WHERE ".implode(' AND ',$where)." ORDER BY f.ec_year DESC, f.ec_month DESC, f.id DESC LIMIT ".(int)$limit." OFFSET ".(int)$offset;
     $stmt = $conn->prepare($sql);
     if ($params) { $stmt->bind_param($types, ...$params); }
     $stmt->execute();

@@ -170,7 +170,7 @@ switch ($action) {
         $lastLoginCol = $hasLastLogin ? "u.last_login," : "";
         $memberJoin = $hasMemberId ? "LEFT JOIN students m ON u.member_id = m.id" : "";
         $memberCols = $hasMemberId ? "m.student_name as member_name, m.father_name as member_father,
-                    m.phone_number as member_phone, m.student_code," : "";
+                    m.phone_number as member_phone, m.student_code as member_code," : "";
         
         if ($hasTaTable) {
             $assignedClasses = "(SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta 
@@ -922,7 +922,7 @@ switch ($action) {
         
         // Get adult members who could be teachers
         $result = $conn->query("
-            SELECT id, student_code, student_name, father_name, grandfather_name, phone_number
+            SELECT id, student_code AS member_code, student_name, father_name, grandfather_name, phone_number
             FROM students 
             WHERE status = 'active' 
             ORDER BY student_name
@@ -971,6 +971,7 @@ switch ($action) {
         while ($row = $r->fetch_assoc()) {
             $members[] = [
                 'id' => (int)$row['id'],
+                'member_code' => $row['member_code'] ?? '',
                 'student_code' => $row['student_code'] ?? '',
                 'student_name' => $row['student_name'] ?? '',
                 'father_name' => $row['father_name'] ?? '',
