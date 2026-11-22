@@ -647,7 +647,7 @@ try {
             $r = $conn->query("SELECT COUNT(*) as total, 
                 COALESCE(SUM(status='active'),0) as active,
                 COALESCE(SUM(status='archived'),0) as archived
-                FROM members");
+                FROM students");
             $info['members'] = $r ? $r->fetch_assoc() : ['total' => 0, 'active' => 0, 'archived' => 0];
 
             // User accounts
