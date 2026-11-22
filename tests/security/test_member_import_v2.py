@@ -80,13 +80,17 @@ class ImporterStaticContract(unittest.TestCase):
         self.assertLess(self.src.index("if ($dryRun)"), self.src.index("$transaction->start()"))
 
     def test_identity_and_section_rules(self):
-        self.assertIn("$rowData['age_group']", self.src)
+        # ADR-0027: age_group/current_section/registration_type/waiting_since
+        # removed from learner model; not written to students.
+        self.assertNotIn("$rowData['age_group']", self.src)
         self.assertNotIn("generateMemberCode($conn);", self.src)
         self.assertIn("normalizeSectionAm", self.src)
         self.assertIn("current_section", self.src)
         self.assertIn("MemberCategory::groupForAge($age)", self.src)
-        self.assertIn("$rowData['registration_type'] = 'waiting'", self.src)
-        self.assertIn("$rowData['registration_type'] = 'direct'", self.src)
+        self.assertNotIn("$rowData['registration_type'] = 'waiting'", self.src)
+        self.assertNotIn("$rowData['registration_type'] = 'direct'", self.src)
+        # student_code replaces member_code as the write column on students.
+        self.assertIn("$rowData['student_code']", self.src)
 
     def test_strict_class_lookup(self):
         self.assertIn("EnrollmentService::resolveClassByLabel(", self.src)
@@ -330,34 +334,33 @@ class ImportLive(unittest.TestCase):
 
     @classmethod
     def cleanup(cls):
-        ids = db(f"SELECT GROUP_CONCAT(id) FROM members WHERE grandfather_name LIKE '{cls.TAG}%'")
+        ids = db(f"SELECT GROUP_CONCAT(id) FROM students WHERE grandfather_name LIKE '{cls.TAG}%'")
         if ids and ids != "NULL":
             db(f"DELETE FROM member_guardians WHERE member_id IN ({ids})")
             for table in ("class_enrollments", "member_changes_log", "member_history"):
                 if db(f"SHOW TABLES LIKE '{table}'"):
                     db(f"DELETE FROM {table} WHERE member_id IN ({ids})")
-            db(f"DELETE FROM members WHERE id IN ({ids})")
+            db(f"DELETE FROM students WHERE id IN ({ids})")
         db("DELETE g FROM guardians g LEFT JOIN member_guardians mg ON mg.guardian_id = g.id "
            f"WHERE mg.guardian_id IS NULL AND g.display_name LIKE '{cls.TAG}%'")
         db("DELETE FROM classes WHERE class_code IN ('tv_s3','tv_q1')")
 
     def member(self, name):
-        row = db("SELECT id, IFNULL(member_code,''), gender, IFNULL(date_of_birth,''), "
-                 "CONCAT_WS('-', dob_ec_year, dob_ec_month, dob_ec_day), IFNULL(age,''), IFNULL(age_group,''), "
-                 "IFNULL(current_section,''), registration_type, membership_tier, IFNULL(waiting_since,''), "
+        row = db("SELECT id, IFNULL(student_code,''), gender, IFNULL(date_of_birth,''), "
+                 "CONCAT_WS('-', dob_ec_year, dob_ec_month, dob_ec_day), IFNULL(age,''), "
                  "IFNULL(guardian_name,''), IFNULL(guardian_phone1,''), IFNULL(guardian_phone2,''), IFNULL(phone_guardian,''), "
                  "IFNULL(emergency_name,''), IFNULL(emergency_phone,''), IFNULL(phone_primary,''), "
                  "(SELECT IFNULL(GROUP_CONCAT(c.class_code),'') FROM class_enrollments ce JOIN classes c ON c.id = ce.class_id "
                  " WHERE ce.member_id = m.id AND ce.status = 'active') "
-                 f"FROM members m WHERE full_name_am = '{name}'")
+                 f"FROM students m WHERE full_name_am = '{name}'")
         self.assertTrue(row, f"member {name} not found")
-        keys = ["id", "code", "gender", "dob", "ec", "age", "group", "section", "reg", "tier", "waiting",
+        keys = ["id", "code", "gender", "dob", "ec", "age",
                 "gname", "gp1", "gp2", "pg", "ename", "ephone", "phone", "classes"]
         self.assertEqual(len(row.splitlines()), 1, f"duplicate rows for {name}")
         return dict(zip(keys, row.split("\t")))
 
     def count(self):
-        return int(db(f"SELECT COUNT(*) FROM members WHERE grandfather_name LIKE '{self.TAG}%'"))
+        return int(db(f"SELECT COUNT(*) FROM students WHERE grandfather_name LIKE '{self.TAG}%'"))
 
     H = ["Full Name", "Christian Name", "Class", "Gender", "Date of Birth", "Primary Phone", "Guardian Name",
          "Guardian Phone 1", "Guardian Phone 2", "Emergency Contact", "Emergency Phone"]
@@ -408,8 +411,9 @@ class ImportLive(unittest.TestCase):
 
         a = self.member("ሀሌታ አበራ ቲቪአንድ")
         self.assertEqual((a["gender"], a["dob"], a["ec"]), ("female", "2014-07-05", "2006-10-28"))
-        self.assertEqual((a["age"], a["group"], a["section"]), ("12", "7_13", "ህጻናት"))
-        self.assertEqual((a["reg"], a["tier"]), ("direct", "permanent"))
+        self.assertEqual(a["age"], "12")
+        # ADR-0027: age_group/current_section/registration_type/membership_tier
+        # removed from learner model; not stored on students.
         self.assertTrue(a["code"].startswith("A-"), a["code"])
         self.assertEqual((a["gname"], a["gp1"], a["gp2"], a["pg"]), ("ቲቪ እናት", "+251911000001", "0911000002", "+251911000001"))
         self.assertEqual((a["ename"], a["ephone"]), ("ጎረቤት", "0911000003"))
@@ -418,14 +422,12 @@ class ImportLive(unittest.TestCase):
         b = self.member("ለማ አበራ ቲቪሁለት")
         self.assertEqual(b["phone"], "+251911000009")  # export guard apostrophe removed
         self.assertEqual(b["ec"], "2003-13-4")
-        self.assertEqual(b["group"], "14_17")
         self.assertTrue(b["code"].startswith("B-"), b["code"])
         self.assertEqual(b["classes"], "tv_q1")
 
         c = self.member("ሐና አበራ ቲቪሶስት")  # age 6 → ህጻናት (owner D3)
-        self.assertEqual((c["age"], c["group"], c["section"], c["classes"]), ("6", "7_13", "ህጻናት", ""))
+        self.assertEqual((c["age"], c["classes"]), ("6", ""))
         d = self.member("ዮናስ አበራ ቲቪአራት")
-        self.assertEqual((d["group"], d["section"]), ("18_plus", "ወጣቶች"))
         self.assertTrue(d["code"].startswith("C-"), d["code"])
 
         status, res = self.s.upload(f)
@@ -441,8 +443,8 @@ class ImportLive(unittest.TestCase):
         status, res = self.s.upload(f, tier="temporary")
         self.assertTrue(res["success"], res)
         t = self.member("ጊዜ አንድ ቲቪጊዜ")
-        self.assertEqual((t["code"], t["reg"], t["tier"]), ("", "waiting", "temporary"))
-        self.assertRegex(t["waiting"], r"^\d{4}-\d{2}-\d{2}$")
+        self.assertEqual(t["code"], "")
+        # ADR-0027: registration_type/waiting_since removed from learner model.
         self.assertEqual(t["classes"], "tv_q1")
         self.assertEqual(t["pg"], "0922000000")
 
@@ -493,7 +495,7 @@ class ImportLive(unittest.TestCase):
             if r.get("done"):
                 break
             cursor = r.get("next_cursor", 0)
-        g = {name: db("SELECT IFNULL(MAX(mg.guardian_id),0) FROM members m LEFT JOIN member_guardians mg ON mg.member_id = m.id "
+        g = {name: db("SELECT IFNULL(MAX(mg.guardian_id),0) FROM students m LEFT JOIN member_guardians mg ON mg.member_id = m.id "
                       f"WHERE m.full_name_am = '{name}'")
              for name in ("ወንድም ከበደ ቲቪቤተሰብ", "እህት ከበደ ቲቪቤተሰብ", "ሌላ ከበደ ቲቪሌላ")}
         self.assertNotEqual(g["ወንድም ከበደ ቲቪቤተሰብ"], "0")
@@ -531,7 +533,7 @@ class ImportLive(unittest.TestCase):
             if r.get("done") or int(r.get("processed", 0)) == 0:  # same stop rule as family_link.js
                 break
             cursor = r.get("next_cursor", 0)
-        unlinked = db("SELECT COUNT(*) FROM members m WHERE m.grandfather_name LIKE 'ቲቪሊንክ%' "
+        unlinked = db("SELECT COUNT(*) FROM students m WHERE m.grandfather_name LIKE 'ቲቪሊንክ%' "
                       "AND NOT EXISTS (SELECT 1 FROM member_guardians mg WHERE mg.member_id = m.id)")
         self.assertEqual(unlinked, "0", f"Link all left members unlinked after {steps} step(s)")
         self.assertGreaterEqual(steps, 2)

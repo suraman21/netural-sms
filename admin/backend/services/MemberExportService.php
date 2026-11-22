@@ -16,22 +16,23 @@ final class MemberExportService
     public static function count(PDO $pdo, string $tier): int
     {
         if ($tier === 'all') {
-            $statement = $pdo->query('SELECT COUNT(*) FROM `members`');
+            $statement = $pdo->query('SELECT COUNT(*) FROM `students`');
             return (int)$statement->fetchColumn();
         }
-        $statement = $pdo->prepare('SELECT COUNT(*) FROM `members` WHERE `membership_tier` = ?');
-        $statement->execute([$tier]);
+        $statement = $pdo->prepare('SELECT COUNT(*) FROM `students`');
+        $statement->execute([]);
         return (int)$statement->fetchColumn();
     }
 
     public static function query(PDO $pdo, string $tier, int $yearId, ?int $limit = null): PDOStatement
     {
         $limitSql = $limit === null ? '' : ' LIMIT ' . max(1, $limit);
-        $tierWhere = $tier === 'all' ? '' : ' WHERE m.membership_tier = ?';
+        // ADR-0027: membership_tier removed from learner model; students has no tier column.
+        // Tier filtering is no longer supported at the storage layer.
         if ($yearId > 0) {
             $statement = $pdo->prepare(
                 "SELECT m.*, c.class_code AS class_code, c.class_name AS class_name
-                 FROM members m
+                 FROM students m
                  LEFT JOIN class_enrollments ce
                         ON ce.id = (
                             SELECT MAX(ce_latest.id)
@@ -41,23 +42,17 @@ final class MemberExportService
                               AND ce_latest.academic_year_id = ?
                         )
                  LEFT JOIN classes c ON c.id = ce.class_id
-                 {$tierWhere}
                  ORDER BY m.id DESC{$limitSql}"
             );
-            $params = [$yearId];
-            if ($tier !== 'all') {
-                $params[] = $tier;
-            }
-            $statement->execute($params);
+            $statement->execute([$yearId]);
             return $statement;
         }
 
         $statement = $pdo->prepare(
-            "SELECT m.* FROM members m
-             {$tierWhere}
+            "SELECT m.* FROM students m
              ORDER BY m.id DESC{$limitSql}"
         );
-        $statement->execute($tier === 'all' ? [] : [$tier]);
+        $statement->execute([]);
         return $statement;
     }
 

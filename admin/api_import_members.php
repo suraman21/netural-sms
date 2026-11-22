@@ -207,7 +207,7 @@ if (!empty($headerErrors)) {
 // ── Schema (types, lengths, allowed values) ─────────────────────────
 $colMeta = [];
 $notNullCols = [];
-$colRes = $conn->query('SHOW COLUMNS FROM members');
+$colRes = $conn->query('SHOW COLUMNS FROM students');
 while ($colRes && ($col = $colRes->fetch_assoc())) {
     $type = strtolower((string)$col['Type']);
     $meta = ['type' => $type, 'max' => null, 'enum' => null];
@@ -222,7 +222,7 @@ while ($colRes && ($col = $colRes->fetch_assoc())) {
     }
 }
 $requiredSchema = ['full_name_am', 'student_name', 'father_name', 'gender', 'date_of_birth', 'dob_ec_day', 'dob_ec_month',
-    'dob_ec_year', 'age', 'age_group', 'current_section', 'registration_type', 'membership_tier', 'waiting_since', 'member_code'];
+    'dob_ec_year', 'age', 'student_code'];
 $missingSchema = array_values(array_diff($requiredSchema, array_keys($colMeta)));
 foreach (['emergency_name', 'emergency_phone'] as $optional) {
     if (isset($seenKeys[$optional]) && !isset($colMeta[$optional])) {
@@ -230,13 +230,13 @@ foreach (['emergency_name', 'emergency_phone'] as $optional) {
     }
 }
 if (!empty($missingSchema)) {
-    error_log('api_import_members: members table is missing columns: ' . implode(', ', $missingSchema));
+    error_log('api_import_members: students table is missing columns: ' . implode(', ', $missingSchema));
     import_json(['success' => false, 'message' => 'The system database needs an update before importing (missing member fields). No changes were saved.'], 503);
 }
 
 // Columns the importer computes itself or never writes from a sheet.
-$computedKeys = ['id', 'member_code', 'age', 'age_group', 'current_section', 'date_of_birth', 'dob_ec_day', 'dob_ec_month',
-    'dob_ec_year', 'gender', 'registration_type', 'created_by', 'created_at', 'current_class_id', 'legacy_member_code'];
+$computedKeys = ['id', 'student_code', 'age', 'date_of_birth', 'dob_ec_day', 'dob_ec_month', 'dob_ec_year',
+    'gender', 'created_by', 'created_at', 'current_class_id', 'legacy_student_code'];
 
 $adminId = (int)$_SESSION['admin_id'];
 $zone = new DateTimeZone('Africa/Addis_Ababa');
@@ -435,20 +435,20 @@ try {
         $systemId = $cells['system_id'] ?? '';
         if ($systemId !== '') {
             $found = preg_match('/^\d{1,10}$/', $systemId)
-                ? $fetchOne('SELECT * FROM members WHERE id = ? LIMIT 1', 'i', [(int)$systemId])
+                ? $fetchOne('SELECT * FROM students WHERE id = ? LIMIT 1', 'i', [(int)$systemId])
                 : [];
             if (count($found) !== 1) {
                 $fail($excelRow, 'System ID "' . $systemId . '" was not found. Do not type in the System ID column; leave it empty for new members.');
                 continue;
             }
             $existing = $found[0];
-            if ($code !== '' && (string)$existing['member_code'] !== $code) {
+            if ($code !== '' && (string)$existing['student_code'] !== $code) {
                 $fail($excelRow, 'Member Code "' . $code . '" does not belong to System ID ' . $systemId . '.');
                 continue;
             }
         }
         if ($existing === null && $code !== '') {
-            $found = $fetchOne('SELECT * FROM members WHERE member_code = ? LIMIT 2', 's', [$code]);
+            $found = $fetchOne('SELECT * FROM students WHERE student_code = ? LIMIT 2', 's', [$code]);
             if (count($found) === 1) {
                 $existing = $found[0];
             } else {
@@ -457,7 +457,7 @@ try {
             }
         }
         if ($existing === null && $name !== '' && ($fields['phone_number'] ?? '') !== '') {
-            $found = $fetchOne('SELECT * FROM members WHERE full_name_am = ? AND phone_number = ? LIMIT 2', 'ss', [$name, $fields['phone_number']]);
+            $found = $fetchOne('SELECT * FROM students WHERE full_name_am = ? AND phone_number = ? LIMIT 2', 'ss', [$name, $fields['phone_number']]);
             if (count($found) > 1) {
                 $fail($excelRow, 'more than one existing member has this name and phone. Add the Member Code to choose one.');
                 continue;
@@ -466,7 +466,7 @@ try {
         }
         if ($existing === null && $name !== '' && $dob !== null) {
             $found = $fetchOne(
-                'SELECT * FROM members WHERE full_name_am = ? AND (date_of_birth = ? OR (dob_ec_year = ? AND dob_ec_month = ? AND dob_ec_day = ?)) LIMIT 2',
+                'SELECT * FROM students WHERE full_name_am = ? AND (date_of_birth = ? OR (dob_ec_year = ? AND dob_ec_month = ? AND dob_ec_day = ?)) LIMIT 2',
                 'ssiii',
                 [$name, $dob['gregorian'], $dob['y'], $dob['m'], $dob['d']]
             );
@@ -505,7 +505,7 @@ try {
             // ── Update: only filled cells; never the member code ──
             if (($existing['status'] ?? '') === 'archived') {
                 $summary['skipped_archived']++;
-                $warn($excelRow, 'member ' . ($existing['member_code'] ?: ('#' . $existing['id'])) . ' is archived and was skipped. Restore the member first to update.');
+                $warn($excelRow, 'member ' . ($existing['student_code'] ?: ('#' . $existing['id'])) . ' is archived and was skipped. Restore the member first to update.');
                 continue;
             }
             $rowData = $fields;
@@ -529,10 +529,8 @@ try {
             if ($age !== null) {
                 $rowData['age'] = (string)$age;
             }
-            if ($section !== null) {
-                $rowData['age_group'] = (string)$ageGroup;
-                $rowData['current_section'] = $section;
-            }
+            # ADR-0027: age_group/current_section removed from learner model;
+            # not written to students (update path).
             $changes = [];
             foreach ($rowData as $col => $val) {
                 if (trim((string)($existing[$col] ?? '')) !== (string)$val) {
@@ -559,7 +557,7 @@ try {
             // Never silently create a second copy of someone already in the
             // system: a same-name member is only treated as a different
             // person when both birth dates are known and differ.
-            $sameName = $fetchOne('SELECT id, member_code, date_of_birth, dob_ec_year, dob_ec_month, dob_ec_day FROM members WHERE full_name_am = ? LIMIT 20', 's', [$name]);
+            $sameName = $fetchOne('SELECT id, student_code, date_of_birth, dob_ec_year, dob_ec_month, dob_ec_day FROM students WHERE full_name_am = ? LIMIT 20', 's', [$name]);
             if (!empty($sameName)) {
                 $provablyDifferent = $dob !== null;
                 foreach ($sameName as $other) {
@@ -571,7 +569,7 @@ try {
                         $provablyDifferent = false;
                     }
                 }
-                $who = (string)($sameName[0]['member_code'] ?: ('System ID ' . $sameName[0]['id']));
+                $who = (string)($sameName[0]['student_code'] ?: ('System ID ' . $sameName[0]['id']));
                 if (!$provablyDifferent) {
                     $fail($excelRow, '"' . $name . '" already exists (' . $who . '). If it is the same person, use the exported sheet (System ID) or add the Member Code; if it is a different person, both members need a Date of Birth.');
                     continue;
@@ -596,7 +594,6 @@ try {
                 $rowData += ['grandfather_name' => $grandfather];
             }
             $rowData['gender'] = $gender;
-            $rowData['membership_tier'] = $rowTier;
             if ($dob !== null) {
                 $rowData['date_of_birth'] = $dob['gregorian'];
                 $rowData['dob_ec_year'] = (string)$dob['y'];
@@ -608,16 +605,14 @@ try {
             if ($age !== null) {
                 $rowData['age'] = (string)$age;
             }
-            $rowData['age_group'] = $ageGroup;
-            $rowData['current_section'] = $section;
+            # ADR-0027: age_group/current_section removed from learner model;
+            # not written to students (insert path).
             if ($sectionSource === 'none') {
                 $warn($excelRow, 'no birth date, age or section — section' . ($rowTier === 'permanent' ? ' and member code stay' : ' stays') . ' pending.');
             }
             if ($rowTier === 'temporary') {
-                $rowData['registration_type'] = 'waiting';
-                $rowData['waiting_since'] = $rowData['waiting_since'] ?? $todayGregorian;
+                # ADR-0027: registration_type/waiting_since removed from learner model.
             } else {
-                $rowData['registration_type'] = 'direct';
                 $summary[$ageGroup !== null ? 'codes_to_issue' : 'codes_pending']++;
             }
             // The member's own phone lives in phone_number AND phone_primary
@@ -634,7 +629,7 @@ try {
             if (isset($colMeta['created_by'])) {
                 $rowData['created_by'] = (string)$adminId;
             }
-            $plan[] = ['action' => 'insert', 'row' => $excelRow, 'data' => $rowData, 'class' => $class];
+            $plan[] = ['action' => 'insert', 'row' => $excelRow, 'data' => $rowData, 'class' => $class, 'age_group' => $ageGroup];
             $summary[$rowTier === 'temporary' ? 'new_temporary' : 'new_permanent']++;
             $sectionName = $section ?? 'pending';
             $summary['sections'][$sectionName] = ($summary['sections'][$sectionName] ?? 0) + 1;
@@ -690,14 +685,14 @@ try {
         $rowData = $item['data'];
         $memberId = 0;
         if ($item['action'] === 'insert') {
-            if (($rowData['membership_tier'] ?? '') === 'permanent') {
+            if ($tier === 'permanent') {
                 // Code letter from the member's own age group; unknown group →
                 // pending code (issued later from the Identity hub), never guessed.
-                $rowData['member_code'] = EnrollmentService::generateMemberCode(
+                $rowData['student_code'] = EnrollmentService::generateMemberCode(
                     $conn,
-                    isset($rowData['age_group']) ? (string)$rowData['age_group'] : null
+                    isset($item['age_group']) ? (string)$item['age_group'] : null
                 );
-                $stats[$rowData['member_code'] !== null ? 'codes_issued' : 'codes_pending']++;
+                $stats[$rowData['student_code'] !== null ? 'codes_issued' : 'codes_pending']++;
             }
             foreach ($notNullCols as $reqCol) {
                 if (!isset($rowData[$reqCol])) {
@@ -705,7 +700,7 @@ try {
                 }
             }
             $cols = array_keys($rowData);
-            $sql = 'INSERT INTO members (`' . implode('`,`', $cols) . '`) VALUES (' . rtrim(str_repeat('?,', count($cols)), ',') . ')';
+            $sql = 'INSERT INTO students (`' . implode('`,`', $cols) . '`) VALUES (' . rtrim(str_repeat('?,', count($cols)), ',') . ')';
             $stmt = $conn->prepare($sql);
             if (!$stmt) {
                 throw new RuntimeException('insert prepare failed');
@@ -728,7 +723,7 @@ try {
                 foreach (array_keys($rowData) as $col) {
                     $sets[] = '`' . $col . '` = ?';
                 }
-                $stmt = $conn->prepare('UPDATE members SET ' . implode(', ', $sets) . ' WHERE id = ?');
+                $stmt = $conn->prepare('UPDATE students SET ' . implode(', ', $sets) . ' WHERE id = ?');
                 if (!$stmt) {
                     throw new RuntimeException('update prepare failed');
                 }

@@ -196,7 +196,7 @@ class GuardianService
      */
     public static function attachFromLegacy(\mysqli $conn, int $memberId, int $pickedGuardianId = 0, string $source = 'hr'): array
     {
-        $stmt = $conn->prepare('SELECT guardian_name, guardian_phone1, guardian_phone2, guardian_city, guardian_sub_city, guardian_woreda, guardian_mender, guardian_block_number, guardian_house FROM students WHERE id = ?');
+        $stmt = $conn->prepare('SELECT guardian_name, guardian_phone1, guardian_phone2 FROM students WHERE id = ?');
         if (!$stmt) {
             return ['guardian_id' => 0, 'mode' => 'none'];
         }

@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit; 
         }
         
-        $stmt = $conn->prepare('SELECT * FROM members WHERE id = ?'); 
+        $stmt = $conn->prepare('SELECT * FROM students WHERE id = ?'); 
         $stmt->bind_param('i', $id); 
         $stmt->execute(); 
         $cur = $stmt->get_result()->fetch_assoc(); 
@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $student_photo_path      = $storeUpload('student_photo') ?? $cur['student_photo_path'];
     $guardian_photo_path     = $storeUpload('guardian_photo') ?? $cur['guardian_photo_path'];
     $doc_school_records_path = $storeUpload('doc_school_records') ?? $cur['doc_school_records_path'];
-    $doc_spiritual_path      = $storeUpload('doc_spiritual') ?? $cur['doc_spiritual_path'];
+    $doc_spiritual_path      = $storeUpload('doc_spiritual') ?? ($cur['doc_spiritual_path'] ?? null);
     $doc_signed_form_path    = $storeUpload('doc_signed_form') ?? $cur['doc_signed_form_path'];
 
     $full_name_am = trim($student_name . ' ' . $father_name . ' ' . $grandfather_name);
@@ -215,17 +215,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Legacy role flags (is_teacher, …) are no longer written here:
         // they are DERIVED from the member's positions right after the
         // update (PositionSyncService), keeping every old consumer in sync.
-        $sql = "UPDATE members SET 
-            registration_type=?, member_type=?, status=?,
-            student_name=?, baptismal_name=?, father_name=?, grandfather_name=?,
+        $sql = "UPDATE students SET 
+            status=?,
+            student_name=?, father_name=?, grandfather_name=?,
             full_name_am=?, gender=?, 
-            dob_ec_day=?, dob_ec_month=?, dob_ec_year=?, date_of_birth=COALESCE(?, date_of_birth), age=?, age_group=?, current_section=?,
-            education_level=?, spiritual_education=?, work_profession=?,
+            dob_ec_day=?, dob_ec_month=?, dob_ec_year=?, date_of_birth=COALESCE(?, date_of_birth), age=?,
+            education_level=?,
             city=?, sub_city=?, woreda=?, mender=?, block_number=?, house_number=?,
             phone_number=?, phone_primary=?, alt_phone_number=?,
             guardian_name=?, guardian_phone1=?, guardian_phone2=?, phone_guardian=?,
             student_photo_path=?, guardian_photo_path=?,
-            doc_school_records_path=?, doc_spiritual_path=?, doc_signed_form_path=?
+            doc_school_records_path=?, doc_signed_form_path=?
             WHERE id=?";
         
         $stmt = $conn->prepare($sql);
@@ -234,16 +234,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $ageVal = $age !== null ? $age : 0;
         $bindValues = [
-            $registration_type, $member_type, $status,
-            $student_name, $baptismal_name, $father_name, $grandfather_name,
+            $status,
+            $student_name, $father_name, $grandfather_name,
             $full_name_am, $gender,
-            $dob_day, $dob_month, $dob_year, $dob_gregorian, $ageVal, $age_group, $current_section,
-            $education_level, $spiritual_education, $work_profession,
+            $dob_day, $dob_month, $dob_year, $dob_gregorian, $ageVal,
+            $education_level,
             $city, $sub_city, $woreda, $mender, $block_number, $house_number,
             $phone_number, $phone_number, $alt_phone_number,
             $guardian_name, $guardian_phone1, $guardian_phone2, $guardian_phone1,
             $student_photo_path, $guardian_photo_path,
-            $doc_school_records_path, $doc_spiritual_path, $doc_signed_form_path,
+            $doc_school_records_path, $doc_signed_form_path,
             $id
         ];
         $bindTypes = '';
@@ -370,7 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $memberId = isset($_GET['id']) ? (int)$_GET['id'] : 0; 
 if ($memberId <= 0) die('<div style="padding:20px;color:#dc2626;">Invalid member ID</div>');
 
-$stmt = $conn->prepare('SELECT * FROM members WHERE id = ?'); 
+$stmt = $conn->prepare('SELECT * FROM students WHERE id = ?'); 
 $stmt->bind_param('i', $memberId); 
 $stmt->execute(); 
 $m = $stmt->get_result()->fetch_assoc(); 

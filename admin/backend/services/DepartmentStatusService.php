@@ -318,7 +318,7 @@ final class DepartmentStatusService
             $conn->begin_transaction();
         }
         try {
-            $lock = $conn->prepare('SELECT id, status FROM members WHERE id = ? FOR UPDATE');
+            $lock = $conn->prepare('SELECT id, status FROM students WHERE id = ? FOR UPDATE');
             if (!$lock) {
                 throw new \RuntimeException('Member lookup failed.');
             }
@@ -498,7 +498,7 @@ final class DepartmentStatusService
         }
         $stmt = $conn->prepare(
             'SELECT COUNT(DISTINCT p.member_id) FROM ' . self::TABLE . " p
-             JOIN members m ON m.id = p.member_id AND m.status != 'archived'
+             JOIN students m ON m.id = p.member_id AND m.status != 'archived'
              WHERE p.department = ? AND p.status = 'inactive' AND p.ended_at IS NULL"
         );
         if (!$stmt) {
