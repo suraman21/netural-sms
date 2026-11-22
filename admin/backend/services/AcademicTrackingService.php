@@ -391,7 +391,7 @@ final class AcademicTrackingService
      */
     private static function memberStatus(\mysqli $conn, int $memberId): string
     {
-        $stmt = $conn->prepare("SELECT status FROM members WHERE id = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT status FROM students WHERE id = ? LIMIT 1");
         if (!$stmt) {
             return '';
         }
@@ -649,7 +649,7 @@ final class AcademicTrackingService
             "SELECT u.id, u.full_name, u.username, u.email, u.is_active, u.member_id,
                     m.member_code, m.phone_number
                FROM users u
-          LEFT JOIN members m ON u.member_id = m.id
+          LEFT JOIN students m ON u.member_id = m.id
               WHERE u.id = ? AND u.role = 'teacher'
               LIMIT 1"
         );
@@ -1035,7 +1035,7 @@ final class AcademicTrackingService
         $rows = [];
         $sql = "SELECT m.id, m.member_code, m.student_name, m.father_name, m.gender, m.status
                   FROM class_enrollments ce
-                  JOIN members m ON m.id = ce.member_id
+                  JOIN students m ON m.id = ce.member_id
                  WHERE $where
                  ORDER BY m.student_name, m.id
                  LIMIT ? OFFSET ?";
@@ -1276,7 +1276,7 @@ final class AcademicTrackingService
                        m.member_code
                   FROM teacher_assignments ta
                   JOIN users u ON u.id = ta.teacher_id AND u.role = 'teacher'
-             LEFT JOIN members m ON m.id = u.member_id
+             LEFT JOIN students m ON m.id = u.member_id
                  WHERE ta.class_id = ? AND ta.subject_id = ? AND ta.is_active = 1";
         $params = [$classId, $subjectId];
         $types = 'ii';
@@ -1643,7 +1643,7 @@ final class AcademicTrackingService
         $total = 0;
         $stmt = $conn->prepare(
             "SELECT COUNT(*) AS total FROM class_enrollments ce
-               JOIN members m ON m.id = ce.member_id
+               JOIN students m ON m.id = ce.member_id
               WHERE $where"
         );
         if ($stmt) {
@@ -1661,7 +1661,7 @@ final class AcademicTrackingService
         $stmt = $conn->prepare(
             "SELECT m.id, m.member_code, m.student_name, m.father_name, m.gender, m.status
                FROM class_enrollments ce
-               JOIN members m ON m.id = ce.member_id
+               JOIN students m ON m.id = ce.member_id
               WHERE $where
               ORDER BY m.student_name, m.id
               LIMIT ? OFFSET ?"
@@ -1842,7 +1842,7 @@ final class AcademicTrackingService
                   FROM teacher_assignments ta
                   JOIN users u ON u.id = ta.teacher_id AND u.role = 'teacher'
              LEFT JOIN subjects s ON s.id = ta.subject_id
-             LEFT JOIN members m ON m.id = u.member_id
+             LEFT JOIN students m ON m.id = u.member_id
                  WHERE ta.class_id = ? AND ta.is_active = 1";
         $params = [$classId];
         $types = 'i';
