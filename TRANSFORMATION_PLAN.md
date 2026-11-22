@@ -4,7 +4,7 @@
 **Server:** /home/arkeonet/sms.arkeonethiopia.com/ (synced to b29f66e)
 **Date:** 2026-11-16
 **Protocol:** UNIVERSAL AI SOFTWARE CHANGE, PATCH & UPDATE PROTOCOL v1.0
-**Commits:** 6af4268 + b29f66e + 6ed4cdf + dc3cb0d (pushed to GitHub main)
+**Commits:** 6af4268 + b29f66e + 6ed4cdf + dc3cb0d + 54877e2 (pushed to GitHub main)
 
 ---
 
@@ -157,6 +157,11 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
 - `admin/backend/services/AdminSessionGuard.php` — added to `KNOWN_ROLES`
 - `admin/dashboard.php` — added `school_registrar` route case (registrar.php → school_admin.php fallback)
 - `admin/access_control.php` — added `school_registrar` to ROLE_MAP for registration, member directory, duplicate check, member management, print, archive, restore, and `registrar.php` page
+
+### Commit 54877e2 — Add school_registrar to role dropdowns (3 files)
+- `admin/dashboards/super-admin.php` — added `school_registrar => 'School Registrar'` to `$roles` array
+- `admin/dashboards/school_admin.php` — added `school_registrar` option to Add User modal
+- `admin/users.php` — added `school_registrar` option to role select
 
 ### Commit dc3cb0d — Create registrar dashboard (1 file)
 - `admin/dashboards/registrar.php` — NEW: Student-focused dashboard with:
