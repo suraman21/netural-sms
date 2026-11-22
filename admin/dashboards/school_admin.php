@@ -47,11 +47,24 @@ $sectionDist=[];if(isset($conn)){$r=$conn->query("SELECT COALESCE(current_class_
 // ── Users list ──
 $usersList=[];if(isset($conn)){$r=$conn->query("SELECT id,username,full_name,role,is_active,created_at,last_login FROM users ORDER BY id DESC");if($r)while($row=$r->fetch_assoc()){$row['status']=$row['is_active']?'active':'inactive';$usersList[]=$row;}}
 
+// ── Member code settings ──
+$codeSettings = ['member_code_prefix' => '', 'member_code_digits' => '4', 'auto_generate_code' => '1'];
+if (isset($conn)) {
+    try {
+        $cr = $conn->query("SELECT setting_key, setting_value FROM dept_settings WHERE setting_key IN ('member_code_prefix','member_code_digits','auto_generate_code')");
+        if ($cr) {
+            while ($crow = $cr->fetch_assoc()) {
+                $codeSettings[$crow['setting_key']] = $crow['setting_value'];
+            }
+        }
+    } catch (Throwable $e) {}
+}
+
 // ── Recent registrations ──
 $recentRegs=0;$recentMembers=[];
 if(isset($conn)){
     try{$r=$conn->query("SELECT COUNT(*) c FROM students WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND status!='archived'");if($r&&$row=$r->fetch_assoc())$recentRegs=(int)$row['c'];}catch(Exception $e){}
-    try{$r=$conn->query("SELECT id,student_code,student_name,father_name,gender,status,created_at FROM students WHERE status!='archived' ORDER BY created_at DESC LIMIT 10");if($r)while($row=$r->fetch_assoc())$recentMembers[]=$row;}catch(Exception $e){}
+    try{$r=$conn->query("SELECT id,student_code,student_name,father_name,gender,status,current_class_id,created_at FROM students WHERE status!='archived' ORDER BY created_at DESC LIMIT 10");if($r)while($row=$r->fetch_assoc())$recentMembers[]=$row;}catch(Exception $e){}
 }
 
 // ── Department stats ──
@@ -376,7 +389,7 @@ renderSidebarUserCard($fullName, 'School Admin', $todayFormatted, $initials, 'li
 <?php if(count($recentMembers)>0):?>
 <div class="tw"><table><thead><tr><th>Code</th><th>Name</th><th>Father</th><th>Gender</th><th>Section</th><th>Status</th><th>Registered</th></tr></thead><tbody>
 <?php foreach($recentMembers as $m):?>
-<tr><td><span class="bg bg-info"><?=e($m['member_code']??'')?></span></td><td style="font-weight:600;color:var(--bright)"><?=e($m['student_name']??'')?></td><td><?=e($m['father_name']??'')?></td><td><?=$m['gender']==='male'?'<span style="color:var(--info)">♂</span>':'<span style="color:var(--pink)">♀</span>'?></td><td><?=e($m['current_section']??'—')?></td><td><span class="bg bg-<?=$m['status']==='active'?'ok':($m['status']==='warning'?'w':'bad')?>"><?=e($m['status'])?></span></td><td style="font-size:.65rem;color:var(--dim)"><?=date('M j',strtotime($m['created_at']))?></td></tr>
+<tr><td><span class="bg bg-info"><?=e($m['student_code']??'')?></span></td><td style="font-weight:600;color:var(--bright)"><?=e($m['student_name']??'')?></td><td><?=e($m['father_name']??'')?></td><td><?=$m['gender']==='male'?'<span style="color:var(--info)">♂</span>':'<span style="color:var(--pink)">♀</span>'?></td><td><?=e($m['current_class_id']??'—')?></td><td><span class="bg bg-<?=$m['status']==='active'?'ok':($m['status']==='warning'?'w':'bad')?>"><?=e($m['status'])?></span></td><td style="font-size:.65rem;color:var(--dim)"><?=date('M j',strtotime($m['created_at']))?></td></tr>
 <?php endforeach;?>
 </tbody></table></div>
 <?php else:?><p style="font-size:.75rem;color:var(--dim);text-align:center;padding:1rem">No recent registrations</p><?php endif;?>
@@ -401,7 +414,7 @@ renderSidebarUserCard($fullName, 'School Admin', $todayFormatted, $initials, 'li
 <div><label class="flbl">City</label><input autocomplete="off" type="text" id="fCity" class="inp" style="width:100%" placeholder="City..." oninput="applyFilters()"></div>
 </div></div>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.3rem"><div id="resultCount" style="font-size:.72rem;color:var(--dim)">Loading...</div><div style="display:flex;align-items:center;gap:.4rem"><label style="font-size:.6rem;color:var(--dim)">Per page:</label><select id="perPage" class="inp bs" onchange="saveMemberPerPage();applyFilters()" style="width:auto" aria-label="Rows per page"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option></select></div></div>
-<div class="tw"><table id="mTbl"><thead><tr><th data-col="member_code" onclick="sortBy('member_code')">Code</th><th data-col="student_name" onclick="sortBy('student_name')">Name</th><th data-col="father_name" onclick="sortBy('father_name')">Father</th><th data-col="gender" onclick="sortBy('gender')">Gen</th><th data-col="age_group" onclick="sortBy('age_group')">Age</th><th data-col="current_section" onclick="sortBy('current_section')">Section</th><th data-col="status" onclick="sortBy('status')">Status</th><th data-col="registration_type" onclick="sortBy('registration_type')">Reg</th><th data-col="phone_number" onclick="sortBy('phone_number')">Phone</th><th data-col="city" onclick="sortBy('city')">City</th><th data-col="created_at" onclick="sortBy('created_at')">Date</th><th>⋯</th></tr></thead><tbody id="mBody"></tbody></table></div>
+<div class="tw"><table id="mTbl"><thead><tr><th data-col="student_code" onclick="sortBy('student_code')">Code</th><th data-col="student_name" onclick="sortBy('student_name')">Name</th><th data-col="father_name" onclick="sortBy('father_name')">Father</th><th data-col="gender" onclick="sortBy('gender')">Gen</th><th data-col="age" onclick="sortBy('age')">Age</th><th data-col="current_class_id" onclick="sortBy('current_class_id')">Section</th><th data-col="status" onclick="sortBy('status')">Status</th><th data-col="phone_number" onclick="sortBy('phone_number')">Phone</th><th data-col="city" onclick="sortBy('city')">City</th><th data-col="created_at" onclick="sortBy('created_at')">Date</th><th>⋯</th></tr></thead><tbody id="mBody"></tbody></table></div>
 <div id="pag" style="display:flex;justify-content:center;gap:.35rem;margin-top:.75rem;flex-wrap:wrap"></div>
 </div>
 
@@ -507,6 +520,21 @@ renderSidebarUserCard($fullName, 'School Admin', $todayFormatted, $initials, 'li
 <div style="padding:.4rem;display:flex;align-items:center;gap:.4rem"><span class="health-dot health-ok"></span> XSS Protection Active</div>
 <div style="padding:.4rem;display:flex;align-items:center;gap:.4rem"><span class="health-dot health-ok"></span> Password Hashing (bcrypt)</div>
 </div></div>
+
+<!-- ═══ MEMBER CODE SETTINGS ═══ -->
+<div class="cd"><div class="ct"><i class="fa-solid fa-hashtag" style="color:var(--purple)"></i> Member Code Settings</div>
+<p style="font-size:.68rem;color:var(--dim);margin-bottom:.6rem">Superadmin controls the member code format. Changing digits affects new codes only; existing codes are unchanged.</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.55rem;margin-bottom:.6rem">
+<div><label class="flbl">Code Prefix</label><input id="csPrefix" class="inp" style="width:100%" value="<?=e($codeSettings['member_code_prefix'])?>" placeholder="e.g. M"></div>
+<div><label class="flbl">Code Digits</label><select id="csDigits" class="inp bs" style="width:100%"><option value="3">3 digits (000–999)</option><option value="4" <?= $codeSettings['member_code_digits']=='4'?'selected':'' ?>>4 digits (0000–9999)</option><option value="5">5 digits (00000–99999)</option><option value="6">6 digits (000000–999999)</option></select></div>
+<div><label class="flbl">Auto-generate</label><select id="csAutoGen" class="inp bs" style="width:100%"><option value="1" <?= $codeSettings['auto_generate_code']=='1'?'selected':'' ?>>On</option><option value="0">Off</option></select></div>
+</div>
+<div style="display:flex;gap:.4rem">
+<button class="btn bp bs" onclick="saveCodeSettings()"><i class="fa-solid fa-save"></i> Save Code Settings</button>
+<span id="csMsg" style="font-size:.68rem;color:var(--dim);margin-left:.6rem"></span>
+</div>
+<div style="font-size:.68rem;color:var(--dim);margin-top:.4rem">Next code preview: <span id="csPreview" style="font-family:monospace;font-weight:700"><?=e($codeSettings['member_code_prefix']).str_pad('1', max(3,(int)$codeSettings['member_code_digits']), '0', STR_PAD_LEFT)?></span></div>
+</div>
 </div>
 
 <!-- ═══ PROFILE TAB ═══ -->
@@ -641,6 +669,7 @@ let memberTotal=0,memberPages=1,memberNextCursor=null,memberCursors={1:null},mem
 const secDist=<?=json_encode($sectionDist, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)?>;
 const memberStats=<?=json_encode($stats, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)?>;
 const usersData=<?=json_encode($usersList, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)?>;
+const codeSettings=<?=json_encode($codeSettings, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)?>;
 
 // ANIMATED COUNTERS
 function animateCounters(){document.querySelectorAll('.count-up').forEach(el=>{const target=parseInt(el.dataset.target)||0;if(!target){el.textContent='0';return;}const dur=800,start=performance.now();const step=ts=>{const p=Math.min((ts-start)/dur,1);el.textContent=Math.floor(p*target).toLocaleString();if(p<1)requestAnimationFrame(step);else el.textContent=target.toLocaleString();};requestAnimationFrame(step);});}
@@ -661,7 +690,7 @@ document.querySelectorAll('[data-section]').forEach(el=>{el.addEventListener('cl
 // GLOBAL SEARCH
 let searchTimer;
 function globalSearchHandler(q){clearTimeout(searchTimer);const box=document.getElementById('searchResults');q=q.trim();if(q.length<2){box.classList.remove('show');return;}searchTimer=setTimeout(async()=>{try{const params=new URLSearchParams({q:q,limit:'8',page:'1'});const r=await fetch('/admin/api_list_members.php?'+params.toString(),{credentials:'same-origin',headers:{Accept:'application/json'}});const d=await r.json();if(!r.ok||d.status!=='success')throw new Error(d.message||'Search failed');globalSearchMembers=d.members||[];showSearchResults(globalSearchMembers);}catch(_){globalSearchMembers=[];showSearchResults([]);}},250);}
-function showSearchResults(matches){const box=document.getElementById('searchResults');if(!matches.length){box.innerHTML='<div class="sr-item" style="color:var(--dim)">No results</div>';box.classList.add('show');return;}box.innerHTML=matches.map(m=>`<div class="sr-item" onclick="viewMember(${parseInt(m.id,10)});document.getElementById('searchResults').classList.remove('show');document.getElementById('globalSearch').value='';"><span class="bg bg-info" style="font-size:.55rem">${esc(m.member_code||'')}</span><span style="font-weight:500;color:var(--bright)">${esc(m.student_name)}</span><span style="color:var(--dim);font-size:.62rem">${esc(m.current_section||'')}</span></div>`).join('');box.classList.add('show');}
+function showSearchResults(matches){const box=document.getElementById('searchResults');if(!matches.length){box.innerHTML='<div class="sr-item" style="color:var(--dim)">No results</div>';box.classList.add('show');return;}box.innerHTML=matches.map(m=>`<div class="sr-item" onclick="viewMember(${parseInt(m.id,10)});document.getElementById('searchResults').classList.remove('show');document.getElementById('globalSearch').value='';"><span class="bg bg-info" style="font-size:.55rem">${esc(m.student_code||'')}</span><span style="font-weight:500;color:var(--bright)">${esc(m.student_name)}</span><span style="color:var(--dim);font-size:.62rem">${esc(m.current_class_id||'')}</span></div>`).join('');box.classList.add('show');}
 document.addEventListener('click',e=>{if(!e.target.closest('.search-box'))document.getElementById('searchResults').classList.remove('show');});
 
 // NOTIFICATIONS
@@ -684,7 +713,7 @@ async function loadMembers(page=1,append=false){
     const rc=document.getElementById('resultCount');
     const pp=memberPerPage();
     const params=new URLSearchParams({page:String(page),limit:String(pp),sort:sortCol,direction:sortDir});
-    const filters={fSearch:'q',fStatus:'status',fGender:'gender',fSection:'current_section',fRegType:'registration_type',fMemberType:'member_type',fAgeGroup:'age_group',fCity:'city'};
+    const filters={fSearch:'q',fStatus:'status',fGender:'gender',fSection:'current_class_id',fCity:'city'};
     Object.entries(filters).forEach(([id,key])=>{const value=document.getElementById(id)?.value.trim()||'';if(value)params.set(key,value);});
     if(!memberOptionsLoaded)params.set('include_options','1');
     if(page>1)params.set('include_total','0');
@@ -711,7 +740,7 @@ async function loadMembers(page=1,append=false){
 function populateDropdowns(sections){const secs=[...new Set((sections||[]).filter(Boolean))].sort();['fSection','attSection','qmSection'].forEach(id=>{const s=document.getElementById(id);if(!s)return;const v=s.value;const def=id==='qmSection'?'<option value="">Select</option>':'<option value="">All</option>';s.innerHTML=def+secs.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');s.value=v;});}
 function applyFilters(){clearTimeout(memberFilterTimer);memberCursors={1:null};memberFilterTimer=setTimeout(()=>loadMembers(1),300);}
 function sortBy(col){if(sortCol===col)sortDir=sortDir==='asc'?'desc':'asc';else{sortCol=col;sortDir='asc';}document.querySelectorAll('#mTbl th').forEach(th=>th.classList.remove('sa','sd'));const th=document.querySelector('#mTbl th[data-col="'+col+'"]');if(th)th.classList.add(sortDir==='asc'?'sa':'sd');memberCursors={1:null};loadMembers(1);}
-function renderMembers(){const pp=memberPerPage();const pg=allMembers;const first=memberTotal&&pg.length?((memberFirstPage-1)*pp)+1:0,last=first?Math.min(memberTotal,first+pg.length-1):0;document.getElementById('resultCount').innerHTML=`Showing <span style="color:var(--bright);font-weight:600">${first}–${last}</span> of ${memberTotal}`;const tb=document.getElementById('mBody');if(!pg.length){tb.innerHTML='<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--dim)">No members found</td></tr>';}else{tb.innerHTML=pg.map(m=>`<tr><td><span class="bg bg-info">${esc(m.member_code||'—')}</span></td><td style="font-weight:600;color:var(--bright)">${esc(m.student_name||'')}</td><td>${esc(m.father_name||'')}</td><td>${m.gender==='male'?'<span style="color:var(--info)">♂</span>':'<span style="color:var(--pink)">♀</span>'}</td><td>${esc(fmtAge(m.age_group))}</td><td>${esc(m.current_section||'—')}</td><td>${stBg(m.status)}</td><td>${rgBg(m.registration_type)}</td><td style="font-size:.68rem">${esc(m.phone_number||'—')}</td><td>${esc(m.city||'—')}</td><td style="font-size:.62rem;color:var(--dim)">${fmtDate(m.created_at)}</td><td><button class="btn bo bs" onclick="viewMember(${parseInt(m.id,10)})"><i class="fa-solid fa-eye"></i></button></td></tr>`).join('');}const p=document.getElementById('pag');if(memberPages<=1){p.innerHTML='';return;}const left=Math.max(0,memberTotal-last);const pos=memberFirstPage===curPage?`Page ${curPage} of ${memberPages}`:`Pages ${memberFirstPage}–${curPage} of ${memberPages}`;p.innerHTML=`<button class="btn bo bs" data-fk-pager-prev onclick="goP(${memberFirstPage-1})" ${memberFirstPage<=1?'disabled':''}>‹ Previous</button><span data-fk-pager-pos style="padding:.3rem;color:var(--dim)">${pos}</span><button class="btn bo bs" data-fk-pager-next onclick="goP(${curPage+1})" ${curPage>=memberPages?'disabled':''}>Next ›</button>`+(left>0?`<button class="btn bs" data-fk-pager-more onclick="loadMoreMembers(this)" style="margin-left:.6rem">Load more (${left} left)</button>`:'');}
+function renderMembers(){const pp=memberPerPage();const pg=allMembers;const first=memberTotal&&pg.length?((memberFirstPage-1)*pp)+1:0,last=first?Math.min(memberTotal,first+pg.length-1):0;document.getElementById('resultCount').innerHTML=`Showing <span style="color:var(--bright);font-weight:600">${first}–${last}</span> of ${memberTotal}`;const tb=document.getElementById('mBody');if(!pg.length){tb.innerHTML='<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--dim)">No members found</td></tr>';}else{tb.innerHTML=pg.map(m=>`<tr><td><span class="bg bg-info">${esc(m.student_code||'—')}</span></td><td style="font-weight:600;color:var(--bright)">${esc(m.student_name||'')}</td><td>${esc(m.father_name||'')}</td><td>${m.gender==='male'?'<span style="color:var(--info)">♂</span>':'<span style="color:var(--pink)">♀</span>'}</td><td>${esc(fmtAge(m.age||'—'))}</td><td>${esc(m.current_class_id||'—')}</td><td>${stBg(m.status)}</td><td style="font-size:.68rem">${esc(m.phone_number||'—')}</td><td>${esc(m.city||'—')}</td><td style="font-size:.62rem;color:var(--dim)">${fmtDate(m.created_at)}</td><td><button class="btn bo bs" onclick="viewMember(${parseInt(m.id,10)})"><i class="fa-solid fa-eye"></i></button></td></tr>`).join('');}const p=document.getElementById('pag');if(memberPages<=1){p.innerHTML='';return;}const left=Math.max(0,memberTotal-last);const pos=memberFirstPage===curPage?`Page ${curPage} of ${memberPages}`:`Pages ${memberFirstPage}–${curPage} of ${memberPages}`;p.innerHTML=`<button class="btn bo bs" data-fk-pager-prev onclick="goP(${memberFirstPage-1})" ${memberFirstPage<=1?'disabled':''}>‹ Previous</button><span data-fk-pager-pos style="padding:.3rem;color:var(--dim)">${pos}</span><button class="btn bo bs" data-fk-pager-next onclick="goP(${curPage+1})" ${curPage>=memberPages?'disabled':''}>Next ›</button>`+(left>0?`<button class="btn bs" data-fk-pager-more onclick="loadMoreMembers(this)" style="margin-left:.6rem">Load more (${left} left)</button>`:'');}
 function loadMoreMembers(btn){if(curPage>=memberPages)return;const page=curPage+1;if(sortCol==='id'&&sortDir==='desc'&&memberNextCursor)memberCursors[page]=memberNextCursor;if(btn){btn.disabled=true;btn.textContent='Loading…';}loadMembers(page,true);}
 function goP(page){if(page<1||page>memberPages)return;if(page===curPage+1&&sortCol==='id'&&sortDir==='desc'){if(!memberNextCursor)return;memberCursors[page]=memberNextCursor;}loadMembers(page);window.scrollTo({top:0,behavior:'smooth'});}
 function resetFilters(){['fSearch','fCity'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});['fStatus','fGender','fSection','fRegType','fMemberType','fAgeGroup'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});memberCursors={1:null};loadMembers(1);}
@@ -722,11 +751,11 @@ document.getElementById('memberDetail').innerHTML=`
 <div style="display:flex;align-items:center;gap:.85rem;padding:.85rem;background:linear-gradient(135deg,rgba(6,182,212,.06),rgba(139,92,246,.04));border-radius:12px;margin-bottom:.85rem">
 <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--ac2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;font-weight:700;flex-shrink:0">${(m.student_name||'?')[0].toUpperCase()}</div>
 <div style="flex:1;min-width:0"><div style="font-size:1.05rem;font-weight:700;color:var(--bright)">${esc(m.student_name||'')} ${esc(m.father_name||'')} ${esc(m.grandfather_name||'')}</div>
-<div style="font-size:.72rem;color:var(--dim);display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.2rem"><span class="bg bg-info">${esc(m.member_code||'—')}</span> ${stBg(m.status)} ${rgBg(m.registration_type)} <span style="color:${m.gender==='male'?'var(--info)':'var(--pink)'}">${m.gender==='male'?'♂ Male':'♀ Female'}</span></div></div></div>
-${sec('Personal Information','user','var(--ac)',[['Full Name',`<strong>${esc(m.student_name)}</strong>`],['Father Name',esc(m.father_name)],['Grandfather Name',esc(m.grandfather_name)],['Christian Name (የክርስትና ስም)',esc(m.baptismal_name)],['Gender',m.gender==='male'?'♂ Male':'♀ Female'],['Age Group',fmtAge(m.age_group)]])}
-${sec('Church & Education','graduation-cap','var(--purple)',[['Current Section',esc(m.current_section)],['Member Type',esc(m.member_type)],['Registration Type',esc(m.registration_type)],['Education Level',esc(m.education_level)],['Profession',esc(m.work_profession)],['Member Code',esc(m.member_code)]])}
+<div style="font-size:.72rem;color:var(--dim);display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.2rem"><span class="bg bg-info">${esc(m.student_code||'—')}</span> ${stBg(m.status)} <span style="color:${m.gender==='male'?'var(--info)':'var(--pink)'}">${m.gender==='male'?'♂ Male':'♀ Female'}</span></div></div></div>
+${sec('Personal Information','user','var(--ac)',[['Full Name',`<strong>${esc(m.student_name)}</strong>`],['Father Name',esc(m.father_name)],['Grandfather Name',esc(m.grandfather_name)],['Gender',m.gender==='male'?'♂ Male':'♀ Female'],['Age',fmtAge(m.age||'—')]])}
+${sec('Church & Education','graduation-cap','var(--purple)',[['Section',esc(m.current_class_id||'—')],['Education Level',esc(m.education_level||'—')],['Member Code',esc(m.student_code||'—')]])}
 ${sec('Contact Details','phone','var(--ok)',[['Phone Number',esc(m.phone_number)],['Alt Phone',esc(m.alt_phone_number)],['Guardian Name',esc(m.guardian_name)],['Guardian Phone 1',esc(m.guardian_phone1)]])}
-${sec('Address','location-dot','var(--warn)',[['City',esc(m.city)],['Sub City',esc(m.sub_city)],['Woreda',esc(m.woreda)],['Mender',esc(m.mender)],['Block Number',esc(m.block_number)],['House Number',esc(m.house_number)]])}
+${sec('Address','location-dot','var(--warn)',[['City',esc(m.city)],['Sub City',esc(m.sub_city)],['Woreda',esc(m.woreda)],['Block Number',esc(m.block_number)],['House Number',esc(m.house_number)]])}
 <div style="text-align:right;font-size:.65rem;color:var(--dim);margin-top:.5rem;padding-top:.4rem;border-top:1px solid var(--cb)">Registered: ${fmtDate(m.created_at)} • Member ID: ${m.id}</div>`;
 document.getElementById('memberModal').classList.add('show');}
 
@@ -748,6 +777,21 @@ async function loadClasses(){const el=document.getElementById('classesContent');
 function renderUsers(){document.getElementById('usersBody').innerHTML=usersData.map(u=>`<tr><td style="color:var(--dim)">${u.id}</td><td style="font-weight:600;color:var(--bright)">${esc(u.username)}</td><td>${esc(u.full_name||'—')}</td><td>${rlBg(u.role)}</td><td>${stBg(u.status)}</td><td style="font-size:.62rem;color:var(--dim)">${u.last_login?fmtDate(u.last_login):'Never'}</td><td><button class="btn bs ${u.status==='active'?'bo':''}" style="${u.status!=='active'?'background:var(--ok);color:#fff':''}" onclick="toggleUser(${u.id},'${u.status}')"><i class="fa-solid fa-${u.status==='active'?'ban':'check'}"></i></button></td></tr>`).join('');}
 function openAddUser(){document.getElementById('addUserModal').classList.add('show');}
 async function saveNewUser(){const nm=document.getElementById('nuName').value.trim(),un=document.getElementById('nuUser').value.trim(),pw=document.getElementById('nuPass').value,rl=document.getElementById('nuRole').value;if(!nm||!un||!pw)return toast('All fields required','e');if(pw.length<12)return toast('Password must be at least 12 characters','e');if(new TextEncoder().encode(pw).length>72)return toast('Password is too long','e');try{const fd=new FormData();fd.append('full_name',nm);fd.append('username',un);fd.append('password',pw);fd.append('role',rl);fd.append('status','active');fd.append('csrf_token',CSRF);const r=await fetch('/admin/backend/user-save.php',{method:'POST',body:fd,credentials:'same-origin'});const d=await r.json();if(d.status==='success'||d.success){toast('User created!','s');document.getElementById('addUserModal').classList.remove('show');usersData.unshift({id:d.id||Date.now(),username:un,full_name:nm,role:rl,status:'active',last_login:null});renderUsers();['nuName','nuUser','nuPass'].forEach(id=>document.getElementById(id).value='');}else toast(d.message||'Failed','e');}catch(e){toast('Network error','e');}}
+
+async function saveCodeSettings(){
+    const prefix=document.getElementById('csPrefix').value.trim();
+    const digits=document.getElementById('csDigits').value;
+    const auto=document.getElementById('csAutoGen').value;
+    const msg=document.getElementById('csMsg');
+    const preview=document.getElementById('csPreview');
+    try{
+        const r=await fetch('/admin/api_settings.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'dept_save',member_code_prefix:prefix,member_code_digits:digits,auto_generate_code:auto}),credentials:'same-origin'});
+        const d=await r.json();
+        if(d.status==='success'){msg.textContent='Saved.';msg.style.color='var(--ok)';preview.textContent=prefix+strPadCode(1,digits);setTimeout(()=>{msg.textContent='';},2000);}else{msg.textContent=d.message||'Failed';msg.style.color='var(--bad)';}
+    }catch(e){msg.textContent='Network error';msg.style.color='var(--bad)';}
+}
+function strPadCode(n,d){return String(n).padStart(d,'0');}
+document.getElementById('csDigits')?.addEventListener('change',()=>{const p=document.getElementById('csPrefix').value.trim();const d=document.getElementById('csDigits').value;document.getElementById('csPreview').textContent=p+strPadCode(1,d);});
 async function toggleUser(id,cur){const act=cur==='active'?'deactivate':'activate';const dc=await dcAsk(act==='deactivate'?{tier:'medium',title:'Deactivate this user account?',summary:'The account is switched off but not deleted.',intent:'I want to deactivate this account',consequences:['The user can no longer log in on the web dashboard or the mobile app.','Work assigned to this account (classes, tasks) stops reaching them.'],keeps:['Everything they recorded stays and keeps their name.','You can activate the account again later.'],phrase:'DEACTIVATE USER',confirmLabel:'Deactivate account'}:{tier:'low',title:'Activate this user account?',summary:'The user can log in again with their existing password.',confirmLabel:'Activate account'});if(!dc)return;try{const fd=new FormData();fd.append('id',id);fd.append('action',act);fd.append('csrf_token',CSRF);const r=await fetch('/admin/backend/user-toggle.php',{method:'POST',body:fd,credentials:'same-origin'});const d=await r.json();if(d.status==='success'||d.success){const u=usersData.find(x=>x.id==id);if(u)u.status=cur==='active'?'inactive':'active';renderUsers();toast('Done','s');}}catch(e){toast('Failed','e');}}
 
 // REPORTS
@@ -770,13 +814,11 @@ function buildAnalyticsData(members){
     members.forEach(m=>{
         if(bySt[m.status]!==undefined)bySt[m.status]++;
         if(m.gender==='male')byG.Male++;else byG.Female++;
-        const sec=m.current_section||'Unassigned';bySec[sec]=(bySec[sec]||0)+1;
-        const rt=(m.registration_type||'unknown').charAt(0).toUpperCase()+(m.registration_type||'unknown').slice(1);
-        if(byRt[rt]!==undefined)byRt[rt]++;
-        const ag=fmtAge(m.age_group);byAg[ag]=(byAg[ag]||0)+1;
+        const sec=m.current_class_id||'Unassigned';bySec[sec]=(bySec[sec]||0)+1;
+        const ag=fmtAge(m.age||'—');byAg[ag]=(byAg[ag]||0)+1;
         const ct=m.city||'Unknown';byCity[ct]=(byCity[ct]||0)+1;
     });
-    return{total,bySt,byG,bySec:Object.entries(bySec).sort((a,b)=>b[1]-a[1]),byRt,byAg:Object.entries(byAg),byCity:Object.entries(byCity).sort((a,b)=>b[1]-a[1]).slice(0,10)};
+    return{total,bySt,byG,bySec:Object.entries(bySec).sort((a,b)=>b[1]-a[1]),byAg:Object.entries(byAg),byCity:Object.entries(byCity).sort((a,b)=>b[1]-a[1]).slice(0,10)};
 }
 
 // ── SVG chart generators (for PDF/Word embedding) ──
@@ -907,11 +949,11 @@ function exportMemberPDF(m){
     <div class="header"><h1><?= SCHOOL_NAME_SHORT ?> <?= SCHOOL_TYPE ?> — Member Profile</h1><p>Official Member Record • Generated: ${genStamp()}</p></div>
     <div class="profile"><div class="avatar">${(m.student_name||'?')[0].toUpperCase()}</div><div>
     <div style="font-size:14pt;font-weight:bold">${esc(m.student_name||'')} ${esc(m.father_name||'')} ${esc(m.grandfather_name||'')}</div>
-    <div style="margin-top:4px"><span class="badge b-info">${esc(m.member_code||'—')}</span><span class="badge b-${m.status==='active'?'ok':(m.status==='warning'?'w':'bad')}">${(m.status||'—').toUpperCase()}</span><span class="badge b-info">${(m.registration_type||'').toUpperCase()}</span><span class="badge b-info">${m.gender==='male'?'Male':'Female'}</span></div></div></div>
-    ${[{t:'Personal Information',c:'st1',f:[['Full Name',m.student_name],['Father Name',m.father_name],['Grandfather Name',m.grandfather_name],['Christian Name (የክርስትና ስም)',m.baptismal_name],['Gender',m.gender==='male'?'Male':'Female'],['Age Group',fmtAge(m.age_group)]]},
-    {t:'Church & Education',c:'st2',f:[['Current Section',m.current_section],['Member Type',m.member_type],['Registration Type',m.registration_type],['Education Level',m.education_level],['Profession',m.work_profession],['Member Code',m.member_code]]},
+    <div style="margin-top:4px"><span class="badge b-info">${esc(m.student_code||'—')}</span><span class="badge b-${m.status==='active'?'ok':(m.status==='warning'?'w':'bad')}">${(m.status||'—').toUpperCase()}</span><span class="badge b-info">${m.gender==='male'?'Male':'Female'}</span></div></div></div>
+    ${[{t:'Personal Information',c:'st1',f:[['Full Name',m.student_name],['Father Name',m.father_name],['Grandfather Name',m.grandfather_name],['Gender',m.gender==='male'?'Male':'Female'],['Age',fmtAge(m.age||'—')]]},
+    {t:'Church & Education',c:'st2',f:[['Section',m.current_class_id],['Education Level',m.education_level],['Member Code',m.student_code]]},
     {t:'Contact Details',c:'st3',f:[['Phone Number',m.phone_number],['Alt Phone',m.alt_phone_number],['Guardian Name',m.guardian_name],['Guardian Phone',m.guardian_phone1]]},
-    {t:'Address Information',c:'st4',f:[['City',m.city],['Sub City',m.sub_city],['Woreda',m.woreda],['Mender',m.mender],['Block Number',m.block_number],['House Number',m.house_number]]}
+    {t:'Address Information',c:'st4',f:[['City',m.city],['Sub City',m.sub_city],['Woreda',m.woreda],['Block Number',m.block_number],['House Number',m.house_number]]}
     ].map(s=>'<div class="sec"><div class="sec-title '+s.c+'">'+s.t+'</div><table class="f">'+s.f.map(([l,v],i)=>i%2===0?'<tr><td style="width:50%"><span class="lbl">'+l+'</span><span class="val">'+(esc(v)||'—')+'</span></td>'+(s.f[i+1]?'<td><span class="lbl">'+s.f[i+1][0]+'</span><span class="val">'+(esc(s.f[i+1][1])||'—')+'</span></td>':'<td></td>')+'</tr>':'').filter(Boolean).join('')+'</table></div>').join('')}
     <div class="footer"><?= SCHOOL_NAME ?> • Member ID: ${m.id} • Registered: ${fmtDate(m.created_at)} • Generated: ${genStamp()}</div>
     <script>setTimeout(()=>window.print(),600)<\/script></body></html>`);
@@ -940,12 +982,12 @@ function exportMemberWord(m){
     <div class="header"><h1><?= SCHOOL_NAME_SHORT ?> Member Profile</h1><p><?= SCHOOL_TAGLINE ?> — Official Record</p></div>
     <div class="profile-card"><div class="avatar">${(m.student_name||'?')[0].toUpperCase()}</div><div>
     <div style="font-size:14pt;font-weight:bold;color:#111827">${esc(m.student_name||'')} ${esc(m.father_name||'')} ${esc(m.grandfather_name||'')}</div>
-    <div style="margin-top:4px"><span class="badge bg-info">${esc(m.member_code||'—')}</span><span class="badge bg-${m.status==='active'?'active':(m.status==='warning'?'warning':'inactive')}">${(m.status||'—').toUpperCase()}</span><span class="badge bg-info">${(m.registration_type||'—').toUpperCase()}</span><span class="badge bg-info">${m.gender==='male'?'Male':'Female'}</span></div>
+    <div style="margin-top:4px"><span class="badge bg-info">${esc(m.student_code||'—')}</span><span class="badge bg-${m.status==='active'?'active':(m.status==='warning'?'warning':'inactive')}">${(m.status||'—').toUpperCase()}</span><span class="badge b-info">${m.gender==='male'?'Male':'Female'}</span></div>
     </div></div>
-    ${[{t:'Personal Information',c:'personal',f:[['Full Name',m.student_name],['Father Name',m.father_name],['Grandfather Name',m.grandfather_name],['Christian Name (የክርስትና ስም)',m.baptismal_name],['Gender',m.gender==='male'?'Male':'Female'],['Age Group',fmtAge(m.age_group)]]},
-    {t:'Church & Education',c:'church',f:[['Current Section',m.current_section],['Member Type',m.member_type],['Registration Type',m.registration_type],['Education Level',m.education_level],['Profession',m.work_profession],['Member Code',m.member_code]]},
+    ${[{t:'Personal Information',c:'personal',f:[['Full Name',m.student_name],['Father Name',m.father_name],['Grandfather Name',m.grandfather_name],['Gender',m.gender==='male'?'Male':'Female'],['Age',fmtAge(m.age||'—')]]},
+    {t:'Church & Education',c:'church',f:[['Section',m.current_class_id],['Education Level',m.education_level],['Member Code',m.student_code]]},
     {t:'Contact Details',c:'contact',f:[['Phone Number',m.phone_number],['Alt Phone',m.alt_phone_number],['Guardian Name',m.guardian_name],['Guardian Phone',m.guardian_phone1]]},
-    {t:'Address Information',c:'address',f:[['City',m.city],['Sub City',m.sub_city],['Woreda',m.woreda],['Mender',m.mender],['Block Number',m.block_number],['House Number',m.house_number]]}
+    {t:'Address Information',c:'address',f:[['City',m.city],['Sub City',m.sub_city],['Woreda',m.woreda],['Block Number',m.block_number],['House Number',m.house_number]]}
     ].map(s=>`<div class="section"><div class="section-title st-${s.c}">${s.t}</div><table class="fields">${s.f.map(([l,v],i)=>i%2===0?`<tr><td style="width:25%"><span class="label">${l}</span><br><span class="value">${esc(v)||'—'}</span></td>${s.f[i+1]?`<td style="width:25%"><span class="label">${s.f[i+1][0]}</span><br><span class="value">${esc(s.f[i+1][1])||'—'}</span></td>`:'<td></td>'}</tr>`:'').filter(Boolean).join('')}</table></div>`).join('')}
     <div class="footer">Generated: ${genStamp()} | Member ID: ${m.id} | <?= SCHOOL_NAME ?> | Registered: ${fmtDate(m.created_at)}</div>
     </body></html>`;
@@ -966,8 +1008,8 @@ function exportFullReport(fmt){if(!allMembers.length){loadMembers().then(()=>exp
 
 // ── CSV ──
 function exportCSV(data){
-    const h=['Code','Name','Father Name','Grandfather','Christian Name (የክርስትና ስም)','Gender','Age Group','Section','Status','Reg Type','Member Type','Phone','Alt Phone','Guardian','Guardian Phone','City','Sub City','Woreda','Education','Profession','Registered'];
-    const rows=data.map(m=>[m.member_code,m.student_name,m.father_name,m.grandfather_name,m.baptismal_name,m.gender,fmtAge(m.age_group),m.current_section,m.status,m.registration_type,m.member_type,m.phone_number,m.alt_phone_number,m.guardian_name,m.guardian_phone1,m.city,m.sub_city,m.woreda,m.education_level,m.work_profession,m.created_at?fmtDate(m.created_at):''].map(v=>v||''));
+    const h=['Code','Name','Father Name','Grandfather','Gender','Age','Section','Status','Phone','Alt Phone','Guardian','Guardian Phone','City','Sub City','Woreda','Education','Registered'];
+    const rows=data.map(m=>[m.student_code,m.student_name,m.father_name,m.grandfather_name,m.gender,fmtAge(m.age||'—'),m.current_class_id,m.status,m.phone_number,m.alt_phone_number,m.guardian_name,m.guardian_phone1,m.city,m.sub_city,m.woreda,m.education_level,m.created_at?fmtDate(m.created_at):''].map(v=>v||''));
     let csv=h.join(',')+'\n'+rows.map(r=>r.map(c=>`"${(c+'').replace(/"/g,'""')}"`).join(',')).join('\n');
     dlFile(csv,'<?= MEMBER_CODE_PREFIX ?>_Members_Full_'+new Date().toISOString().slice(0,10)+'.csv','text/csv');
     toast('CSV exported with all fields','s');
@@ -984,11 +1026,10 @@ function exportExcelPro(data){
         ['Generated: '+genStamp()],[''],
         ['OVERVIEW STATISTICS'],
         ['Total Members','Active','Warning','Inactive','Pending','Male','Female','Sections'],
-        [a.total,a.bySt.active,a.bySt.warning,a.bySt.inactive,data.filter(m=>m.registration_type==='waiting').length,a.byG.Male,a.byG.Female,a.bySec.length],
+        [a.total,a.bySt.active,a.bySt.warning,a.bySt.inactive,data.filter(m=>m.status==='warning').length,a.byG.Male,a.byG.Female,a.bySec.length],
         [''],['SECTION DISTRIBUTION'],['Section','Count','Percentage'],...a.bySec.map(([s,c])=>[s,c,(c/a.total*100).toFixed(1)+'%']),
         [''],['GENDER ANALYSIS'],['Gender','Count','Percentage'],['Male',a.byG.Male,(a.byG.Male/a.total*100).toFixed(1)+'%'],['Female',a.byG.Female,(a.byG.Female/a.total*100).toFixed(1)+'%'],
         [''],['AGE GROUP DISTRIBUTION'],['Age Group','Count','Percentage'],...a.byAg.map(([g,c])=>[g,c,(c/a.total*100).toFixed(1)+'%']),
-        [''],['REGISTRATION TYPES'],['Type','Count','Percentage'],...Object.entries(a.byRt).map(([t,c])=>[t,c,(c/a.total*100).toFixed(1)+'%']),
         [''],['TOP CITIES'],['City','Count'],...a.byCity.map(([c,n])=>[c,n])
     ];
     const ws1=XLSX.utils.aoa_to_sheet(summary);
@@ -997,8 +1038,8 @@ function exportExcelPro(data){
     XLSX.utils.book_append_sheet(wb,ws1,'📊 Summary');
 
     // Sheet 2: Full Member Data
-    const headers=['Code','Name','Father','Grandfather','Christian Name (የክርስትና ስም)','Gender','Age Group','Section','Status','Reg Type','Member Type','Phone','Alt Phone','Guardian','Guardian Phone','City','Sub City','Woreda','Education','Profession','Registered'];
-    const rows=data.map(m=>[m.member_code,m.student_name,m.father_name,m.grandfather_name,m.baptismal_name,m.gender,fmtAge(m.age_group),m.current_section,m.status,m.registration_type,m.member_type,m.phone_number,m.alt_phone_number,m.guardian_name,m.guardian_phone1,m.city,m.sub_city,m.woreda,m.education_level,m.work_profession,m.created_at?fmtDate(m.created_at):''].map(v=>v||''));
+    const headers=['Code','Name','Father','Grandfather','Gender','Age','Section','Status','Phone','Alt Phone','Guardian','Guardian Phone','City','Sub City','Woreda','Education','Registered'];
+    const rows=data.map(m=>[m.student_code,m.student_name,m.father_name,m.grandfather_name,m.gender,fmtAge(m.age||'—'),m.current_class_id,m.status,m.phone_number,m.alt_phone_number,m.guardian_name,m.guardian_phone1,m.city,m.sub_city,m.woreda,m.education_level,m.created_at?fmtDate(m.created_at):''].map(v=>v||''));
     const ws2=XLSX.utils.aoa_to_sheet([headers,...rows]);
     ws2['!cols']=headers.map(h=>({wch:h.length<8?12:18}));
     ws2['!autofilter']={ref:'A1:U1'};
@@ -1071,7 +1112,7 @@ function exportPDFPro(data){
     </div>
     <div class="sec-title s1">Complete Member List</div>
     <table class="main"><thead><tr><th>#</th><th>Code</th><th>Full Name</th><th>Father</th><th>Gender</th><th>Age</th><th>Section</th><th>Status</th><th>Reg Type</th><th>Phone</th><th>City</th><th>Sub City</th><th>Education</th></tr></thead><tbody>
-    ${data.map((m,i)=>{const sc=m.status==='active'?'s-active':(m.status==='warning'?'s-warning':'s-inactive');return'<tr><td style="color:#9ca3af">'+(i+1)+'</td><td style="font-family:monospace;font-size:7.5pt">'+esc(m.member_code||'')+'</td><td style="font-weight:600">'+esc(m.student_name||'')+'</td><td>'+esc(m.father_name||'')+'</td><td>'+(m.gender==='male'?'M':'F')+'</td><td>'+fmtAge(m.age_group)+'</td><td>'+esc(m.current_section||'—')+'</td><td><span class="status '+sc+'">'+(m.status||'')+'</span></td><td>'+esc(m.registration_type||'')+'</td><td>'+esc(m.phone_number||'')+'</td><td>'+esc(m.city||'')+'</td><td>'+esc(m.sub_city||'')+'</td><td>'+esc(m.education_level||'')+'</td></tr>';}).join('')}
+    ${data.map((m,i)=>{const sc=m.status==='active'?'s-active':(m.status==='warning'?'s-warning':'s-inactive');return'<tr><td style="color:#9ca3af">'+(i+1)+'</td><td style="font-family:monospace;font-size:7.5pt">'+esc(m.student_code||'')+'</td><td style="font-weight:600">'+esc(m.student_name||'')+'</td><td>'+esc(m.father_name||'')+'</td><td>'+(m.gender==='male'?'M':'F')+'</td><td>'+fmtAge(m.age||'—')+'</td><td>'+esc(m.current_class_id||'—')+'</td><td><span class="status '+sc+'">'+(m.status||'')+'</span></td><td>'+esc(m.phone_number||'')+'</td><td>'+esc(m.city||'')+'</td><td>'+esc(m.sub_city||'')+'</td><td>'+esc(m.education_level||'')+'</td></tr>';}).join('')}
     </tbody></table>
     <div class="footer"><?= SCHOOL_NAME ?> — Confidential Report — ${genStamp()} — ${data.length} members</div>
     <script>setTimeout(()=>window.print(),600)<\/script></body></html>`);
@@ -1137,14 +1178,13 @@ function exportWordPro(data){
     <table><thead><tr><th>#</th><th>Code</th><th>Name</th><th>Father</th><th>Gender</th><th>Age</th><th>Section</th><th>Status</th><th>Reg</th><th>Phone</th><th>City</th></tr></thead><tbody>
     ${data.map((m,i)=>`<tr${i%2?' class="alt"':''}>
     <td style="color:#9ca3af">${i+1}</td>
-    <td><span class="badge" style="background:#e0f2fe;color:#0369a1">${esc(m.member_code||'—')}</span></td>
+    <td><span class="badge" style="background:#e0f2fe;color:#0369a1">${esc(m.student_code||'—')}</span></td>
     <td style="font-weight:600">${esc(m.student_name||'')}</td>
     <td>${esc(m.father_name||'')}</td>
     <td>${m.gender==='male'?'♂':'♀'}</td>
-    <td>${fmtAge(m.age_group)}</td>
-    <td>${esc(m.current_section||'—')}</td>
+    <td>${fmtAge(m.age||'—')}</td>
+    <td>${esc(m.current_class_id||'—')}</td>
     <td><span class="badge bg-${m.status==='active'?'active':(m.status==='warning'?'warning':'inactive')}">${(m.status||'—').toUpperCase()}</span></td>
-    <td>${esc(m.registration_type||'—')}</td>
     <td style="font-size:7pt">${esc(m.phone_number||'—')}</td>
     <td>${esc(m.city||'—')}</td></tr>`).join('')}
     </tbody></table>

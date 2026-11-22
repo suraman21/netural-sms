@@ -251,12 +251,39 @@ $recentMembers = array_map(function ($row) {
 // ------------------------------------------------------------
 function generate_next_member_code(mysqli $conn): string
 {
-    $res = db_fetch_all_assoc($conn, "SELECT student_code FROM students WHERE student_code IS NOT NULL AND student_code <> '' ORDER BY id DESC LIMIT 1");
-    $last = $res[0]['student_code'] ?? null;
-    if (!$last) return '0001';
-    $num = preg_replace('/\D/', '', $last);
-    $next = str_pad((int)$num + 1, 4, '0', STR_PAD_LEFT);
-    return $next;
+    // Read code settings from dept_settings (managed by superadmin)
+    $digits = 4;
+    $prefix = '';
+    try {
+        $rs = $conn->query("SELECT setting_key, setting_value FROM dept_settings WHERE setting_key IN ('member_code_digits','member_code_prefix')");
+        if ($rs) {
+            while ($row = $rs->fetch_assoc()) {
+                if ($row['setting_key'] === 'member_code_digits') {
+                    $digits = max(1, min(10, (int)$row['setting_value']));
+                }
+                if ($row['setting_key'] === 'member_code_prefix') {
+                    $prefix = (string)$row['setting_value'];
+                }
+            }
+        }
+    } catch (Throwable $e) {}
+
+    // Find the highest numeric code in use (strip any prefix)
+    $res = $conn->query("SELECT student_code FROM students WHERE student_code IS NOT NULL AND student_code <> '' ORDER BY id DESC LIMIT 1");
+    $last = $res ? ($res->fetch_assoc()['student_code'] ?? null) : null;
+    $maxNum = 0;
+    if ($last) {
+        $num = preg_replace('/\D/', '', $last);
+        $maxNum = $num !== '' ? (int)$num : 0;
+    }
+
+    $nextNum = $maxNum + 1;
+
+    // Auto-scale: if we've exhausted all combinations at current digit length,
+    // use more digits (e.g. 4 digits = 0000-9999, next is 10000 → 5 digits)
+    $actualDigits = max($digits, strlen((string)$nextNum));
+
+    return $prefix . str_pad((string)$nextNum, $actualDigits, '0', STR_PAD_LEFT);
 }
 
 $nextMemberCode = isset($conn) ? generate_next_member_code($conn) : '0001';
