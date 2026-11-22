@@ -1,10 +1,10 @@
 # UNIVERSAL AI SOFTWARE CHANGE — Audited Transformation Plan (UPDATED)
 
 **System:** netural-sms (School Management System)
-**Server:** /home/arkeonet/sms.arkeonethiopia.com/ (synced to b29f66e)
+**Server:** /home/arkeonet/sms.arkeonethiopia.com/ (synced to dc3cb0d + uncommitted pending)
 **Date:** 2026-11-16
 **Protocol:** UNIVERSAL AI SOFTWARE CHANGE, PATCH & UPDATE PROTOCOL v1.0
-**Commits:** 6af4268 + b29f66e + 6ed4cdf + dc3cb0d + 54877e2 (pushed to GitHub main)
+**Commits:** 6af4268 + b29f66e + 6ed4cdf + dc3cb0d + 54877e2 + 7720eaf (pushed to GitHub main)
 
 ---
 
@@ -137,6 +137,8 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
 12. [x] Session revalidation works for `school_registrar` role — ✅ VERIFIED (valid: true)
 13. [x] Registrar can access registration endpoint (`hr_register_member.php`) — ✅ Added to ROLE_MAP
 14. [x] Registrar can access member directory API — ✅ Added to ROLE_MAP
+15. [x] Registrar dashboard rewritten to follow hr-dept.php UI pattern (sidebar, header, section navigation, stat cards, panels, badges, JS section switching) — ✅ REWRITTEN (no custom UI/UX)
+16. [x] `school_registrar` added to `$rolePermissions` in user-save.php — registrar can create registrar accounts
 
 ---
 
@@ -176,9 +178,23 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
   - Student record management (view, archive)
   - ID card generation
 
+### Commit pending — Registrar UI rewrite + $rolePermissions (2 files)
+- `admin/dashboards/registrar.php` — REWRITTEN to follow hr-dept.php UI pattern exactly:
+  - Same sidebar layout (gradient, nav pills, profile card, logout)
+  - Same header (mobile sticky, desktop indigo header with notification center)
+  - Same section navigation (content-section pattern with active class)
+  - Same stat cards (gradient, icon, label, value)
+  - Same panels (white background, shadow, rounded-xl)
+  - Same badges (status color coding: active/waiting/inactive/archived)
+  - Same JS section switching (navigateToSection)
+  - Same registration form pattern, directory table, ID cards, transfers
+  - Removed all custom UI/UX; no invented navigation or workflows
+- `admin/backend/user-save.php` — added `'school_registrar' => ['school_registrar']` to `$rolePermissions`
+
 ### Deployment
-- All 4 commits pushed to GitHub main
+- All commits pushed to GitHub main through dc3cb0d
 - Server deployed at dc3cb0d
+- Pending changes (registrar.php rewrite + user-save.php $rolePermissions) not yet deployed
 - All PHP syntax checks pass on server
 - Server error.log: 0 lines (no new errors)
 
@@ -191,6 +207,9 @@ No `info_dept` user exists in the `users` table. Current users:
 - schooladmin (id:43, role: school_admin)
 - hrm (id:44, role: hr_dept)
 
-For info dept login to work, an info_dept user account needs to be created via the superadmin dashboard (admin/dashboards/super-admin.php → admin/backend/user-save.php).
+Migration script created: `create_info_dept_user.php`
+- Creates `info_dept` user (role: info_dept, active: 1) with temporary password `InfoDept@2026`
+- Run on server via: `php create_info_dept_user.php`
+- User should change password on first login
 
-For registrar login to work, a `school_registrar` user account needs to be created via the superadmin dashboard (same path, select role `school_registrar`).
+For registrar login to work, a `school_registrar` user account needs to be created via the superadmin dashboard (admin/dashboards/super-admin.php → admin/backend/user-save.php, select role `school_registrar`).

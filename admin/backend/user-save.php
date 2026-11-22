@@ -117,6 +117,7 @@ $rolePermissions = [
     'super_admin' => $validRoles, // Can create all
     'school_admin' => $validRoles, // Can create all
     'edu_dept' => ['teacher'], // Can only create teacher accounts
+    'school_registrar' => ['school_registrar'], // Registrar can create registrar accounts
     // Department-owned attendance takers (mezmur_attendance_taker /
     // hr_attendance_taker) are created ONLY through the governed
     // api_dept_takers.php endpoint — the service layer enforces the
