@@ -302,9 +302,9 @@ switch ($action) {
         // Find the member by code and ensure they are enrolled in this class
         $stmt = $conn->prepare("
             SELECT m.id, m.student_name, m.father_name, m.status as member_status, ce.status as enrollment_status 
-            FROM members m 
-            JOIN class_enrollments ce ON m.id = ce.member_id 
-            WHERE m.member_code = ? AND ce.class_id = ? AND ce.status = 'active'
+            FROM students m
+            JOIN class_enrollments ce ON m.id = ce.member_id
+            WHERE m.student_code = ? AND ce.class_id = ? AND ce.status = 'active'
         ");
         $stmt->bind_param("si", $memberCode, $classId);
         $stmt->execute();
@@ -379,7 +379,7 @@ switch ($action) {
                 SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as absent_days,
                 SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) as late_days
             FROM attendance a
-            JOIN members m ON a.member_id = m.id
+            JOIN students m ON a.member_id = m.id
             WHERE a.class_id = ? AND a.attendance_date BETWEEN ? AND ?
             GROUP BY a.member_id
             ORDER BY m.student_name

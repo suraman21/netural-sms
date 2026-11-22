@@ -73,7 +73,7 @@ case 'overview':
     $data['today'] = $r ? $r->fetch_assoc() : ['recorded'=>0,'present_cnt'=>0,'absent_cnt'=>0,'late_cnt'=>0,'excused_cnt'=>0];
 
     // Total active members (for attendance rate calc)
-    $r = $conn->query("SELECT COUNT(*) as cnt FROM members WHERE status IN ('active','warning')");
+    $r = $conn->query("SELECT COUNT(*) as cnt FROM students WHERE status IN ('active','warning')");
     $data['total_active'] = $r ? (int)$r->fetch_assoc()['cnt'] : 0;
 
     // Member status breakdown
@@ -82,7 +82,7 @@ case 'overview':
         COALESCE(SUM(status='warning'),0) as warning_cnt,
         COALESCE(SUM(status='inactive'),0) as inactive_cnt,
         COALESCE(SUM(status='archived'),0) as archived_cnt
-        FROM members");
+        FROM students");
     $data['member_status'] = $r ? $r->fetch_assoc() : [];
 
     // Last 7 days attendance trend
@@ -109,9 +109,9 @@ case 'overview':
     if ($r) while ($row = $r->fetch_assoc()) $data['monthly_weeks'][] = $row;
 
     // Top absentees (last 30 days)
-    $r = $conn->query("SELECT a.member_id, m.student_name, m.father_name, m.member_code, m.status as member_status, m.age_group,
+        $r = $conn->query("SELECT a.member_id, m.student_name, m.father_name, m.student_code, m.status as member_status,
         SUM(a.status='absent') as absent_days, SUM(a.status='present') as present_days, COUNT(*) as total_days
-        FROM attendance a JOIN members m ON a.member_id = m.id
+        FROM attendance a JOIN students m ON a.member_id = m.id
         WHERE a.attendance_date >= '$monthAgo' AND m.status != 'archived'
         GROUP BY a.member_id HAVING absent_days >= 2
         ORDER BY absent_days DESC LIMIT 20");
@@ -122,7 +122,7 @@ case 'overview':
     }
 
     // Never attended (registered but never in attendance table)
-    $r = $conn->query("SELECT COUNT(*) as cnt FROM members m 
+    $r = $conn->query("SELECT COUNT(*) as cnt FROM students m 
         WHERE m.status IN ('active','warning') 
         AND NOT EXISTS (SELECT 1 FROM attendance a WHERE a.member_id = m.id)");
     $data['never_attended'] = $r ? (int)$r->fetch_assoc()['cnt'] : 0;
@@ -142,7 +142,7 @@ case 'member_attendance':
     if (!$memberId) { echo json_encode(['status'=>'error','message'=>'Member ID required']); break; }
 
     // Get member info
-    $stmt = $conn->prepare("SELECT id, member_code, student_name, father_name, grandfather_name, gender, age_group, status, phone_number FROM members WHERE id = ?");
+    $stmt = $conn->prepare("SELECT id, student_code, student_name, father_name, grandfather_name, gender, status, phone_number FROM students WHERE id = ?");
     $stmt->bind_param('i', $memberId);
     $stmt->execute();
     $member = $stmt->get_result()->fetch_assoc();
@@ -172,8 +172,8 @@ case 'member_attendance':
 case 'search_members':
 // ============================================================
     $q = '%' . ($_GET['q'] ?? '') . '%';
-    $stmt = $conn->prepare("SELECT id, member_code, student_name, father_name, gender, age_group, status, phone_number 
-        FROM members WHERE status != 'archived' AND (student_name LIKE ? OR father_name LIKE ? OR member_code LIKE ? OR phone_number LIKE ?)
+    $stmt = $conn->prepare("SELECT id, student_code, student_name, father_name, gender, status, phone_number 
+        FROM students WHERE status != 'archived' AND (student_name LIKE ? OR father_name LIKE ? OR student_code LIKE ? OR phone_number LIKE ?)
         ORDER BY student_name LIMIT 30");
     $stmt->bind_param('ssss', $q, $q, $q, $q);
     $stmt->execute();
@@ -203,7 +203,7 @@ case 'update_status':
     }
 
     // Get old status
-    $stmt = $conn->prepare("SELECT status, student_name, father_name FROM members WHERE id = ?");
+    $stmt = $conn->prepare("SELECT status, student_name, father_name FROM students WHERE id = ?");
     $stmt->bind_param('i', $memberId);
     $stmt->execute();
     $old = $stmt->get_result()->fetch_assoc();
@@ -215,7 +215,7 @@ case 'update_status':
         break;
     }
 
-    $stmt = $conn->prepare("UPDATE members SET status = ? WHERE id = ? AND status != 'archived'");
+    $stmt = $conn->prepare("UPDATE students SET status = ? WHERE id = ? AND status != 'archived'");
     $stmt->bind_param('si', $newStatus, $memberId);
     if ($stmt->execute()) {
         // Log the change
@@ -267,7 +267,7 @@ case 'bulk_status':
 
     $updated = 0;
     $changedIds = [];
-    $stmt = $conn->prepare("UPDATE members SET status = ? WHERE id = ? AND status != 'archived'");
+    $stmt = $conn->prepare("UPDATE students SET status = ? WHERE id = ? AND status != 'archived'");
     foreach ($memberIds as $mid) {
         $mid = (int)$mid;
         if ($mid <= 0) continue;
@@ -366,8 +366,8 @@ case 'daily_report':
 // ============================================================
     $date = $_GET['date'] ?? date('Y-m-d');
     $stmt = $conn->prepare("SELECT a.member_id, a.status, a.notes, a.check_in_time,
-        m.student_name, m.father_name, m.member_code, m.gender, m.age_group, m.status as member_status
-        FROM attendance a JOIN members m ON a.member_id = m.id
+        m.student_name, m.father_name, m.student_code, m.gender, m.status as member_status
+        FROM attendance a JOIN students m ON a.member_id = m.id
         WHERE a.attendance_date = ? ORDER BY m.student_name ASC");
     $stmt->bind_param('s', $date);
     $stmt->execute();
