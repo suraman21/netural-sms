@@ -131,7 +131,7 @@ final class PositionSyncService
                 }
             }
 
-            $stmt = $conn->prepare('SELECT member_code, age_group FROM members WHERE id = ? FOR UPDATE');
+            $stmt = $conn->prepare('SELECT member_code FROM students WHERE id = ? FOR UPDATE');
             $stmt->bind_param('i', $memberId);
             $stmt->execute();
             $member = $stmt->get_result()->fetch_assoc();
@@ -159,13 +159,13 @@ final class PositionSyncService
 
             $newCode = self::computeCode($conn, $memberId, (string)($member['age_group'] ?? ''));
 
-            $update = $conn->prepare('UPDATE members SET member_code = ? WHERE id = ?');
+            $update = $conn->prepare('UPDATE students SET member_code = ? WHERE id = ?');
             $update->bind_param('si', $newCode, $memberId);
             $update->execute();
             $update->close();
 
             if ($newCode !== $oldCode && $oldCode !== '') {
-                $legacy = $conn->prepare('UPDATE members SET legacy_member_code = ? WHERE id = ?');
+                $legacy = $conn->prepare('UPDATE students SET legacy_student_code = ? WHERE id = ?');
                 $legacy->bind_param('si', $oldCode, $memberId);
                 $legacy->execute();
                 $legacy->close();
@@ -252,18 +252,8 @@ final class PositionSyncService
         }
         $stmt->close();
 
-        $sets = [];
-        $values = [];
-        foreach (self::LEGACY_FLAGS as $flag) {
-            $sets[] = "$flag = ?";
-            $values[] = isset($held[$flag]) ? 1 : 0;
-        }
-        $values[] = $memberId;
-        $update = $conn->prepare('UPDATE members SET ' . implode(', ', $sets) . ' WHERE id = ?');
-        $types = str_repeat('i', count($values));
-        $update->bind_param($types, ...$values);
-        $update->execute();
-        $update->close();
+        // Legacy role flags (is_teacher, is_staff, is_committee, is_volunteer)
+        // are not stored on the students schema; they are derived from positions.
     }
 
     /**
