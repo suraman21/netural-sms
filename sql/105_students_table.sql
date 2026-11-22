@@ -173,7 +173,7 @@ SET @do_copy := (@has_members > 0 AND @students_empty = 0);
 
 SET @copy_sql := IF(@do_copy,
     'INSERT INTO `students`
-        (`student_code`, `full_name_am`, `student_name`, `father_name`, `mother_name`,
+        (`id`, `student_code`, `full_name_am`, `student_name`, `father_name`, `mother_name`,
          `grandfather_name`, `full_name_en`, `gender`, `date_of_birth`,
          `dob_ec_day`, `dob_ec_month`, `dob_ec_year`, `age`,
          `education_level`, `current_class_id`, `promoted_at`, `academic_status`,
@@ -190,7 +190,7 @@ SET @copy_sql := IF(@do_copy,
          `id_card_generated_at`, `qr_code_path`, `total_attendance_rate`,
          `last_attendance_date`, `legacy_student_code`)
      SELECT
-        `member_code`, `full_name_am`, `student_name`, `father_name`, `mother_name`,
+        `id`, `member_code`, `full_name_am`, `student_name`, `father_name`, `mother_name`,
          `grandfather_name`, `full_name_en`, `gender`, `date_of_birth`,
          `dob_ec_day`, `dob_ec_month`, `dob_ec_year`, `age`,
          `education_level`, `current_class_id`, `promoted_at`, `academic_status`,
