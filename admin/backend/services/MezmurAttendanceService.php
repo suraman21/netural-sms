@@ -38,7 +38,7 @@ final class MezmurAttendanceService
 
     private const SORTABLE = [
         'name'          => 'm.student_name',
-        'section'       => 'm.current_section',
+        'section'       => 'm.current_class_id',
         'attended'      => 'attended',
         'present'       => 'present',
         'late'          => 'late',
@@ -112,7 +112,7 @@ final class MezmurAttendanceService
             $col = '';
             foreach (['photo_url', 'student_photo_path'] as $candidate) {
                 try {
-                    $r = $conn->query("SHOW COLUMNS FROM members LIKE '" . $candidate . "'");
+                    $r = $conn->query("SHOW COLUMNS FROM students LIKE '" . $candidate . "'");
                     if ($r && $r->fetch_assoc()) { $col = $candidate; $r->close(); break; }
                     if ($r) { $r->close(); }
                 } catch (\Throwable $e) {
@@ -130,13 +130,13 @@ final class MezmurAttendanceService
     public static function rosterGroupedBySection(\mysqli $conn, ?string $onDate = null): array
     {
         $photo = self::photoSelectExpr($conn);
-        $secExpr = MemberCategory::sqlSectionExpr('members', 'current_section', 'age_group');
+        $secExpr = MemberCategory::sqlSectionExpr('members', 'current_class_id', 'current_class_id');
         // Attendance alerting §11: members inactive in Mezmur on the sheet date are not on the sheet.
         $excl = DepartmentStatusService::exclusionSql($conn, 'mezmur', 'members.id', $onDate);
         $res = $conn->query(
             "SELECT id, member_code, student_name, father_name, full_name_am, $photo,
                     $secExpr AS section
-             FROM members
+             FROM students
              WHERE status = 'active'{$excl}
              ORDER BY section, student_name, father_name"
         );
@@ -156,7 +156,7 @@ final class MezmurAttendanceService
     {
         $ids = [];
         $excl = DepartmentStatusService::exclusionSql($conn, 'mezmur', 'members.id', $onDate);
-        $res = $conn->query("SELECT id FROM members WHERE status = 'active'{$excl}");
+        $res = $conn->query("SELECT id FROM students WHERE status = 'active'{$excl}");
         if ($res) {
             while ($row = $res->fetch_assoc()) $ids[] = (int)$row['id'];
         }
@@ -401,13 +401,13 @@ final class MezmurAttendanceService
         }
         $canonical = MemberCategory::canonicalizeSection($section);
         $photo = self::photoSelectExpr($conn);
-        $secExpr = MemberCategory::sqlSectionExpr('members', 'current_section', 'age_group');
+        $secExpr = MemberCategory::sqlSectionExpr('members', 'current_class_id', 'current_class_id');
         $excl = DepartmentStatusService::exclusionSql($conn, 'mezmur', 'members.id', $onDate);
         $stmt = $conn->prepare(
             "SELECT id, member_code, student_name, father_name, $photo
-             FROM members
+             FROM students
              WHERE status = 'active'{$excl}
-               AND ($secExpr = ? OR current_section = ?)
+               AND ($secExpr = ? OR current_class_id = ?)
              ORDER BY student_name, father_name"
         );
         if (!$stmt) {
@@ -429,11 +429,11 @@ final class MezmurAttendanceService
     public static function sectionListWithCounts(\mysqli $conn): array
     {
         $out = [];
-        $secExpr = MemberCategory::sqlSectionExpr('members', 'current_section', 'age_group');
+        $secExpr = MemberCategory::sqlSectionExpr('members', 'current_class_id', 'current_class_id');
         $excl = DepartmentStatusService::exclusionSql($conn, 'mezmur', 'members.id', null);
         $res = $conn->query(
             "SELECT $secExpr AS section, COUNT(*) AS members
-             FROM members WHERE status = 'active'{$excl}
+             FROM students WHERE status = 'active'{$excl}
              GROUP BY section ORDER BY section LIMIT 200"
         );
         if ($res) {
@@ -460,14 +460,14 @@ final class MezmurAttendanceService
         $canonical = MemberCategory::canonicalizeSection($section);
 
         $marks = [];
-        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_section', 'age_group');
+        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_class_id', 'current_class_id');
         try {
             $stmt = $conn->prepare(
                 "SELECT a.member_id, a.status, a.notes
                  FROM mezmur_attendance a
-                 JOIN members m ON m.id = a.member_id
+                 JOIN students m ON m.id = a.member_id
                  WHERE a.attendance_date = ?
-                   AND ($secExpr = ? OR m.current_section = ?)"
+                   AND ($secExpr = ? OR m.current_class_id = ?)"
             );
             if ($stmt) {
                 $stmt->bind_param('sss', $date, $canonical, $section);
@@ -601,12 +601,12 @@ final class MezmurAttendanceService
             if ($requireComplete) {
                 // Complete sheet = the authority: delete only this section's
                 // rows for the date, then insert.
-                $secExpr = MemberCategory::sqlSectionExpr('m', 'current_section', 'age_group');
+                $secExpr = MemberCategory::sqlSectionExpr('m', 'current_class_id', 'current_class_id');
                 $del = $conn->prepare(
                     "DELETE a FROM mezmur_attendance a
-                     JOIN members m ON m.id = a.member_id
+                     JOIN students m ON m.id = a.member_id
                      WHERE a.attendance_date = ?
-                       AND ($secExpr = ? OR m.current_section = ?)"
+                       AND ($secExpr = ? OR m.current_class_id = ?)"
                 );
                 $del->bind_param('sss', $date, $canonical, $section);
                 $del->execute();
@@ -678,14 +678,14 @@ final class MezmurAttendanceService
         $perPage = self::clampPerPage((int)($filters['per_page'] ?? 25));
 
         $held = self::daysHeld($conn, $w, $programType);
-        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_section', 'age_group');
+        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_class_id', 'current_class_id');
 
         $where = ["m.status = 'active'"];
         $types = '';
         $params = [];
         if ($section !== '') {
             $canonical = MemberCategory::canonicalizeSection($section);
-            $where[] = "($secExpr = ? OR m.current_section = ?)";
+            $where[] = "($secExpr = ? OR m.current_class_id = ?)";
             $types .= 'ss'; $params[] = $canonical; $params[] = $section;
         }
         if ($search !== '') {
@@ -710,7 +710,7 @@ final class MezmurAttendanceService
                         THEN ROUND((COALESCE(agg.present,0) + COALESCE(agg.late,0)) * 100.0 / $held, 1)
                         ELSE NULL END AS rate,
                    agg.last_attended
-            FROM members m
+            FROM students m
             LEFT JOIN (
                 SELECT a.member_id,
                        SUM(a.status = 'present') AS present,
@@ -779,7 +779,7 @@ final class MezmurAttendanceService
         $held = self::daysHeld($conn, $w, $programType);
 
         [$pJoin, $pType] = self::programJoinFilter($programType);
-        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_section', 'age_group');
+        $secExpr = MemberCategory::sqlSectionExpr('m', 'current_class_id', 'current_class_id');
 
         $sql = "
             SELECT $secExpr AS section,
@@ -787,7 +787,7 @@ final class MezmurAttendanceService
                    COALESCE(SUM(a.status = 'present'), 0) AS present,
                    COALESCE(SUM(a.status = 'late'), 0)    AS late,
                    COALESCE(SUM(a.status = 'absent'), 0)  AS absent
-            FROM members m
+            FROM students m
             LEFT JOIN mezmur_attendance a ON a.member_id = m.id AND a.attendance_date BETWEEN ? AND ?"
             . ($programType !== ''
                 ? " AND EXISTS (SELECT 1 FROM mezmur_days d WHERE d.attendance_date = a.attendance_date AND d.program_type = ?)"
@@ -863,8 +863,8 @@ final class MezmurAttendanceService
     public static function sectionList(\mysqli $conn): array
     {
         $out = [];
-        $secExpr = MemberCategory::sqlSectionExpr('', 'current_section', 'age_group');
-        $res = $conn->query("SELECT DISTINCT $secExpr AS section FROM members WHERE status = 'active' ORDER BY section LIMIT 200");
+        $secExpr = MemberCategory::sqlSectionExpr('', 'current_class_id', 'current_class_id');
+        $res = $conn->query("SELECT DISTINCT $secExpr AS section FROM students WHERE status = 'active' ORDER BY section LIMIT 200");
         if ($res) {
             while ($r = $res->fetch_assoc()) $out[] = $r['section'];
         }
@@ -882,7 +882,7 @@ final class MezmurAttendanceService
             "SELECT u.id, u.username, u.full_name, u.is_active, u.created_at,
                     m.student_name, m.member_code
              FROM users u
-             LEFT JOIN members m ON u.member_id = m.id
+             LEFT JOIN students m ON u.member_id = m.id
              WHERE u.role = 'mezmur_attendance_taker'
              ORDER BY u.full_name
              LIMIT 500"
