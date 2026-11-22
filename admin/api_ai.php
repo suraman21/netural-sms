@@ -224,17 +224,9 @@ function collectDataSnapshot($conn, $scope = 'overview') {
             SUM(status='warning') as warning,
             SUM(gender='male') as male,
             SUM(gender='female') as female,
-            SUM(member_type='regular') as regular,
-            SUM(member_type='special_regular') as special,
-            SUM(registration_type='waiting') as waiting,
-            SUM(registration_type='transfer') as transfer,
-            SUM(registration_type='direct') as direct,
             SUM(phone_number IS NOT NULL AND phone_number!='') as has_phone,
-            SUM(student_photo_path IS NOT NULL AND student_photo_path!='') as has_photo,
-            SUM(age_group='7_13') as age_7_13,
-            SUM(age_group='14_17') as age_14_17,
-            SUM(age_group='18_plus' OR age_group='18+') as age_18plus
-        FROM members WHERE status != 'archived'");
+            SUM(student_photo_path IS NOT NULL AND student_photo_path!='') as has_photo
+        FROM students WHERE status != 'archived'");
         if ($r) $data['members_overview'] = $r->fetch_assoc();
     } catch (Exception $e) { $data['members_overview'] = ['error' => 'Query failed']; }
     
@@ -242,7 +234,7 @@ function collectDataSnapshot($conn, $scope = 'overview') {
     if (in_array($scope, ['overview', 'members', 'trends'])) {
         try {
             $r = $conn->query("SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count 
-                FROM members WHERE status != 'archived' AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+                FROM students WHERE status != 'archived' AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
                 GROUP BY month ORDER BY month");
             $data['registration_trends'] = [];
             if ($r) while ($row = $r->fetch_assoc()) $data['registration_trends'][] = $row;
