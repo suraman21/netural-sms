@@ -59,7 +59,7 @@ def test_batch_fixture_mutates_only_owned_connection_local_tables():
     source = (ROOT / 'tests/e2e/attendance_preparation_batch.php').read_text()
     assert "PHP_SAPI !== 'cli'" in source and "getenv('SSMS_AUDIT_TESTING') !== '1'" in source
     assert 'config.php' not in source and 'DROP TABLE' not in source and 'DROP DATABASE' not in source
-    assert 'CREATE TEMPORARY TABLE members' in source and 'CREATE TEMPORARY TABLE class_enrollments' in source
+    assert 'CREATE TEMPORARY TABLE students' in source and 'CREATE TEMPORARY TABLE class_enrollments' in source
     assert 'CREATE TEMPORARY TABLE member_department_periods' in source
     assert 'DROP TEMPORARY TABLE IF EXISTS' in source
     assert "'ssms_comm_e2e'" in source and "'127.0.0.1'" in source

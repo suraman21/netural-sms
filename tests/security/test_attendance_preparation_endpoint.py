@@ -56,7 +56,7 @@ def test_full_boundary_authority_and_dependency_contract():
                   "'deadline'=>min($issuedAt+30*86400,$yearEnd)", 'if ($knownDenial !== null) throw $knownDenial;']:
         assert token in source
     for table in ['users','academic_years','api_refresh_sessions','classes','teacher_assignments',
-                  'class_enrollments','members','timetable_class_days','timetable_makeup_classes',
+                  'class_enrollments','students','timetable_class_days','timetable_makeup_classes',
                   'school_day_offs','school_holidays','member_department_periods']:
         assert "'" + table + "'" in source
     assert 'getCurrentAcademicYear(' not in source
@@ -108,7 +108,7 @@ def test_owned_schema_fixture_safety_and_honest_boundaries():
                   "CREATE DATABASE `", "if($owned)", 'DROP DATABASE `', 'finally',
                   "'ssms_comm_e2e'", 'Actual core authentication', 'Concurrent real commit',
                   'ALTER TABLE users DROP COLUMN authorization_version', 'ENGINE=MyISAM',
-                  'CREATE TEMPORARY TABLE members', 'Staff cannot acquire closed original-year capture permission',
+                  'CREATE TEMPORARY TABLE students', 'Staff cannot acquire closed original-year capture permission',
                   'Root signs exact complete payload bytes', 'Unknown workflow never becomes new capture permission',
                   'Future coverage requires future opening, no early capture', 'No result/error doubles'.lower()]:
         assert token in source

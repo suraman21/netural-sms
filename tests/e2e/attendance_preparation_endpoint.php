@@ -37,7 +37,7 @@ try{
  'classes'=>'id INT,class_name VARCHAR(100),class_name_en VARCHAR(100),section VARCHAR(30),is_active TINYINT',
  'teacher_assignments'=>'teacher_id INT,class_id INT,is_active TINYINT,academic_year_id INT NULL',
  'class_enrollments'=>'member_id INT,class_id INT,academic_year_id INT NULL,status VARCHAR(20)',
- 'members'=>'id INT,student_name VARCHAR(100),father_name VARCHAR(100),member_code VARCHAR(50)',
+ 'students'=>'id INT,student_name VARCHAR(100),father_name VARCHAR(100),student_code VARCHAR(50)',
  'attendance'=>'member_id INT,class_id INT,academic_year_id INT NULL,attendance_date DATE,status VARCHAR(30),notes VARCHAR(255)',
  'grade_submissions'=>'id INT,class_id INT,academic_year_id INT NULL,attendance_date DATE,submission_type VARCHAR(30),status VARCHAR(40)',
  'timetable_class_days'=>'class_id INT,academic_year_id INT,working_days VARCHAR(40)',
@@ -57,7 +57,7 @@ try{
  $conn->query("INSERT INTO classes VALUES(3,'Assigned','A','',1),(4,'Assigned inactive','B','',0),(99,'Other','C','',1)");
  $conn->query('INSERT INTO teacher_assignments VALUES(7,3,1,6),(7,4,1,NULL),(8,99,1,6)');
  $conn->query("INSERT INTO class_enrollments VALUES(1,3,6,'active'),(2,4,5,'active'),(99,99,6,'active')");
- $conn->query("INSERT INTO members VALUES(1,'One','Father','M1'),(2,'Two','Father','M2'),(99,'PRIVATE OTHER','Father','M99')");
+ $conn->query("INSERT INTO students VALUES(1,'One','Father','M1'),(2,'Two','Father','M2'),(99,'PRIVATE OTHER','Father','M99')");
  $conn->query("INSERT INTO timetable_class_days VALUES(3,6,'1,2,3,4,5,6,7'),(4,6,'1,2,3,4,5,6,7'),(99,6,'7')");
  $conn->query("INSERT INTO attendance VALUES(1,3,5,'$today','present','old year')");
  $strict=($argv[2]??'')==='strict';mysqli_report($strict?MYSQLI_REPORT_ERROR|MYSQLI_REPORT_STRICT:MYSQLI_REPORT_OFF);$mode=(new mysqli_driver())->report_mode;
@@ -134,7 +134,7 @@ try{
  $conn->query("UPDATE academic_years SET status='active' WHERE id=5");endpointReject(fn()=>endpointRead($auth));$conn->query("UPDATE academic_years SET status='closed' WHERE id=5");
  $conn->query('ALTER TABLE users DROP COLUMN authorization_version');endpointReject(fn()=>endpointRead($auth));$conn->query('ALTER TABLE users ADD authorization_version INT');$conn->query('UPDATE users SET authorization_version=3');
  $conn->query('ALTER TABLE school_day_offs ENGINE=MyISAM');endpointReject(fn()=>endpointRead($auth));$conn->query('ALTER TABLE school_day_offs ENGINE=InnoDB');
- $conn->query('CREATE TEMPORARY TABLE members(id INT) ENGINE=InnoDB');endpointReject(fn()=>endpointRead($auth));$conn->query('DROP TEMPORARY TABLE members');
+ $conn->query('CREATE TEMPORARY TABLE students(id INT) ENGINE=InnoDB');endpointReject(fn()=>endpointRead($auth));$conn->query('DROP TEMPORARY TABLE students');
  $conn->begin_transaction();endpointReject(fn()=>endpointRead($auth));endpointCheck((int)$conn->query('SELECT @@in_transaction')->fetch_row()[0]===1,'Existing caller transaction untouched');$conn->rollback();
  $conn->query('ALTER TABLE attendance_session_records DROP COLUMN status');if($feature)endpointReject(fn()=>endpointRead($auth));else endpointCheck(endpointRead($auth)['lessons_enabled']===false,'OFF optional schema remains unused');$conn->query('ALTER TABLE attendance_session_records ADD status VARCHAR(30)');
  // Actual core authentication + staged real attendance route, response adapter
@@ -165,7 +165,7 @@ try{
  // Hook forwards actual queries/results unchanged, never fabricates data.
  $fired=false;$conn->beforePrepare=static function(string $sql)use(&$fired,$writer):void{
   if(!$fired&&str_starts_with($sql,'SELECT id,role,is_active,authorization_version FROM users')){
-   $fired=true;$writer->begin_transaction();$writer->query('UPDATE users SET authorization_version=4');$writer->query("UPDATE members SET student_name='CHANGED' WHERE id=1");$writer->query('UPDATE teacher_assignments SET is_active=0 WHERE teacher_id=7');$writer->query("UPDATE timetable_class_days SET working_days='9'");$writer->query("INSERT INTO grade_submissions VALUES(100,3,6,CURRENT_DATE,'attendance','approved')");$writer->query("UPDATE academic_years SET status='closed' WHERE id=6");$writer->commit();
+   $fired=true;$writer->begin_transaction();$writer->query('UPDATE users SET authorization_version=4');$writer->query("UPDATE students SET student_name='CHANGED' WHERE id=1");$writer->query('UPDATE teacher_assignments SET is_active=0 WHERE teacher_id=7');$writer->query("UPDATE timetable_class_days SET working_days='9'");$writer->query("INSERT INTO grade_submissions VALUES(100,3,6,CURRENT_DATE,'attendance','approved')");$writer->query("UPDATE academic_years SET status='closed' WHERE id=6");$writer->commit();
   }
  };
  $coherent=endpointRead($auth);$conn->beforePrepare=null;

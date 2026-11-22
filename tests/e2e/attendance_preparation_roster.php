@@ -43,11 +43,13 @@ class PreparationFailureConnection extends mysqli {
     }
 }
 try {
-    $conn->query('CREATE TEMPORARY TABLE members (id BIGINT, student_name VARCHAR(80), father_name VARCHAR(80), member_code VARCHAR(80)) ENGINE=InnoDB');
+    // ADR-0027 M1: the learner table is `students`. This fixture prepares a
+    // temporary learner table for EnrollmentService roster reads.
+    $conn->query('CREATE TEMPORARY TABLE students (id BIGINT, student_name VARCHAR(80), father_name VARCHAR(80), student_code VARCHAR(80)) ENGINE=InnoDB');
     $conn->query('CREATE TEMPORARY TABLE class_enrollments (id INT, member_id BIGINT, class_id INT, academic_year_id INT NULL, enrolled_at DATE, status VARCHAR(20)) ENGINE=InnoDB');
     $conn->query('CREATE TEMPORARY TABLE member_department_periods (member_id BIGINT, department VARCHAR(20), status VARCHAR(20), started_at DATETIME, ended_at DATETIME NULL) ENGINE=InnoDB');
     for ($id = 30; $id <= 37; $id++) {
-        $conn->query("INSERT INTO members VALUES ($id,'Synthetic $id','Parent','CODE-$id')");
+        $conn->query("INSERT INTO students VALUES ($id,'Synthetic $id','Parent','CODE-$id')");
     }
     $conn->query("INSERT INTO class_enrollments VALUES
         (1,30,3,5,'2026-01-01','active'),(2,31,3,6,'2026-01-01','active'),
@@ -103,7 +105,7 @@ try {
     if ($enabled) refusesPreparation(fn()=>E::fetchPreparationRoster($conn, 3, 6, '2026-11-05'));
     else verifyPreparation(count(E::fetchPreparationRoster($conn, 3, 6, '2026-11-05')) === 5, 'Deployment flag OFF stays OFF even without eligibility schema');
     $conn->query('ALTER TABLE member_department_periods ADD COLUMN ended_at DATETIME NULL');
-    $conn->query('ALTER TABLE members DROP COLUMN father_name');
+    $conn->query('ALTER TABLE students DROP COLUMN father_name');
     refusesPreparation(fn()=>E::fetchPreparationRoster($conn, 3, 6, '2026-11-05'));
     $conn->query('ALTER TABLE class_enrollments DROP COLUMN academic_year_id');
     refusesPreparation(fn()=>E::resolvePreparationRosterYear($conn, 3, 6));
@@ -111,6 +113,6 @@ try {
 } finally {
     // Never DROP a permanent table: these are private connection-local fixtures.
     $conn->rollback();
-    foreach (['class_enrollments','members','member_department_periods'] as $table) $conn->query('DROP TEMPORARY TABLE IF EXISTS ' . $table);
+    foreach (['class_enrollments','students','member_department_periods'] as $table) $conn->query('DROP TEMPORARY TABLE IF EXISTS ' . $table);
     $conn->close();
 }

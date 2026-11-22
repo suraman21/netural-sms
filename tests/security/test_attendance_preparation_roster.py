@@ -45,5 +45,5 @@ def test_sql_fixture_is_cli_only_and_never_drops_permanent_business_tables():
     assert 'config.php' not in fixture
     assert 'DROP TEMPORARY TABLE IF EXISTS' in fixture
     assert 'DROP TABLE' not in fixture
-    assert 'CREATE TEMPORARY TABLE members' in fixture
+    assert 'CREATE TEMPORARY TABLE students' in fixture
     assert 'CREATE TEMPORARY TABLE class_enrollments' in fixture
