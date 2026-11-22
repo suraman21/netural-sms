@@ -234,7 +234,6 @@ class Phase4LiveGuards(unittest.TestCase):
     CLASS_ID = 1
     EDU_A = 900000      # class 1 (seed)
     EDU_B = 900001      # class 1 (seed)
-    MEZ = 900005        # ህጻናት (seed age_group 7_13)
     EC_YEAR, EC_MONTH = 2019, 1
     DATES = ["2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17"]
     _sessions: dict = {}
@@ -244,9 +243,7 @@ class Phase4LiveGuards(unittest.TestCase):
         dates = "','".join(cls.DATES)
         db(f"DELETE FROM attendance WHERE class_id={cls.CLASS_ID} AND attendance_date IN ('{dates}')")
         db(f"DELETE FROM grade_submissions WHERE submission_type='attendance' AND class_id={cls.CLASS_ID} AND attendance_date IN ('{dates}')")
-        db(f"DELETE FROM mezmur_attendance WHERE member_id={cls.MEZ} AND attendance_date IN ('{dates}')")
-        db(f"DELETE FROM mezmur_submissions WHERE attendance_date IN ('{dates}')")
-        db(f"DELETE FROM attendance_month_rollup WHERE ec_year={cls.EC_YEAR} AND ec_month={cls.EC_MONTH} AND member_id IN ({cls.EDU_A},{cls.EDU_B},{cls.MEZ})")
+        db(f"DELETE FROM attendance_month_rollup WHERE ec_year={cls.EC_YEAR} AND ec_month={cls.EC_MONTH} AND member_id IN ({cls.EDU_A},{cls.EDU_B})")
 
     @classmethod
     def setUpClass(cls):
@@ -261,8 +258,6 @@ class Phase4LiveGuards(unittest.TestCase):
         # packets: day0 submitted, day1 approved, day2 (none → legacy eligible), day3 REJECTED (excluded)
         db(f"INSERT INTO grade_submissions (teacher_id,class_id,academic_year_id,attendance_date,submission_type,status) VALUES "
            f"(3,{cls.CLASS_ID},1,'{d[0]}','attendance','submitted'),(3,{cls.CLASS_ID},1,'{d[1]}','attendance','approved'),(3,{cls.CLASS_ID},1,'{d[3]}','attendance','rejected')")
-        db(f"INSERT INTO mezmur_attendance (member_id,attendance_date,status) VALUES ({cls.MEZ},'{d[0]}','absent'),({cls.MEZ},'{d[1]}','late'),({cls.MEZ},'{d[2]}','absent')")
-
     @classmethod
     def tearDownClass(cls):
         cls._clean()
@@ -300,21 +295,6 @@ class Phase4LiveGuards(unittest.TestCase):
         self.assertEqual(data["summary"]["threshold"], 75.0)
         self.assertEqual(data["summary"]["min_sessions"], 3)
 
-    def test_02_mezmur_rollup_and_rejected_packet(self):
-        status, data = self._list("mezmur_dept", "mezmur")
-        self.assertEqual(status, 200, data)
-        row = {r["member_id"]: r for r in data["items"]}[self.MEZ]
-        self.assertEqual((row["sessions"], row["absent"], row["late"]), (3, 2, 1))
-        self.assertAlmostEqual(row["rate"], 16.67)
-        self.assertEqual(row["band"], "low")
-        self.assertEqual(row["group"], "ህጻናት")
-        # reject day1 sheet for the canonical section → late row disappears
-        db(f"INSERT INTO mezmur_submissions (attendance_date, section, taker_id, status, member_count, present_count, late_count, absent_count, excused_count) VALUES ('{self.DATES[1]}', 'ህጻናት', 8, 'rejected', 0, 0, 0, 0, 0)")
-        status, data = self._list("mezmur_dept", "mezmur")
-        row = {r["member_id"]: r for r in data["items"]}[self.MEZ]
-        self.assertEqual((row["sessions"], row["absent"], row["late"]), (2, 2, 0))
-        self.assertAlmostEqual(row["rate"], 0.0)
-
     def test_03_partial_refresh_resets_members_without_sessions(self):
         db(f"UPDATE grade_submissions SET status='rejected' WHERE class_id={self.CLASS_ID} AND submission_type='attendance' AND attendance_date IN ('{self.DATES[0]}','{self.DATES[1]}')")
         db(f"DELETE FROM attendance WHERE member_id={self.EDU_B} AND class_id={self.CLASS_ID} AND attendance_date='{self.DATES[2]}'")
@@ -335,14 +315,14 @@ class Phase4LiveGuards(unittest.TestCase):
         self.assertEqual(status, 200, data)
 
     def test_04_role_scoping_and_read_only(self):
+        # mezmur is no longer a valid department (ADR-0023 S6) → 400, not 403
         status, data = self.s("edu_dept").get_json("/admin/api_attendance_monthly.php?action=list&department=mezmur")
-        self.assertEqual(status, 403, data)
+        self.assertEqual(status, 400, data)
         status, data = self.s("mezmur_dept").get_json("/admin/api_attendance_monthly.php?action=list&department=edu")
         self.assertEqual(status, 403, data)
         for role in ("hr_dept", "info_dept", "school_admin", "super_admin"):
             status, data = self.s(role).get_json("/admin/api_attendance_monthly.php?action=months&department=mezmur")
-            self.assertEqual(status, 200, (role, data))
-            self.assertEqual(data["departments"], ["edu", "mezmur"])
+            self.assertEqual(status, 400, (role, data))
         status, data = self.s("teacher").get_json("/admin/api_attendance_monthly.php?action=months")
         self.assertIn(status, (401, 403), data)
         sess = self.s("hr_dept")
