@@ -227,7 +227,7 @@ Closed decisions stay in the table on purpose: a future reader needs to know the
 1. **New decision** → new ADR with the next number (0028 is free), `docs/adr/README.md` row, and a line in section 6 here.
 2. **New document** → add a row to section 2 with its owning workstream.
 3. **Resolved contradiction** → keep the row, change Status. Deleting it erases why the code looks the way it does.
-4. **New migration** → next free number is **106** (gaps at 047, 061, 093, 094 are historical; do not reuse them). Seeds live in `sql/seeds/` and are *not* migrations.
+4. **New migration** → next free number is **108** (gaps at 047, 061, 093, 094 are historical; do not reuse them). Seeds live in `sql/seeds/` and are *not* migrations.
 5. **Changing a pin** → if a test asserts a fact, change the test in the same commit as the fact, and say why in the message.
 
 ---

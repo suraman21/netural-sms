@@ -48,14 +48,13 @@ SQL = ROOT / "sql"
 
 # Measured 2026-10-02. Tables whose CREATE TABLE lives outside sql/.
 # Shrinking this set is an improvement; growing it needs a deliberate decision.
+# Tables that sql/ genuinely does not create. `sql/107` removed five entries
+# from this set by formalising them (subjects, finance_transactions,
+# finance_member_fees, material_items, material_transactions) -- the set shrank
+# because the defect it recorded was fixed, which is the point of keeping it.
 KNOWN_EXTERNALLY_DEFINED = {
-    "users",
-    "members",
-    "subjects",
-    "finance_transactions",
-    "finance_member_fees",
-    "material_items",
-    "material_transactions",
+    "users",   # legacy baseline
+    "members", # legacy baseline; retired by ADR-0027 when 108 drops it
 }
 
 # Measured 2026-10-02. (migration, table) pairs altered before their CREATE.
@@ -67,6 +66,16 @@ KNOWN_FORWARD_REFERENCES = {
     ("004", "academic_years"),
     ("012", "wbws_groups"),
     ("012", "wbws_group_leaders"),
+    # Added with sql/107: these tables are now created by a LATER numbered
+    # migration (107) than the one that alters them (003/029), because 107 was
+    # written after them. The forward reference is real and deliberate -- a
+    # single in-order run cannot repair its own past. The deployment guide
+    # requires re-running 003 and 029 after 107, and CI verifies that works.
+    ("003", "material_items"),
+    ("003", "material_transactions"),
+    ("003", "finance_transactions"),
+    ("003", "finance_member_fees"),
+    ("029", "subjects"),
 }
 
 

@@ -185,3 +185,61 @@ why `docs/DATABASE.md` could claim the chain was complete.
 rebuilt from `sql/` alone, and add the four missing column sets. That is a
 prerequisite for a trustworthy fresh clone, and it is independent of the
 member→student remodel, so it can be done first.
+
+---
+
+# `sql/107` — formalising the PHP-only DDL (in progress)
+
+## The authoritative source is the PHP migrations, not the dump
+
+`provision_env.sh` already contains every fact needed, as shell workarounds:
+
+| Workaround | Line | What it reveals |
+|---|---|---|
+| extract `CREATE TABLE` from `php-migrations/admin/*.php` | 93–112 | 9+ tables exist only there |
+| `ALTER TABLE departments ADD sort_order` | 115 | column in the pre-versioning era |
+| `ALTER TABLE members ADD membership_tier` | 120 | column from the PHP-migration era |
+| `CREATE TABLE ..._archive LIKE ...` | 124 | archive tables from 003's failing tail |
+| re-run `003 014 017 021 029 070 075 076` | 129 | eight migrations depend on the above |
+
+Verified: for all 11 tables the PHP migrations define, their column lists match
+production **exactly** (15=15 for `finance_transactions`, 16=16 for
+`assessments`, and so on). `migration_055_mezmur_link_quarantine` is a
+twelfth, but it is defined in `sql/055` itself and 055 **aborts by design** on a
+fresh clone (`SIGNAL SQLSTATE '45000'` — it requires seeded hymn categories
+85/116 that only exist in the live taxonomy).
+
+## The ten migrations that cannot apply to a fresh database
+
+Each for a different reason, and only three are real defects:
+
+| Migration | Fails because | Verdict |
+|---|---|---|
+| `003` | head adds indexes/tables that 012/013 already made; tail's archive tables need `activity_logs` | ordering |
+| `014` | `members.membership_tier` never created | **defect** |
+| `017` | needs `subjects`/`assessments` (PHP-only) | **defect** |
+| `021` | needs mezmur taxonomy seeded | data-dependent |
+| `029` | needs `subjects` (PHP-only) | **defect** |
+| `055` | aborts deliberately without taxonomy | by design |
+| `068` | `membership_tier` | **defect** |
+| `075` | FK to `subjects` (PHP-only) | **defect** |
+| `076` | FK to `subjects`/`classes` | **defect** |
+| `083` | telegram approval state | ordering |
+
+## Plan
+
+`107` will contain, all idempotent and guarded:
+
+1. the 11 PHP-only `CREATE TABLE` statements, verbatim from the PHP source
+2. `departments.sort_order`
+3. `members.membership_tier` — **kept as a legacy column even though students
+   will not have it**, because `014` and `068` index and alter it, and a chain
+   that cannot run is worse than a chain with one unused column. `sql/105`
+   deliberately does not copy it to `students`.
+4. the three `*_archive` tables from 003's tail
+
+Because `sql/107` sorts after every migration that currently needs these, it
+cannot repair them in one pass — the existing numbered files claim their
+history. The honest options are (a) `107` plus a re-run list in the deployment
+guide, or (b) fold the repair into the next *baseline*. This is recorded rather
+than guessed, and will be settled when `107` is written.
