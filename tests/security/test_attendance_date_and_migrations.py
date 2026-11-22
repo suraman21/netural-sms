@@ -65,7 +65,7 @@ class AttendanceRecencyIsDerived(unittest.TestCase):
 
     def test_bind_types_match_the_new_placeholder_count(self):
         """Adding the subquery added a placeholder; the bind must follow."""
-        stmt_start = self.src.index("UPDATE members")
+        stmt_start = self.src.index("UPDATE students")
         stmt = self.src[stmt_start:self.src.index("bind_param", stmt_start) + 120]
         placeholders = stmt[:stmt.index("bind_param")].count("?")
         self.assertEqual(placeholders, 3, "expected rate + member_id + member_id")
@@ -104,20 +104,20 @@ class AttendanceRecencySemantics(unittest.TestCase):
 
     def setUp(self):
         self.db = sqlite3.connect(":memory:")
-        self.db.execute("CREATE TABLE members (id INTEGER PRIMARY KEY,"
+        self.db.execute("CREATE TABLE students (id INTEGER PRIMARY KEY,"
                         " total_attendance_rate REAL, last_attendance_date TEXT)")
         self.db.execute("CREATE TABLE attendance (member_id INTEGER, attendance_date TEXT)")
-        self.db.execute("INSERT INTO members VALUES (1, NULL, NULL)")
+        self.db.execute("INSERT INTO students VALUES (1, NULL, NULL)")
 
     def _refresh(self, rate=90.0):
         self.db.execute(
-            "UPDATE members SET total_attendance_rate = ?,"
+            "UPDATE students SET total_attendance_rate = ?,"
             " last_attendance_date = COALESCE("
             "   (SELECT MAX(a.attendance_date) FROM attendance a WHERE a.member_id = ?),"
             "   last_attendance_date)"
             " WHERE id = ?", (rate, 1, 1))
         return self.db.execute(
-            "SELECT last_attendance_date FROM members WHERE id = 1").fetchone()[0]
+            "SELECT last_attendance_date FROM students WHERE id = 1").fetchone()[0]
 
     def test_tracks_the_latest_real_attendance_row(self):
         self.db.executemany("INSERT INTO attendance VALUES (1, ?)",
@@ -133,7 +133,7 @@ class AttendanceRecencySemantics(unittest.TestCase):
                          "a backfill must not make the member look recently present")
 
     def test_no_attendance_rows_never_blanks_an_existing_value(self):
-        self.db.execute("UPDATE members SET last_attendance_date = '2026-01-09'")
+        self.db.execute("UPDATE students SET last_attendance_date = '2026-01-09'")
         self.assertEqual(self._refresh(), "2026-01-09")
 
     def test_other_members_rows_are_not_counted(self):
