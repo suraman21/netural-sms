@@ -127,7 +127,7 @@ class EnrollmentService
         if (!$member) {
             // Legacy bridge: legacy importers still write to `members`.
             // Remove this fallback once api_import_members.php is converted.
-            $stmt = $conn->prepare('SELECT id, status FROM members WHERE id=? FOR UPDATE');
+            $stmt = $conn->prepare('SELECT id, status FROM students WHERE id=? FOR UPDATE');
             $stmt->bind_param('i', $memberId); $stmt->execute();
             $member = $stmt->get_result()->fetch_assoc(); $stmt->close();
         }

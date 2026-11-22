@@ -140,7 +140,7 @@ class SubmissionService
         $out = [];
         try {
             $ph = implode(',', array_fill(0, count($ids), '?'));
-            $st = $conn->prepare("SELECT id, student_name, father_name, member_code FROM members WHERE id IN ($ph)");
+            $st = $conn->prepare("SELECT id, student_name, father_name, member_code FROM students WHERE id IN ($ph)");
             if ($st) {
                 $st->bind_param(str_repeat('i', count($ids)), ...$ids);
                 $st->execute();
@@ -1926,7 +1926,7 @@ class SubmissionService
         $stmt = $conn->prepare(
             "SELECT a.id, a.member_id, a.status, a.notes, m.student_name, m.father_name, m.member_code
              FROM attendance a
-             JOIN members m ON m.id = a.member_id
+             JOIN students m ON m.id = a.member_id
              WHERE a.class_id = ? AND a.attendance_date = ?
              ORDER BY a.id ASC"
         );
@@ -1965,7 +1965,7 @@ class SubmissionService
             "SELECT ar.id, ar.member_id, ar.score, ar.max_score, ar.remarks,
                     m.student_name, m.father_name, m.member_code
              FROM academic_records ar
-             JOIN members m ON m.id = ar.member_id
+             JOIN students m ON m.id = ar.member_id
              WHERE ar.assessment_id = ?
              ORDER BY ar.id ASC"
         );
@@ -2032,7 +2032,7 @@ class SubmissionService
                  FROM assessments a
                  JOIN class_enrollments ce ON ce.class_id = a.class_id
                       AND ce.academic_year_id = a.academic_year_id AND ce.status = 'active'
-                 JOIN members m ON m.id = ce.member_id
+                 JOIN students m ON m.id = ce.member_id
                  WHERE a.id = ?
                  ORDER BY m.student_name"
             );
@@ -2092,7 +2092,7 @@ class SubmissionService
             return ['status' => 'error', 'code' => 'not_found', 'message' => 'This student is not in this class.'];
         }
 
-        $st = $conn->prepare('SELECT id, student_name, father_name, member_code FROM members WHERE id = ?');
+        $st = $conn->prepare('SELECT id, student_name, father_name, member_code FROM students WHERE id = ?');
         $st->bind_param('i', $memberId);
         $st->execute();
         $m = $st->get_result()->fetch_assoc();

@@ -463,7 +463,7 @@ final class AttendanceWarningService
 
     private static function memberName(\mysqli $conn, int $memberId): string
     {
-        $stmt = $conn->prepare('SELECT student_name, father_name, member_code FROM members WHERE id = ? LIMIT 1');
+        $stmt = $conn->prepare('SELECT student_name, father_name, member_code FROM students WHERE id = ? LIMIT 1');
         if (!$stmt) {
             return '#' . $memberId;
         }
@@ -580,15 +580,15 @@ final class AttendanceWarningService
         $offset = max(0, (int)($f['offset'] ?? 0));
         $sqlWhere = implode(' AND ', $where);
 
-        $cnt = $conn->prepare("SELECT COUNT(*) AS c FROM " . self::TABLE . " w JOIN members m ON m.id = w.member_id WHERE $sqlWhere");
+        $cnt = $conn->prepare("SELECT COUNT(*) AS c FROM " . self::TABLE . " w JOIN students m ON m.id = w.member_id WHERE $sqlWhere");
         $cnt->bind_param($types, ...$params);
         $cnt->execute();
         $total = (int)($cnt->get_result()->fetch_assoc()['c'] ?? 0);
         $cnt->close();
 
         $stmt = $conn->prepare(
-            "SELECT w.*, m.student_name, m.father_name, m.full_name_am, m.member_code, m.current_section, m.status AS member_status
-             FROM " . self::TABLE . " w JOIN members m ON m.id = w.member_id
+            "SELECT w.*, m.student_name, m.father_name, m.full_name_am, m.member_code, m.status AS member_status
+             FROM " . self::TABLE . " w JOIN students m ON m.id = w.member_id
              WHERE $sqlWhere
              ORDER BY w.status ASC, FIELD(w.stage,'critical','prolonged','standard') ASC, w.opened_at DESC, w.id DESC
              LIMIT $limit OFFSET $offset"
@@ -645,8 +645,8 @@ final class AttendanceWarningService
             return null;
         }
         $stmt = $conn->prepare(
-            "SELECT w.*, m.student_name, m.father_name, m.full_name_am, m.member_code, m.current_section, m.status AS member_status
-             FROM " . self::TABLE . " w JOIN members m ON m.id = w.member_id WHERE w.id = ? LIMIT 1"
+            "SELECT w.*, m.student_name, m.father_name, m.full_name_am, m.member_code, m.status AS member_status
+             FROM " . self::TABLE . " w JOIN students m ON m.id = w.member_id WHERE w.id = ? LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();
