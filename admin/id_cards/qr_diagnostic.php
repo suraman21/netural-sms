@@ -65,7 +65,7 @@ if (extension_loaded('gd')) {
 
 // 5. Check members with QR issues
 echo "\n5. Member QR Status in Database:\n";
-$result = $conn->query("SELECT id, member_code, qr_code_path, id_card_status FROM members WHERE id_card_status = 'generated' OR qr_code_path IS NOT NULL LIMIT 20");
+$result = $conn->query("SELECT id, student_code, qr_code_path, id_card_status FROM students WHERE id_card_status = 'generated' OR qr_code_path IS NOT NULL LIMIT 20");
 if ($result && $result->num_rows > 0) {
     echo "   Members with ID cards:\n";
     while ($row = $result->fetch_assoc()) {

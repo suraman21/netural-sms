@@ -61,25 +61,20 @@ $installedNewFile = false;
 try {
     $pdo->beginTransaction();
     $statement = $pdo->prepare(
-        'SELECT id, member_code, registration_type, member_type, status, id_card_status
-         FROM members WHERE id = ? FOR UPDATE'
+        'SELECT id, student_code, status, id_card_status
+         FROM students WHERE id = ? FOR UPDATE'
     );
     $statement->execute([(int)$memberId]);
     $member = $statement->fetch(PDO::FETCH_ASSOC);
-    $eligible = $member
-        && $member['status'] === 'active'
-        && (
-            in_array($member['registration_type'], ['direct', 'transfer'], true)
-            || $member['member_type'] === 'honorary'
-        );
+    $eligible = $member && $member['status'] === 'active';
     if (!$eligible) {
-        throw new DomainException('The member is not eligible for an ID card.');
+        throw new DomainException('The student is not eligible for an ID card.');
     }
 
-    $memberCode = trim((string)($member['member_code'] ?? ''));
+    $memberCode = trim((string)($member['student_code'] ?? ''));
     if ($memberCode === '') {
         $memberCode = MEMBER_CODE_FORMAT . str_pad((string)$memberId, 4, '0', STR_PAD_LEFT);
-        $statement = $pdo->prepare('UPDATE members SET member_code = ? WHERE id = ?');
+        $statement = $pdo->prepare('UPDATE students SET student_code = ? WHERE id = ?');
         $statement->execute([$memberCode, (int)$memberId]);
     }
 
@@ -112,10 +107,10 @@ try {
     $refreshIssueDate = $action === 'renew' || ($member['id_card_status'] ?? 'none') !== 'generated';
     $statement = $pdo->prepare(
         $refreshIssueDate
-            ? "UPDATE members
+            ? "UPDATE students
                SET qr_code_path = ?, id_card_status = 'generated', id_card_generated_at = CURRENT_TIMESTAMP
                WHERE id = ?"
-            : 'UPDATE members SET qr_code_path = ? WHERE id = ?'
+            : 'UPDATE students SET qr_code_path = ? WHERE id = ?'
     );
     $statement->execute([$webPath, (int)$memberId]);
 
