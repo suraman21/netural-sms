@@ -48,3 +48,72 @@ The guard test for 106: pins the exact 11 re-pointed tables, their delete
 rules, and the exclusion of `member_staff_positions`. Verified against a
 deliberate violation — flattening `SET NULL` to `CASCADE` makes it fail.
 Restore it to `tests/security/` in the same commit as 106.
+
+---
+
+# Slice 1 findings — why the code cannot move before the fixtures
+
+## What I converted, and why it was reverted
+
+Five services were converted to read `students` and passed `php -l`:
+
+- `DepartmentStatusService` (4 refs, learner rows only)
+- `AttendanceRiskService` (1 join)
+- `AssessmentFollowupService` (2 refs)
+- `SubmissionService` (5 refs)
+- `MezmurSubmissionService` (2 refs)
+
+**All five were reverted before merging.** The reason is a single line in an
+e2e fixture:
+
+```php
+// tests/e2e/attendance_preparation_batch.php:24
+CREATE TEMPORARY TABLE members (id INT, student_name VARCHAR(80), ...)
+```
+
+The attendance tests do not use the real schema. They build **temporary tables
+named `members`** and insert into those. A service that queries `students` does
+not find the fixture's rows — it finds the real (empty) table, or fails outright
+in strict mode.
+
+So the ordering constraint is stricter than documented before: **code cannot
+precede fixtures, and cannot even follow them immediately**, because the
+fixtures are not one fleet. Each test's temporary schema has to be renamed in
+the same commit as the service it exercises.
+
+## What that means for the slice plan
+
+| Order | Step | Files |
+|---|---|---|
+| 1 | service + its own fixture, together | 5 services / 5 fixture files |
+| 2 | next subsystem, same rule | … |
+| 3 | `sql/106`, then `sql/107` drops `members` | last |
+
+A slice is therefore "one service and every fixture that exercises it", not
+"ten files that mention members". The earlier recommendation of ten-file slices
+was wrong for this codebase and is corrected here.
+
+## A separate bug found while doing it — not caused by the rename
+
+**`membership_tier` does not exist, and 17 files use it.**
+
+- Not in `sql/legacy/database_schema.sql`
+- No migration adds it
+- `sql/014` line 39 fails: `ERROR 1072  Key column 'membership_tier' doesn't exist`
+- `sql/068` line 8 fails: `ERROR 1054  Unknown column 'membership_tier' in 'members'`
+- `admin/api_export_members.php:37` **defaults to `$tier = 'permanent'`**, so the
+  member export queries a non-existent column by default
+- `admin/info_manage_member.php:668` has already lost its badge
+  (`?? 'temporary'` always fires)
+
+This is pre-existing and orthogonal to ADR-0027, but it is exactly the kind of
+thing the remodel is meant to remove: ADR-0024 says `member_type` has no student
+equivalent, and `membership_tier` (`temporary`/`permanent`) is the same
+membership concept under a second name, half-built and never finished.
+
+**Resolution:** `membership_tier` does not migrate to `students`. But fixing it
+now would mean a schema change independent of the rename, so it is recorded here
+and raised to the owner rather than fixed in a phase-3d commit.
+
+Two migrations (`014`, `068`) are consequently **dead on a fresh clone** — a
+fact `docs/DATABASE.md` should state, and does not yet.

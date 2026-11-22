@@ -1,0 +1,73 @@
+"""DS-1 — the wire contract does not move when the internals do (ADR-0028 A3).
+
+Phase 3d renames `members` to `students` in SQL and PHP. It must NOT rename the
+JSON keys the installed mobile app reads, because a field name is a promise to
+clients and the app cannot be updated in lockstep with the server.
+
+Measured on the Flutter app before this test was written:
+    'member_id'   used in 97 places
+    'member_code' used in 49 places
+    'member_name' used in  3 places
+
+These tests fail if a later change "finishes the rename" on the wire side by
+accident — the most likely way this boundary gets broken, since on the server
+`student_code` now looks like the obviously correct name everywhere else.
+"""
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+FLUTTER = ROOT / "Mobile/wbws_flutter_app/lib"
+
+
+def flutter_sources():
+    return list(FLUTTER.rglob("*.dart"))
+
+
+def test_the_app_still_reads_the_member_keys():
+    """If these vanish from the app, the server may drop them. Until then: no."""
+    body = "\n".join(p.read_text(encoding="utf-8", errors="ignore") for p in flutter_sources())
+    for key in ("member_id", "member_code"):
+        assert f"'{key}'" in body, (
+            f"the app no longer reads '{key}' — if that is deliberate, ADR-0028 A3 "
+            "must be revisited before the server stops sending it"
+        )
+
+
+def test_no_dart_source_was_renamed_to_student_keys_yet():
+    """A partial rename on the client is the worst state: it breaks on old servers."""
+    offenders = []
+    for p in flutter_sources():
+        src = p.read_text(encoding="utf-8", errors="ignore")
+        if re.search(r"['\"]student_(id|code)['\"]", src):
+            offenders.append(p.relative_to(ROOT).as_posix())
+    assert not offenders, (
+        "the Flutter app reads student_* keys, but the server still sends member_*: "
+        f"{offenders[:5]}"
+    )
+
+
+def test_php_services_send_member_keys_and_read_student_columns():
+    """The intended shape: student_code in SQL, member_code in the response."""
+    body = (ROOT / "admin/backend/services/AssessmentFollowupService.php").read_text(encoding="utf-8")
+    assert "mb.student_code AS member_code" in body
+    assert "'member_code' =>" in body, "the response key must survive"
+
+
+def test_converted_services_do_not_query_the_old_table():
+    """Files already moved in phase 3d must not quietly keep a members query."""
+    converted = [
+        "admin/backend/services/DepartmentStatusService.php",
+        "admin/backend/services/AttendanceRiskService.php",
+        "admin/backend/services/AssessmentFollowupService.php",
+        "admin/id_cards/view_id_card.php",
+    ]
+    offenders = []
+    for rel in converted:
+        src = (ROOT / rel).read_text(encoding="utf-8")
+        # strip comments: a comment may (and should) mention why members is gone
+        code = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+        code = re.sub(r"(?m)^\s*(//|\*|#).*$", "", code)
+        if re.search(r"(FROM|JOIN|INTO|UPDATE|DELETE\s+FROM)\s+`?members`?\b", code, re.I):
+            offenders.append(rel)
+    assert not offenders, f"converted files still query members: {offenders}"
