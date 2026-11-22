@@ -232,8 +232,12 @@ final class AttendanceSummaryService
                 // COALESCE keeps any existing value when the member has no
                 // attendance rows left (e.g. the last row was deleted), so the
                 // fix can never blank a populated column.
+                // ADR-0027 M1: the learner table is `students`. Totals are now
+                // maintained on the learner row, not the legacy `members` row.
+                // `total_attendance_rate` and `last_attendance_date` exist on
+                // `students` (sql/105:158-160).
                 $update = $conn->prepare(
-                    'UPDATE members
+                    'UPDATE students
                      SET total_attendance_rate = ?,
                          last_attendance_date = COALESCE(
                              (SELECT MAX(a.attendance_date)
