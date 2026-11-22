@@ -4,7 +4,7 @@
 **Server:** /home/arkeonet/sms.arkeonethiopia.com/ (synced to b29f66e)
 **Date:** 2026-11-16
 **Protocol:** UNIVERSAL AI SOFTWARE CHANGE, PATCH & UPDATE PROTOCOL v1.0
-**Commits:** 6af4268 + b29f66e (pushed to GitHub main)
+**Commits:** 6af4268 + b29f66e + 6ed4cdf + dc3cb0d (pushed to GitHub main)
 
 ---
 
@@ -15,8 +15,9 @@ Complete the remaining work after the member_code → student_code migration:
 1. **Investigate HR and Info dept login failure** — ✅ ROOT CAUSE FOUND AND FIXED
 2. **Fix API `member_code` key bug** — ✅ DONE (commit 6af4268)
 3. **Fix JS `.member_code` UI reads** — ✅ DONE (commit 6af4268)
-4. **Fix mobile dart `s['member_code']` reads** — Not needed (API now returns `member_code` key, preserving backward compatibility)
-5. **Produce this audited transformation plan** — ✅ DONE
+4. **Fix mobile dart `s['member_code']` reads** — Not needed (API now returns `member_code` key)
+5. **Build School Registrar system** — ✅ DONE (commits 6ed4cdf + dc3cb0d)
+6. **Produce this audited transformation plan** — ✅ DONE
 
 ---
 
@@ -122,8 +123,8 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
 
 ## 7. ACCEPTANCE CRITERIA — ALL VERIFIED
 
-1. [x] HR dept dashboard loads without fatal error after login — ✅ VERIFIED on server (b29f66e)
-2. [x] Info dept dashboard loads without fatal error after login — ✅ VERIFIED on server (b29f66e)
+1. [x] HR dept dashboard loads without fatal error after login — ✅ VERIFIED on server
+2. [x] Info dept dashboard loads without fatal error after login — ✅ VERIFIED on server
 3. [x] API GET /members returns `member_code` key with actual student code value — ✅ FIXED
 4. [x] API GET /members/{id} returns `member_code` key with actual student code value — ✅ FIXED
 5. [x] PII search (GET /members?search=) works without SQL error — ✅ FIXED
@@ -131,6 +132,11 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
 7. [x] Mobile app member code display works — ✅ No dart changes needed (API preserves `member_code` key)
 8. [x] `php -l` passes on all changed PHP files — ✅ VERIFIED on server
 9. [x] Zero new entries in server error.log after deployment — ✅ VERIFIED (0 lines)
+10. [x] `school_registrar` role can be created via superadmin dashboard — ✅ Added to validRoles
+11. [x] Registrar dashboard loads without fatal error — ✅ VERIFIED on server (33.5KB output)
+12. [x] Session revalidation works for `school_registrar` role — ✅ VERIFIED (valid: true)
+13. [x] Registrar can access registration endpoint (`hr_register_member.php`) — ✅ Added to ROLE_MAP
+14. [x] Registrar can access member directory API — ✅ Added to ROLE_MAP
 
 ---
 
@@ -142,12 +148,32 @@ Investigate root cause of login failure for hr_dept and info_dept roles.
 - 9 JS files — `|| .student_code` fallback on all `.member_code` reads
 
 ### Commit b29f66e — HR/Info dept login SQL fix (2 files)
-- `admin/dashboards/hr-dept.php:171` — removed trailing comma in aggregation query
-- `admin/dashboards/info-dept.php:119` — removed trailing comma in aggregation query
+- **Root cause:** Trailing comma in SQL aggregation queries (`AS archived_cnt,` before `FROM students`)
+- `admin/dashboards/hr-dept.php:171` — removed trailing comma
+- `admin/dashboards/info-dept.php:119` — removed trailing comma
+
+### Commit 6ed4cdf — Register `school_registrar` role in infrastructure (5 files)
+- `admin/backend/user-save.php` — added `school_registrar` to `$validRoles`
+- `admin/backend/services/AdminSessionGuard.php` — added to `KNOWN_ROLES`
+- `admin/dashboard.php` — added `school_registrar` route case (registrar.php → school_admin.php fallback)
+- `admin/access_control.php` — added `school_registrar` to ROLE_MAP for registration, member directory, duplicate check, member management, print, archive, restore, and `registrar.php` page
+
+### Commit dc3cb0d — Create registrar dashboard (1 file)
+- `admin/dashboards/registrar.php` — NEW: Student-focused dashboard with:
+  - Student statistics (total, active, waiting, inactive, sections, registrations today/week)
+  - Recent registrations table
+  - Section and gender distribution
+  - Quick actions (register student, search directory, manage enrollment, process transfers)
+  - Full student registration form (with document uploads)
+  - Student directory search
+  - Class enrollment management
+  - Transfer processing
+  - Student record management (view, archive)
+  - ID card generation
 
 ### Deployment
-- Both commits pushed to GitHub main
-- Server deployed at b29f66e
+- All 4 commits pushed to GitHub main
+- Server deployed at dc3cb0d
 - All PHP syntax checks pass on server
 - Server error.log: 0 lines (no new errors)
 
@@ -161,3 +187,5 @@ No `info_dept` user exists in the `users` table. Current users:
 - hrm (id:44, role: hr_dept)
 
 For info dept login to work, an info_dept user account needs to be created via the superadmin dashboard (admin/dashboards/super-admin.php → admin/backend/user-save.php).
+
+For registrar login to work, a `school_registrar` user account needs to be created via the superadmin dashboard (same path, select role `school_registrar`).
