@@ -517,6 +517,7 @@ $currentStatus = (int) field_value('is_active', $editUser, $oldForm, 1);
                                 'finance_dept'  => 'Finance Dept',
                                 'material_dept' => 'Material Dept',
                                 'mezmur_dept' => 'Mezmur Dept',
+                                'school_registrar' => 'School Registrar',
                                 'teacher'       => 'Teacher',
                                 'attendance_taker' => 'Attendance Taker',
                                 'content_editor' => 'Content Editor (Website)',
